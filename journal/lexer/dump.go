@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/olexsmir/ledger-tools/journal/token"
+	"olexsmir.xyz/clerk/journal/token"
 )
 
 func (l *Lexer) Dump() string {

@@ -1,6 +1,6 @@
 package ast
 
-import "github.com/olexsmir/ledger-tools/journal/token"
+import "olexsmir.xyz/clerk/journal/token"
 
 type Journal struct {
 	Entries []Entry

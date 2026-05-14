@@ -1,4 +1,4 @@
-module github.com/olexsmir/ledger-tools
+module olexsmir.xyz/clerk
 
 go 1.26.2
 

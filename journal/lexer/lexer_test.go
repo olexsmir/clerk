@@ -3,8 +3,8 @@ package lexer
 import (
 	"testing"
 
-	"github.com/olexsmir/ledger-tools/internal/testutil/golden"
-	"github.com/olexsmir/ledger-tools/journal/token"
+	"olexsmir.xyz/clerk/internal/testutil/golden"
+	"olexsmir.xyz/clerk/journal/token"
 )
 
 func TestLexer(t *testing.T) {

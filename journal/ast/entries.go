@@ -1,7 +1,7 @@
 package ast
 
 import (
-	"github.com/olexsmir/ledger-tools/journal/token"
+	"olexsmir.xyz/clerk/journal/token"
 	"github.com/shopspring/decimal"
 )
 

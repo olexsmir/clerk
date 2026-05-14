@@ -7,9 +7,9 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/olexsmir/ledger-tools/journal/ast"
-	"github.com/olexsmir/ledger-tools/journal/lexer"
-	"github.com/olexsmir/ledger-tools/journal/parser"
+	"olexsmir.xyz/clerk/journal/ast"
+	"olexsmir.xyz/clerk/journal/lexer"
+	"olexsmir.xyz/clerk/journal/parser"
 )
 
 type ParsedFile struct {

@@ -5,7 +5,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/olexsmir/ledger-tools/journal/token"
+	"olexsmir.xyz/clerk/journal/token"
 )
 
 type Mode uint

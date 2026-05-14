@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/olexsmir/ledger-tools/journal"
+	"olexsmir.xyz/clerk/journal"
 )
 
 type test struct {

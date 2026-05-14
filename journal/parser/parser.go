@@ -5,9 +5,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/olexsmir/ledger-tools/journal/ast"
-	"github.com/olexsmir/ledger-tools/journal/lexer"
-	"github.com/olexsmir/ledger-tools/journal/token"
+	"olexsmir.xyz/clerk/journal/ast"
+	"olexsmir.xyz/clerk/journal/lexer"
+	"olexsmir.xyz/clerk/journal/token"
 	"github.com/shopspring/decimal"
 )
 
