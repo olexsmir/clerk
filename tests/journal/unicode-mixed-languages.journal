@@ -1,0 +1,8 @@
+; synthetic: mixed latin/cyrillic/cjk fixture
+2024/05/01 Coffee з друзями
+  expenses:кава  15 USD
+  assets:wallet
+
+2024/05/02 Dinner 夕食
+  витрати:food  1200 JPY
+  資産:cash

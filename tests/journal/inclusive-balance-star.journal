@@ -1,0 +1,4 @@
+; source: hledger/examples/multicurrency.journal
+2015-12-31 retain earnings
+    Income                       ==* 0
+    Equity:Retained Earnings

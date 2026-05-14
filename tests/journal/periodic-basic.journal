@@ -1,0 +1,4 @@
+; source: hledger examples style
+~ monthly
+    expenses:food  $100
+    assets:checking

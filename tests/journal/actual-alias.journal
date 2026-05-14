@@ -1,0 +1,3 @@
+; source: hledger/examples/alias.journal
+alias expenses	= equity:draw:personal
+alias assets = assets:personal

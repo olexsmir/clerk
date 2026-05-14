@@ -1,0 +1,5 @@
+; source: hledger/examples/personal.journal
+2014/1/2
+    expenses:food  $1
+    assets:cash
+

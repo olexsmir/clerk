@@ -1,0 +1,83 @@
+Journal
+  BlankLine j:2:0-2:1
+  PeriodicTransaction j:2:1-2:3
+    Period: "monthly"
+    Posting j:3:1-4:1
+      Account "expenses:rent" j:3:5-3:18
+      Amount j:3:28-3:28
+        Quantity: 2000
+        Commodity: "$"
+        CommodityPos: Before
+        HasSpace: false
+        Precision: 0
+        Decimal: "."
+    Posting j:4:1-6:0
+      Account "assets:bank:checking" j:4:5-5:0
+      Amount: <elided>
+  BlankLine j:6:0-6:1
+  PeriodicTransaction j:6:1-6:3
+    Period: "monthly from 2023-04-15 to 2023-06-16"
+    From: 2023-04-15
+    To: 2023-06-16
+    Posting j:7:1-8:1
+      Account "expenses:utilities" j:7:5-7:23
+      Amount j:7:33-7:33
+        Quantity: 400
+        Commodity: "$"
+        CommodityPos: Before
+        HasSpace: false
+        Precision: 0
+        Decimal: "."
+    Posting j:8:1-10:0
+      Account "assets:bank:checking" j:8:5-9:0
+      Amount: <elided>
+  BlankLine j:10:0-10:1
+  PeriodicTransaction j:10:1-10:3
+    Period: "every 2 months"
+    Description: "in 2023, we will review"
+    Posting j:11:1-12:1
+      Account "expenses:utilities" j:11:5-11:23
+      Amount j:11:33-11:33
+        Quantity: 400
+        Commodity: "$"
+        CommodityPos: Before
+        HasSpace: false
+        Precision: 0
+        Decimal: "."
+    Posting j:12:1-14:0
+      Account "assets:bank:checking" j:12:5-13:0
+      Amount: <elided>
+  BlankLine j:14:0-14:1
+  PeriodicTransaction j:14:1-14:3
+    Period: "monthly"
+    Description: "Next year blah blah"
+    Posting j:15:1-16:1
+      Account "expenses:food" j:15:5-15:18
+      Amount j:15:20-15:20
+        Quantity: 100
+        Commodity: "$"
+        CommodityPos: Before
+        HasSpace: false
+        Precision: 0
+        Decimal: "."
+    Posting j:16:1-18:0
+      Account "assets:checking" j:16:5-17:0
+      Amount: <elided>
+  BlankLine j:18:0-18:1
+  PeriodicTransaction j:18:1-18:3
+    Period: "monthly from 2018/6"
+    Comment j:18:23-19:0
+      Marker: ";"
+      Text: "In 2019 we will change this"
+    Posting j:19:1-20:1
+      Account "expenses:food" j:19:5-19:18
+      Amount j:19:20-19:20
+        Quantity: 100
+        Commodity: "$"
+        CommodityPos: Before
+        HasSpace: false
+        Precision: 0
+        Decimal: "."
+    Posting j:20:1-21:1
+      Account "assets:checking" j:20:5-21:0
+      Amount: <elided>

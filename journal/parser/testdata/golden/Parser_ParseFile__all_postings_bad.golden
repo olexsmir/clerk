@@ -1,0 +1,8 @@
+Journal
+  Transaction j:1:1-5:1
+    Date: 2024/01/01
+    Payee: "groceries" j:1:12-2:0
+  Errors
+    j:2:5-2:7: expected account name, got ATAT
+    j:3:5-3:6: expected account name, got AT
+    j:4:5-4:6: expected account name, got AT

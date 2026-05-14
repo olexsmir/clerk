@@ -1,0 +1,7 @@
+; source: ledger/test/fuzz/corpus/input_standard.dat
+= /^Expenses:Books/
+    (Liabilities:Taxes)  -0.10
+
+2004/05/27 Book Store
+    Expenses:Books  $20.00
+    Assets:Cash

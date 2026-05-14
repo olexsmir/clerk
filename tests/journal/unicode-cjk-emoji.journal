@@ -1,0 +1,8 @@
+; synthetic: unicode CJK + emoji fixture
+2024/04/10 東京ランチ 🍣
+  費用:食事  1800 JPY
+  資産:現金
+
+2024/04/11 返金 ✅
+  資産:現金  500 JPY
+  収入:返金

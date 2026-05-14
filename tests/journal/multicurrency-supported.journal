@@ -1,0 +1,4 @@
+; source: hledger/examples/multicurrency.journal
+2015-01-03 money exchange office
+    assets:cash  -20 EUR @ 7.53 HRK
+    assets:cash  150.60 HRK

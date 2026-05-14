@@ -1,0 +1,6 @@
+Journal
+  AccountDirective j:1:1-2:1
+    Account "expenses:food" j:1:9-1:22
+    Comment j:1:23-2:0
+      Marker: ";"
+      Text: "my account"

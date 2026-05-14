@@ -1,0 +1,11 @@
+Journal
+  CommodityDirective j:1:1-2:1
+    Commodity: "UAH"
+    Amount j:1:11-1:11
+      Quantity: 1000
+      Commodity: "UAH"
+      CommodityPos: After
+      HasSpace: true
+      Precision: 2
+      Decimal: "."
+      Thousands: ","

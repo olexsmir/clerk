@@ -1,0 +1,4 @@
+; source: hledger examples style
+2024/01/01=2024/01/02 grocery run | weekend
+    expenses:food  $10.00 ; food
+    assets:checking

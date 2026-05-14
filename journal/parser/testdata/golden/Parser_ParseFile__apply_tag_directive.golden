@@ -1,0 +1,3 @@
+Journal
+  ApplyDirective j:1:1-2:1
+    Expr: "tag hashtag"

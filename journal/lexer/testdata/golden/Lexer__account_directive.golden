@@ -1,0 +1,5 @@
+ACCOUNT      "account"            1:1-1:8
+WHITESPACE   " "                  1:8-1:9
+TEXT         "expenses:food"      1:9-1:22
+NEWLINE      "\n"                 1:22-1:23
+EOF          ""                   1:23-1:23

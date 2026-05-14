@@ -1,0 +1,14 @@
+DATE         "2024/01/01"         1:1-1:11
+WHITESPACE   " "                  1:11-1:12
+TEXT         "groceries"          1:12-2:0
+NEWLINE      "\n"                 2:0-2:1
+INDENT       "    "               2:1-2:5
+TEXT         "expenses:food"      2:5-2:18
+WHITESPACE   "  "                 2:18-2:20
+COMMODITYMARK "$"                  2:20-2:21
+DECIMAL      "10.00"              2:21-3:0
+NEWLINE      "\n"                 3:0-3:1
+INDENT       "    "               3:1-3:5
+TEXT         "assets:checking"    3:5-4:0
+NEWLINE      "\n"                 4:0-4:1
+EOF          ""                   4:1-4:1

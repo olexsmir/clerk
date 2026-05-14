@@ -1,0 +1,4 @@
+; source: ledger style virtual posting
+2024/01/01 virtual posting
+    [assets:cash]  $1
+    income:gift

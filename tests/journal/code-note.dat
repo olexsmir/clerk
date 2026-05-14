@@ -1,0 +1,4 @@
+; source: ledger/test/fuzz/corpus/input_standard.dat
+2024/05/27 (INV100) Credit card company | monthly bill ; top note
+    liabilities:mastercard  $20.00
+    assets:bank:checking

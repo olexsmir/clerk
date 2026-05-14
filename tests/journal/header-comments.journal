@@ -1,0 +1,5 @@
+; source: hledger examples style
+2024-01-01 groceries
+    ; header note
+    expenses:food  $10.00
+    assets:checking

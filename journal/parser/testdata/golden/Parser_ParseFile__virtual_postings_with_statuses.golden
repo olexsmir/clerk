@@ -1,0 +1,76 @@
+Journal
+  Transaction j:1:1-5:0
+    Date: 2024/01/01
+    Payee: "test" j:1:12-2:0
+    Posting j:2:1-3:1
+      Type: unbalanced virtual
+      Status: "!"
+      Account "assets:cash" j:2:6-2:17
+      Amount j:2:20-2:20
+        Quantity: 10
+        Commodity: "$"
+        CommodityPos: Before
+        HasSpace: false
+        Precision: 0
+        Decimal: "."
+    Posting j:3:1-5:0
+      Type: unbalanced virtual
+      Account "income:gift" j:3:4-3:15
+      Amount j:3:18-3:18
+        Quantity: -10
+        Commodity: "$"
+        CommodityPos: Before
+        HasSpace: false
+        Precision: 0
+        Decimal: "."
+  BlankLine j:5:0-5:1
+  Transaction j:5:1-9:0
+    Date: 2024/01/01
+    Payee: "test" j:5:12-6:0
+    Posting j:6:1-7:1
+      Type: unbalanced virtual
+      Status: "!"
+      Account "assets:cash" j:6:8-6:19
+      Amount j:6:22-6:22
+        Quantity: 10
+        Commodity: "$"
+        CommodityPos: Before
+        HasSpace: false
+        Precision: 0
+        Decimal: "."
+    Posting j:7:1-9:0
+      Type: unbalanced virtual
+      Account "income:gift" j:7:6-7:17
+      Amount j:7:20-7:20
+        Quantity: -10
+        Commodity: "$"
+        CommodityPos: Before
+        HasSpace: false
+        Precision: 0
+        Decimal: "."
+  BlankLine j:9:0-9:1
+  Transaction j:9:1-12:1
+    Date: 2024/01/01
+    Payee: "test" j:9:12-10:0
+    Posting j:10:1-11:1
+      Type: unbalanced virtual
+      Status: "!"
+      Account "assets:cash" j:10:10-10:21
+      Amount j:10:24-10:24
+        Quantity: 10
+        Commodity: "$"
+        CommodityPos: Before
+        HasSpace: false
+        Precision: 0
+        Decimal: "."
+    Posting j:11:1-12:1
+      Type: unbalanced virtual
+      Status: "*"
+      Account "income:gift" j:11:8-11:19
+      Amount j:11:22-11:22
+        Quantity: -10
+        Commodity: "$"
+        CommodityPos: Before
+        HasSpace: false
+        Precision: 0
+        Decimal: "."

@@ -1,0 +1,27 @@
+Journal
+  Transaction j:1:1-5:1
+    Date: 2024/01/01
+    Payee: "groceries" j:1:12-2:0
+    Posting j:2:1-3:1
+      Type: unbalanced virtual
+      Account "virtual:account" j:2:3-2:18
+      Amount j:2:21-2:21
+        Quantity: 1
+        Commodity: "PESO"
+        CommodityPos: After
+        HasSpace: true
+        Precision: 0
+        Decimal: "."
+    Posting j:3:1-4:1
+      Type: balanced virtual
+      Account "something:else" j:3:3-3:17
+      Amount j:3:21-3:21
+        Quantity: 5
+        Commodity: "PESO"
+        CommodityPos: After
+        HasSpace: true
+        Precision: 0
+        Decimal: "."
+    Posting j:4:1-5:1
+      Account "something:else" j:4:2-5:0
+      Amount: <elided>

@@ -1,0 +1,8 @@
+; source: ledger/test/fuzz/corpus/input_standard.dat
+apply tag foo
+
+2004/05/27 Book Store
+    Expenses:Books  $20.00
+    Assets:Cash
+
+end apply tag

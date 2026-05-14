@@ -1,0 +1,12 @@
+; source: hledger/examples/sample.journal
+account assets:bank:checking
+account income:salary
+commodity $
+
+2024/01/01 opening balance
+    assets:bank:checking  $1000.00
+    equity:opening-balances
+
+2024/01/02 salary
+    assets:bank:checking  $100.00
+    income:salary

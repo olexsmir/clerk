@@ -1,0 +1,9 @@
+; source: ledger/test/fuzz/corpus/input_sample.dat
+2008/01/01 income
+    assets:bank:checking  $1
+    income:salary
+
+2008/06/03 * eat & shop
+    expenses:food      $1
+    expenses:supplies  $1
+    assets:cash

@@ -1,0 +1,11 @@
+; source: mixed hledger docs/examples
+account assets:bank:checking
+commodity $
+include basic.journal
+alias checking = assets:bank:checking
+payee grocery store
+tag project-x
+year 2024
+decimal-mark .
+D $1.00
+P 2024/01/01 USD 40.50 UAH

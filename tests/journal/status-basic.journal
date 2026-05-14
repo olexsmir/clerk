@@ -1,0 +1,8 @@
+; source: hledger/examples/status.journal
+2017/1/2 ! pending transaction
+    assets:cash  1
+    expenses:food
+
+2017/1/3 * cleared transaction
+    assets:cash  1
+    expenses:food

@@ -1,0 +1,88 @@
+Journal
+  Transaction j:1:1-5:0
+    Date: 2024/01/01
+    Payee: "groceries" j:1:12-2:0
+    Posting j:2:1-3:1
+      Account "expenses:food" j:2:2-2:15
+      Amount j:2:17-2:17
+        Quantity: 10
+        Commodity: "$"
+        CommodityPos: Before
+        HasSpace: false
+        Precision: 2
+        Decimal: "."
+      BalanceAssertion j:2:24-3:0
+        IsStrict: false
+        IsInclusive: false
+        Amount j:2:26-2:26
+          Quantity: 100
+          Commodity: "$"
+          CommodityPos: Before
+          HasSpace: false
+          Precision: 2
+          Decimal: "."
+    Posting j:3:1-5:0
+      Account "assets:checking" j:3:2-4:0
+      Amount: <elided>
+  BlankLine j:5:0-5:1
+  Transaction j:5:1-9:0
+    Date: 2025/03/07
+    Payee: "groceries2" j:5:12-6:0
+    Posting j:6:1-7:1
+      Account "expenses:food" j:6:2-6:15
+      Amount j:6:17-6:17
+        Quantity: 10
+        Commodity: "$"
+        CommodityPos: Before
+        HasSpace: false
+        Precision: 2
+        Decimal: "."
+      BalanceAssertion j:6:24-7:0
+        IsStrict: true
+        IsInclusive: false
+        Amount j:6:27-6:27
+          Quantity: 100
+          Commodity: "$"
+          CommodityPos: Before
+          HasSpace: false
+          Precision: 2
+          Decimal: "."
+    Posting j:7:1-9:0
+      Account "assets:checking" j:7:2-7:17
+      Amount: <elided>
+      BalanceAssertion j:7:19-8:0
+        IsStrict: true
+        IsInclusive: false
+        Amount j:7:22-7:22
+          Quantity: 0
+          Commodity: "$"
+          CommodityPos: Before
+          HasSpace: false
+          Precision: 2
+          Decimal: "."
+  BlankLine j:9:0-9:1
+  Transaction j:9:1-12:1
+    Date: 2025/04/08
+    Payee: "groceries3" j:9:12-10:0
+    Posting j:10:1-11:1
+      Account "expenses:food" j:10:2-10:15
+      Amount j:10:17-10:17
+        Quantity: 10
+        Commodity: "$"
+        CommodityPos: Before
+        HasSpace: false
+        Precision: 2
+        Decimal: "."
+    Posting j:11:1-12:1
+      Account "assets:checking" j:11:2-11:17
+      Amount: <elided>
+      BalanceAssertion j:11:19-12:0
+        IsStrict: false
+        IsInclusive: false
+        Amount j:11:21-11:21
+          Quantity: 0
+          Commodity: "$"
+          CommodityPos: Before
+          HasSpace: false
+          Precision: 2
+          Decimal: "."

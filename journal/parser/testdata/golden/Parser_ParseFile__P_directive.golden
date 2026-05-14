@@ -1,0 +1,11 @@
+Journal
+  MarketPriceDirective j:1:1-2:1
+    Date: 2024/01/01
+    Commodity: "USD"
+    Amount j:1:18-1:18
+      Quantity: 40.5
+      Commodity: "UAH"
+      CommodityPos: After
+      HasSpace: true
+      Precision: 2
+      Decimal: "."
