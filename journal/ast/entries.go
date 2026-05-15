@@ -1,8 +1,9 @@
 package ast
 
 import (
-	"olexsmir.xyz/clerk/journal/token"
 	"github.com/shopspring/decimal"
+
+	"olexsmir.xyz/clerk/journal/token"
 )
 
 type BlankLine struct{ Span token.Span }
@@ -11,10 +12,10 @@ func (BlankLine) entryNode() {}
 
 type Transaction struct {
 	Date           Date
-	SecondDate     *Date
-	Status         *Status
-	Code           *string
-	Payee          *Payee
+	SecondDate     *Date     // optional =2026-05-18 date
+	Status         *Status   // optional */! status
+	Code           *string   // optional (123) code
+	Payee          *Payee    // optional payee
 	Note           *string   // part after |
 	Comment        *Comment  // inline ; on header line
 	HeaderComments []Comment // indented ; lines before first posting
@@ -34,12 +35,11 @@ type Period struct {
 func (Period) entryNode() {}
 
 type PeriodicTransaction struct {
-	Period         *Period
-	Status         *Status
-	Code           *string
-	Description    *string
-	Note           *string
-	Comment        *Comment
+	Period         Period   // period-expr
+	Status         *Status  // optional */! status
+	Code           *string  // optional (123) code
+	Description    *string  // optional description
+	Comment        *Comment // optional inline comment
 	HeaderComments []*Comment
 	Postings       []*Posting
 	Span           token.Span
@@ -104,7 +104,7 @@ type Amount struct {
 
 type Cost struct {
 	IsTotal bool // @ vs @@
-	Amount  *Amount
+	Amount  Amount
 	Span    token.Span
 }
 

@@ -24,7 +24,7 @@ type FileError struct {
 
 type Date struct {
 	Year, Month, Day int
-	Sep              byte //  '-' '/' '.'
+	Sep              byte // '-' '/' '.'
 	Span             token.Span
 }
 

@@ -174,17 +174,15 @@ func dumpAutomatedTransaction(b *strings.Builder, t *AutomatedTransaction, depth
 func dumpPeriodicTransaction(b *strings.Builder, t *PeriodicTransaction, depth int) {
 	indent(b, depth)
 	fmt.Fprintf(b, "PeriodicTransaction %s\n", t.Span)
-	if t.Period != nil {
+	indent(b, depth+1)
+	fmt.Fprintf(b, "Period: %q\n", t.Period.Raw)
+	if t.Period.From != nil {
 		indent(b, depth+1)
-		fmt.Fprintf(b, "Period: %q\n", t.Period.Raw)
-		if t.Period.From != nil {
-			indent(b, depth+1)
-			fmt.Fprintf(b, "From: %s\n", dumpDate(*t.Period.From))
-		}
-		if t.Period.To != nil {
-			indent(b, depth+1)
-			fmt.Fprintf(b, "To: %s\n", dumpDate(*t.Period.To))
-		}
+		fmt.Fprintf(b, "From: %s\n", dumpDate(*t.Period.From))
+	}
+	if t.Period.To != nil {
+		indent(b, depth+1)
+		fmt.Fprintf(b, "To: %s\n", dumpDate(*t.Period.To))
 	}
 	if t.Status != nil {
 		indent(b, depth+1)
@@ -197,10 +195,6 @@ func dumpPeriodicTransaction(b *strings.Builder, t *PeriodicTransaction, depth i
 	if t.Description != nil {
 		indent(b, depth+1)
 		fmt.Fprintf(b, "Description: %q\n", *t.Description)
-	}
-	if t.Note != nil {
-		indent(b, depth+1)
-		fmt.Fprintf(b, "Note: %q\n", *t.Note)
 	}
 	dumpOptComment(b, t.Comment, depth+1)
 	if len(t.HeaderComments) > 0 {
@@ -283,7 +277,7 @@ func dumpCost(b *strings.Builder, c *Cost, depth int) {
 	} else {
 		fmt.Fprintf(b, "Cost(unit) %s\n", c.Span)
 	}
-	dumpAmount(b, c.Amount, depth+1)
+	dumpAmount(b, &c.Amount, depth+1)
 }
 
 func dumpBalanceAssertion(b *strings.Builder, ba *BalanceAssertion, depth int) {
@@ -313,9 +307,7 @@ func dumpCommodityDirective(b *strings.Builder, c *CommodityDirective, depth int
 	fmt.Fprintf(b, "CommodityDirective %s\n", c.Span)
 	indent(b, depth+1)
 	fmt.Fprintf(b, "Commodity: %q\n", c.Commodity)
-	if c.Format != nil {
-		dumpAmount(b, c.Format, depth+1)
-	}
+	dumpAmount(b, &c.Format, depth+1)
 	dumpOptComment(b, c.Comment, depth+1)
 }
 

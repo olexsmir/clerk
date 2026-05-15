@@ -12,8 +12,8 @@ func (AccountDirective) entryNode() {}
 
 type CommodityDirective struct {
 	Commodity string
-	Format    *Amount // optional format hint: "1,000.00 UAH"
-	Comment   *Comment
+	Format    Amount  // optional format hint: "1,000.00 UAH"
+	Comment   *Comment // optional inline comment
 	Span      token.Span
 }
 
@@ -29,7 +29,7 @@ func (PayeeDirective) entryNode() {}
 
 type TagDirective struct {
 	Name    string
-	Comment *Comment
+	Comment *Comment // optional inline comment
 	Span    token.Span
 }
 
@@ -37,7 +37,7 @@ func (TagDirective) entryNode() {}
 
 type IncludeDirective struct {
 	Path    string
-	Comment *Comment
+	Comment *Comment // optional inline comment
 	Span    token.Span
 }
 
@@ -45,28 +45,32 @@ func (IncludeDirective) entryNode() {}
 
 type AliasDirective struct {
 	From, To string
+	Comment  *Comment // optional inline comment
 	Span     token.Span
 }
 
 func (AliasDirective) entryNode() {}
 
 type YearDirective struct {
-	Year int
-	Span token.Span
+	Year    int
+	Comment *Comment // optional inline comment
+	Span    token.Span
 }
 
 func (YearDirective) entryNode() {}
 
 type DecimalMarkDirective struct {
-	Mark byte // '.' ','
-	Span token.Span
+	Mark    byte     // '.' ','
+	Comment *Comment // optional inline comment
+	Span    token.Span
 }
 
 func (DecimalMarkDirective) entryNode() {}
 
 type DefaultCommodityDirective struct {
-	Amount Amount
-	Span   token.Span
+	Amount  Amount
+	Comment *Comment // optional inline comment
+	Span    token.Span
 }
 
 func (DefaultCommodityDirective) entryNode() {}
@@ -75,6 +79,7 @@ type MarketPriceDirective struct {
 	DateTime  DateTime
 	Commodity string
 	Amount    Amount
+	Comment   *Comment // optional inline comment
 	Span      token.Span
 }
 
@@ -89,8 +94,8 @@ type ApplyDirective struct {
 func (ApplyDirective) entryNode() {}
 
 type EndDirective struct {
-	Expr    string // text after end e.g "tag"
-	Comment *Comment
+	Expr    string   // text after end e.g "tag"
+	Comment *Comment // optional inline comment
 	Span    token.Span
 }
 
@@ -99,14 +104,15 @@ func (EndDirective) entryNode() {}
 type CommentBlockDirective struct {
 	Header  string // text after "comment" on the same line
 	Content string
-	Comment *Comment
+	Comment *Comment // optional inline comment
 	Span    token.Span
 }
 
 func (CommentBlockDirective) entryNode() {}
 
 type IgnoredDirective struct {
-	Span token.Span
+	Comment *Comment // optional inline comment
+	Span    token.Span
 }
 
 func (IgnoredDirective) entryNode() {}

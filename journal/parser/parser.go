@@ -5,10 +5,11 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/shopspring/decimal"
+
 	"olexsmir.xyz/clerk/journal/ast"
 	"olexsmir.xyz/clerk/journal/lexer"
 	"olexsmir.xyz/clerk/journal/token"
-	"github.com/shopspring/decimal"
 )
 
 type Parser struct {
@@ -241,7 +242,7 @@ func (p *Parser) parseAutomatedTransaction() *ast.AutomatedTransaction {
 	return at
 }
 
-func (p *Parser) parsePeriod() *ast.Period {
+func (p *Parser) parsePeriod() ast.Period {
 	s := p.cur.Span
 
 	var periodBuf strings.Builder
@@ -266,7 +267,7 @@ func (p *Parser) parsePeriod() *ast.Period {
 	}
 
 	str := periodBuf.String()
-	period := &ast.Period{Raw: str, Span: p.span(s)}
+	period := ast.Period{Raw: str, Span: p.span(s)}
 
 	if _, after, ok := strings.Cut(str, " from "); ok {
 		end := strings.Index(after, " ")
@@ -365,7 +366,7 @@ func (p *Parser) parseCommodityDirective() *ast.CommodityDirective {
 
 	return &ast.CommodityDirective{
 		Commodity: commodity,
-		Format:    format,
+		Format:    *format,
 		Comment:   comment,
 		Span:      p.span(s),
 	}
@@ -396,22 +397,19 @@ func (p *Parser) parseIncludeDirective() *ast.IncludeDirective {
 
 func (p *Parser) parseAliasDirective() *ast.AliasDirective {
 	s := p.cur.Span
+	alias := &ast.AliasDirective{}
 	p.expect(token.ALIAS)
 	p.skipWhitespace()
-
-	from := p.parseAccount().Name
+	alias.From = p.parseAccount().Name
 	p.skipWhitespace()
 	p.expect(token.EQ)
 	p.skipWhitespace()
-	to := p.parseAccount().Name
+	alias.To = p.parseAccount().Name
 	p.skipWhitespace()
-
+	alias.Comment = p.parseOptInlineComment()
 	p.expectNewline()
-	return &ast.AliasDirective{
-		From: from,
-		To:   to,
-		Span: p.span(s),
-	}
+	alias.Span = p.span(s)
+	return alias
 }
 
 func (p *Parser) parsePayeeDirective() *ast.PayeeDirective {
@@ -457,56 +455,56 @@ func (p *Parser) parseTagDirective() *ast.TagDirective {
 
 func (p *Parser) parseYearDirective() *ast.YearDirective {
 	s := p.cur.Span
+	year := &ast.YearDirective{}
 	p.expect(token.YEAR)
 	p.skipWhitespace()
 
-	year := 0
 	if p.got(token.INT) {
-		_, _ = fmt.Sscanf(p.cur.Literal, "%d", &year)
+		year.Year, _ = strconv.Atoi(p.cur.Literal)
 		p.advance()
 	} else {
 		p.errorf("expected year, got %s", p.cur.Type)
 	}
 
+	p.skipWhitespace()
+	year.Comment = p.parseOptInlineComment()
 	p.expectNewline()
-	return &ast.YearDirective{
-		Year: year,
-		Span: p.span(s),
-	}
+	year.Span = p.span(s)
+	return year
 }
 
 func (p *Parser) parseDecimalMarkDirective() *ast.DecimalMarkDirective {
 	s := p.cur.Span
+	mark := &ast.DecimalMarkDirective{}
 	p.expect(token.DECIMALMARK)
 	p.skipWhitespace()
 
-	mark := byte('.')
+	mark.Mark = byte('.')
 	if p.got(token.TEXT) {
 		if len(p.cur.Literal) > 0 {
-			mark = p.cur.Literal[0]
+			mark.Mark = p.cur.Literal[0]
 		}
 		p.advance()
 	}
 
+	p.skipWhitespace()
+	mark.Comment = p.parseOptInlineComment()
 	p.expectNewline()
-	return &ast.DecimalMarkDirective{
-		Mark: mark,
-		Span: p.span(s),
-	}
+	mark.Span = p.span(s)
+	return mark
 }
 
 func (p *Parser) parseDefaultCommodityDirective() *ast.DefaultCommodityDirective {
 	s := p.cur.Span
+	com := &ast.DefaultCommodityDirective{}
 	p.expect(token.D)
 	p.skipWhitespace()
-
-	amt := p.parseAmount()
+	com.Amount = *p.parseAmount()
+	p.skipWhitespace()
+	com.Comment = p.parseOptInlineComment()
 	p.expectNewline()
-
-	return &ast.DefaultCommodityDirective{
-		Amount: *amt,
-		Span:   p.span(s),
-	}
+	com.Span = p.span(s)
+	return com
 }
 
 func (p *Parser) parseIgnoredDirective() *ast.IgnoredDirective {
@@ -516,9 +514,13 @@ func (p *Parser) parseIgnoredDirective() *ast.IgnoredDirective {
 	if p.got(token.TEXT) || p.got(token.COMMODITYMARK) {
 		p.advance()
 	}
-	p.parseOptInlineComment()
+	p.skipWhitespace()
+	comment := p.parseOptInlineComment()
 	p.expectNewline()
-	return &ast.IgnoredDirective{Span: p.span(s)}
+	return &ast.IgnoredDirective{
+		Comment: comment,
+		Span:    p.span(s),
+	}
 }
 
 func (p *Parser) parseMarketPriceDirective() *ast.MarketPriceDirective {
@@ -526,30 +528,28 @@ func (p *Parser) parseMarketPriceDirective() *ast.MarketPriceDirective {
 	p.expect(token.P)
 	p.skipWhitespace()
 
-	date := p.parseDate()
+	mp := &ast.MarketPriceDirective{}
+	mp.DateTime.Date = p.parseDate()
 	p.skipWhitespace()
 
-	var t *ast.Time
 	if p.got(token.TIME) {
-		tm := p.parseTime()
-		t = &tm
+		mp.DateTime.Time = new(p.parseTime())
 		p.skipWhitespace()
 	}
 
 	tok, _ := p.expect(token.COMMODITYMARK)
-	commodity := tok.Literal
+	mp.Commodity = tok.Literal
 	p.advance()
 	p.skipWhitespace()
 
-	amt := p.parseAmount()
-	p.expectNewline()
+	mp.Amount = *p.parseAmount()
 
-	return &ast.MarketPriceDirective{
-		DateTime:  ast.DateTime{Date: date, Time: t},
-		Commodity: commodity,
-		Amount:    *amt,
-		Span:      p.span(s),
-	}
+	p.skipWhitespace()
+	mp.Comment = p.parseOptInlineComment()
+
+	p.expectNewline()
+	mp.Span = p.span(s)
+	return mp
 }
 
 func (p *Parser) parseTime() ast.Time {
@@ -890,7 +890,7 @@ func (p *Parser) parseCost() *ast.Cost {
 	p.skipWhitespace()
 	return &ast.Cost{
 		IsTotal: isTotal,
-		Amount:  p.parseAmount(),
+		Amount:  *p.parseAmount(),
 		Span:    p.span(s),
 	}
 }
