@@ -1,8 +1,7 @@
 package ast
 
 import (
-	"github.com/shopspring/decimal"
-
+	"olexsmir.xyz/clerk/internal/decimal"
 	"olexsmir.xyz/clerk/journal/token"
 )
 

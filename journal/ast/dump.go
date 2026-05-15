@@ -307,7 +307,9 @@ func dumpCommodityDirective(b *strings.Builder, c *CommodityDirective, depth int
 	fmt.Fprintf(b, "CommodityDirective %s\n", c.Span)
 	indent(b, depth+1)
 	fmt.Fprintf(b, "Commodity: %q\n", c.Commodity)
-	dumpAmount(b, &c.Format, depth+1)
+	if c.Format.QuantityFmt.Decimal != 0 {
+		dumpAmount(b, &c.Format, depth+1)
+	}
 	dumpOptComment(b, c.Comment, depth+1)
 }
 

@@ -5,8 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/shopspring/decimal"
-
+	"olexsmir.xyz/clerk/internal/decimal"
 	"olexsmir.xyz/clerk/journal/ast"
 	"olexsmir.xyz/clerk/journal/lexer"
 	"olexsmir.xyz/clerk/journal/token"
@@ -364,12 +363,15 @@ func (p *Parser) parseCommodityDirective() *ast.CommodityDirective {
 	comment := p.parseOptInlineComment()
 	p.expectNewline()
 
-	return &ast.CommodityDirective{
+	cd := &ast.CommodityDirective{
 		Commodity: commodity,
-		Format:    *format,
 		Comment:   comment,
 		Span:      p.span(s),
 	}
+	if format != nil {
+		cd.Format = *format
+	}
+	return cd
 }
 
 func (p *Parser) parseIncludeDirective() *ast.IncludeDirective {
@@ -1083,7 +1085,7 @@ func (p *Parser) parseQuantityInto(amt *ast.Amount) {
 	// remove thousands separators, replace decimal mark with '.'
 	normalized := normalizeLiteral(lit, amt.QuantityFmt.Thousands, amt.QuantityFmt.Decimal)
 
-	q, err := decimal.NewFromString(normalized)
+	q, err := decimal.FromString(normalized)
 	if err != nil {
 		p.errorf("invalid quantity %q: %v", lit, err)
 		return
