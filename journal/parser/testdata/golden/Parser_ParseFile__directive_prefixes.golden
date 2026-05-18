@@ -1,0 +1,5 @@
+Journal
+  AccountDirective j:1:2-2:1
+    Account "expenses:food" j:1:10-2:0
+  CommodityDirective j:2:2-3:1
+    Commodity: "USD"

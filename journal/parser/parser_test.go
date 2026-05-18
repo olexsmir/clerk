@@ -43,12 +43,24 @@ end apply tag
 `},
 		{"account directive", "account expenses:food\n"},
 		{"account directive with comment", "account expenses:food ; my account\n"},
+		{"account with subdirectives", `account expenses:food
+  note some note
+  alias food  ; this gets ignored
+`},
 		{"comodity directive", "commodity $\n"},
 		{"comodity directive word", "commodity UAH\n"},
 		{"comodity directive no space", "commodity $1000.00\n"},
 		{"commodity quantity first", "commodity 1,000.00 UAH\n"},
 		{"commodity quantity after", "commodity UAH 1,000.00\n"},
-		{"payee directive with spaces", "payee grocery store\n"},
+		{"commodity with subdirectives", `commodity UAH
+  format 1 000.00 UAH
+  note Божествена Гривня  ; this gets ignored
+`},
+		{"payee directive", `payee grocery store
+payee 'grocery store 3'
+payee "grocery store 2"
+payee grocery store 1
+`},
 		{"transaction", "2024/01/01\n"},
 		{"automated transaction", `= ^income
     (liabilities:tax)  *.33
@@ -109,6 +121,16 @@ end apply tag
     expenses:food  ₹700.00
     assets:checking
 `},
+		{"transaction with strange commodity symbols", `2024-01-01 groceries
+2026-05-20
+  asdf  123 $€£
+  asdf2
+
+2026-05-20
+  asdf  123 bytes
+  asdf2
+`},
+
 		{"transaction with tabs", `2024-01-01 groceries
 	expenses:food  $10.00
 	assets:checking
@@ -229,6 +251,18 @@ end apply tag
     @bad2
     @bad3
     assets:checking
+`},
+		{"quoted payee names", `2024-01-01 "groceries store"
+  expenses:food  $10
+  assets:checking
+`},
+		{"digit group marks", `2024-01-01 groceries
+  expenses:food  1 000.00 UAH
+  expenses:supplies  1'000.00 USD
+  assets:checking  -2_000.00 USD
+`},
+		{"directive prefixes", `!account expenses:food
+@commodity USD
 `},
 		{"bad between good", `2024/01/01 groceries
     expenses:food  $10

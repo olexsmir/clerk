@@ -121,6 +121,10 @@ func (l *Lexer) lexDefault() token.Token {
 		return l.lexSingle(token.MINUS)
 	case l.ch == '.':
 		return l.lexSingle(token.TEXT)
+	case l.ch == '!':
+		return l.lexSingle(token.BANG)
+	case l.ch == '@':
+		return l.lexSingle(token.AT)
 	case l.isAlpha():
 		return l.lexKeyword()
 	case l.isDigit():
@@ -191,6 +195,8 @@ func (l *Lexer) lexTransaction() token.Token {
 		return l.lexSingle(token.MINUS)
 	case '=':
 		return l.lexEquals()
+	case '"', '\'':
+		return l.lexString()
 	default: // description / payee
 		if l.isDate() { // secondsry date after =
 			return l.lexDate()
@@ -317,6 +323,8 @@ func (l *Lexer) lexDirective() token.Token {
 		return l.lexSingle(token.MINUS)
 	case '.':
 		return l.lexSingle(token.TEXT)
+	case '"', '\'':
+		return l.lexString()
 	default:
 		if l.isCommodityStart() {
 			return l.lexCommodityMark()
@@ -444,12 +452,18 @@ func (l *Lexer) lexParenExpr() token.Token {
 
 func (l *Lexer) lexNumber() token.Token {
 	s := l.save()
-	for l.isDigit() || l.ch == '.' || l.ch == ',' || l.ch == '_' {
-		l.advance()
+	for {
+		if l.isDigit() || l.ch == '.' || l.ch == ',' || l.ch == '_' || l.ch == '\'' {
+			l.advance()
+		} else if l.ch == ' ' && (l.peek() >= '0' && l.peek() <= '9') {
+			l.advance()
+		} else {
+			break
+		}
 	}
 	lit := string(l.input[s.offset:l.pos])
 	kind := token.INT
-	if strings.ContainsAny(lit, ".,") {
+	if strings.ContainsAny(lit, "., ") {
 		kind = token.DECIMAL
 	}
 	return token.Token{Type: kind, Literal: lit, Span: l.span(s)}
@@ -478,6 +492,23 @@ func (l *Lexer) lexDate() token.Token {
 	return token.Token{Type: token.DATE, Literal: string(l.input[s.offset:l.pos]), Span: l.span(s)}
 }
 
+func isSymbolChar(r rune) bool {
+	return r == '$' || unicode.In(r, unicode.Sc)
+}
+
+func (l *Lexer) lexString() token.Token {
+	s := l.save()
+	quote := l.ch
+	l.advance() // consume the quote character
+	for l.ch != quote && l.ch != '\n' && l.ch != 0 {
+		l.advance()
+	}
+	if l.ch == quote {
+		l.advance()
+	}
+	return token.Token{Type: token.STRING, Literal: string(l.input[s.offset:l.pos]), Span: l.span(s)}
+}
+
 func (l *Lexer) lexCommodityMark() token.Token {
 	s := l.save()
 
@@ -494,6 +525,13 @@ func (l *Lexer) lexCommodityMark() token.Token {
 
 	if unicode.IsLetter(l.ch) {
 		for unicode.IsLetter(l.ch) || unicode.IsDigit(l.ch) {
+			l.advance()
+		}
+		return token.Token{Type: token.COMMODITYMARK, Literal: string(l.input[s.offset:l.pos]), Span: l.span(s)}
+	}
+
+	if isSymbolChar(l.ch) {
+		for isSymbolChar(l.ch) {
 			l.advance()
 		}
 		return token.Token{Type: token.COMMODITYMARK, Literal: string(l.input[s.offset:l.pos]), Span: l.span(s)}

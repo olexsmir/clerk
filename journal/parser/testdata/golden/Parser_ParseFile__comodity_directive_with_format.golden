@@ -1,6 +1,0 @@
-Journal
-  CommodityDirective 1:1-1:11
-    Commodity: ""
-  Errors
-    1:11-1:19: expected NEWLINE, got TEXT
-    1:11-1:19: unexpected token TEXT

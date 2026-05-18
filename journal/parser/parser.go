@@ -36,7 +36,22 @@ func (p *Parser) ParseJournal() *ast.Journal {
 	return f
 }
 
+func isDirectiveKeyword(t token.Type) bool {
+	switch t {
+	case token.COMMENTKW, token.ACCOUNT, token.COMMODITY, token.INCLUDE,
+		token.ALIAS, token.PAYEE, token.TAG, token.APPLY, token.END,
+		token.YEAR, token.DECIMALMARK, token.D, token.P, token.N:
+		return true
+	}
+	return false
+}
+
 func (p *Parser) parseEntry() ast.Entry {
+	if p.got(token.BANG) || p.got(token.AT) {
+		if isDirectiveKeyword(p.peek.Type) {
+			p.advance() // consume prefix
+		}
+	}
 	switch p.cur.Type {
 	case token.ILLEGAL:
 		p.errorf("illegal character %q", p.cur.Literal)
@@ -122,7 +137,7 @@ func (p *Parser) parseTransaction() *ast.Transaction {
 	}
 
 	// optional payee | note
-	if p.got(token.TEXT) {
+	if p.got(token.TEXT) || p.got(token.STRING) {
 		tx.Payee = p.parsePayee()
 
 		// check for | separator
@@ -164,16 +179,29 @@ func (p *Parser) parseTransaction() *ast.Transaction {
 	return tx
 }
 
+func unquote(s string) string {
+	if len(s) >= 2 && ((s[0] == '"' && s[len(s)-1] == '"') || (s[0] == '\'' && s[len(s)-1] == '\'')) {
+		return s[1 : len(s)-1]
+	}
+	return s
+}
+
 func (p *Parser) parsePayee() *ast.Payee {
 	s := p.cur.Span
 
+	if p.got(token.STRING) {
+		name := unquote(p.cur.Literal)
+		p.advance()
+		return &ast.Payee{Name: name, Span: p.span(s)}
+	}
+
 	// keep spaces/tags between text tokens; stop before trailing whitespace
 	var name strings.Builder
-	for p.got(token.TEXT) || (p.got(token.WHITESPACE) && p.willGet(token.TEXT)) {
+	for p.got(token.TEXT) || p.got(token.INT) || p.got(token.DECIMAL) || (p.got(token.WHITESPACE) && (p.willGet(token.TEXT) || p.willGet(token.INT) || p.willGet(token.DECIMAL))) {
 		_, _ = name.WriteString(p.cur.Literal)
 		p.advance()
 	}
-	return &ast.Payee{Name: name.String(), Span: p.span(s)}
+	return &ast.Payee{Name: unquote(name.String()), Span: p.span(s)}
 }
 
 func (p *Parser) parsePeriodicTransaction() *ast.PeriodicTransaction {
@@ -322,6 +350,15 @@ func (p *Parser) parseAccountDirective() *ast.AccountDirective {
 	account := p.parseAccount()
 	comment := p.parseOptInlineComment()
 	p.expectNewline()
+
+	for p.got(token.INDENT) {
+		p.advance()
+		for !p.got(token.NEWLINE) && !p.got(token.EOF) {
+			p.advance()
+		}
+		p.expectNewline()
+	}
+
 	return &ast.AccountDirective{
 		Account: account,
 		Comment: comment,
@@ -362,6 +399,21 @@ func (p *Parser) parseCommodityDirective() *ast.CommodityDirective {
 
 	comment := p.parseOptInlineComment()
 	p.expectNewline()
+
+	for p.got(token.INDENT) {
+		p.advance()
+		p.skipWhitespace()
+		if p.got(token.COMMODITYMARK) && p.cur.Literal == "format" {
+			p.advance()
+			p.skipWhitespace()
+			format = p.parseAmount()
+		} else {
+			for !p.got(token.NEWLINE) && !p.got(token.EOF) {
+				p.advance()
+			}
+		}
+		p.expectNewline()
+	}
 
 	cd := &ast.CommodityDirective{
 		Commodity: commodity,
@@ -420,7 +472,7 @@ func (p *Parser) parsePayeeDirective() *ast.PayeeDirective {
 	p.skipWhitespace()
 
 	name := ""
-	if p.got(token.TEXT) {
+	if p.got(token.TEXT) || p.got(token.STRING) {
 		name = p.parsePayee().Name
 	}
 
@@ -1194,16 +1246,14 @@ func normalizeLiteral(lit string, thousands, decimal byte) string {
 }
 
 func detectFormat(lit string) ast.QuantityFormat {
-	// find all separator positions
 	var separators []int
 	for i, ch := range []byte(lit) {
-		if ch == '.' || ch == ',' {
+		if ch == '.' || ch == ',' || ch == ' ' || ch == '_' || ch == '\'' {
 			separators = append(separators, i)
 		}
 	}
 
 	if len(separators) == 0 {
-		// "1000" — no separators, integer
 		return ast.QuantityFormat{Decimal: '.', Thousands: 0, Precision: 0}
 	}
 
@@ -1212,12 +1262,17 @@ func detectFormat(lit string) ast.QuantityFormat {
 	precision := 0
 
 	if len(separators) == 1 {
-		// "10.00" or "10,00" — single separator is the decimal mark
 		pos := separators[0]
-		decimal = lit[pos]
-		precision = len(lit) - pos - 1
+		sepChar := lit[pos]
+		if sepChar == ' ' || sepChar == '_' || sepChar == '\'' {
+			thousands = sepChar
+			decimal = '.' // default
+			precision = 0
+		} else {
+			decimal = sepChar
+			precision = len(lit) - pos - 1
+		}
 	} else {
-		// "1,000.00" or "1.000,00" — last separator is decimal, first is thousands
 		last := separators[len(separators)-1]
 		decimal = lit[last]
 		thousands = lit[separators[0]]
