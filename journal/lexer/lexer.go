@@ -723,6 +723,8 @@ func (l *Lexer) keyword(s string) token.Type {
 		return token.P
 	case "N":
 		return token.N
+	case "C":
+		return token.C
 	default:
 		return token.ILLEGAL
 	}

@@ -40,7 +40,7 @@ func isDirectiveKeyword(t token.Type) bool {
 	switch t {
 	case token.COMMENTKW, token.ACCOUNT, token.COMMODITY, token.INCLUDE,
 		token.ALIAS, token.PAYEE, token.TAG, token.APPLY, token.END,
-		token.YEAR, token.DECIMALMARK, token.D, token.P, token.N:
+		token.YEAR, token.DECIMALMARK, token.D, token.P, token.N, token.C:
 		return true
 	}
 	return false
@@ -93,6 +93,8 @@ func (p *Parser) parseEntry() ast.Entry {
 		return p.parseMarketPriceDirective()
 	case token.N:
 		return p.parseIgnoredDirective()
+	case token.C:
+		return p.parseConversionDirective()
 	case token.APPLY:
 		return p.parseApplyDirective()
 	case token.END:
@@ -561,6 +563,36 @@ func (p *Parser) parseDefaultCommodityDirective() *ast.DefaultCommodityDirective
 	return com
 }
 
+func (p *Parser) parseConversionDirective() *ast.ConversionDirective {
+	s := p.cur.Span
+	cd := &ast.ConversionDirective{}
+	p.expect(token.C)
+	p.skipWhitespace()
+
+	if p.isAmountStart() {
+		cd.From = *p.parseAmount()
+	} else {
+		p.errorf("expected amount, got %s", p.cur.Type)
+	}
+
+	p.skipWhitespace()
+	if p.got(token.EQ) {
+		p.advance()
+		p.skipWhitespace()
+		if p.isAmountStart() {
+			cd.To = *p.parseAmount()
+		} else {
+			p.errorf("expected amount, got %s", p.cur.Type)
+		}
+	}
+
+	p.skipWhitespace()
+	cd.Comment = p.parseOptInlineComment()
+	p.expectNewline()
+	cd.Span = p.span(s)
+	return cd
+}
+
 func (p *Parser) parseIgnoredDirective() *ast.IgnoredDirective {
 	s := p.cur.Span
 	p.expect(token.N)
@@ -797,13 +829,13 @@ func (p *Parser) parseAmount() *ast.Amount {
 			switch p.cur.Type {
 			case token.WHITESPACE:
 				p.skipWhitespace()
-				if p.got(token.COMMODITYMARK) {
+				if p.got(token.COMMODITYMARK) || p.got(token.TEXT) {
 					amt.HasSpace = true
 					amt.Commodity = p.cur.Literal
 					amt.CommodityPos = ast.CommodityAfter
 					p.advance()
 				}
-			case token.COMMODITYMARK:
+			case token.COMMODITYMARK, token.TEXT:
 				amt.Commodity = p.cur.Literal
 				amt.CommodityPos = ast.CommodityAfter
 				p.advance()

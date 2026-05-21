@@ -19,6 +19,7 @@ func TestParser_ParseFile(t *testing.T) {
 		{"tag directive", "tag project-xyz\n"},
 		{"year directive", "year 1488\n"},
 		{"decimal-mark directive", "decimal-mark ,\n"},
+		{"C directive", "C 1.00s = 100c\n"},
 		{"D directive", `D $1.00
 D 10 UAH
 `},

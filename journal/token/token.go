@@ -90,4 +90,5 @@ const (
 	D           // "D" default commodity
 	P           // "P" market price
 	N           // "N" ignored price commodity
+	C           // "C" commodity conversion
 )

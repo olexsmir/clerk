@@ -12,7 +12,7 @@ func (AccountDirective) entryNode() {}
 
 type CommodityDirective struct {
 	Commodity string
-	Format    Amount  // optional format hint: "1,000.00 UAH"
+	Format    Amount   // optional format hint: "1,000.00 UAH"
 	Comment   *Comment // optional inline comment
 	Span      token.Span
 }
@@ -84,6 +84,15 @@ type MarketPriceDirective struct {
 }
 
 func (MarketPriceDirective) entryNode() {}
+
+type ConversionDirective struct {
+	From    Amount
+	To      Amount
+	Comment *Comment // optional inline comment
+	Span    token.Span
+}
+
+func (ConversionDirective) entryNode() {}
 
 type ApplyDirective struct {
 	Expr    string // text after apply e.g "tag foo"

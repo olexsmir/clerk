@@ -78,6 +78,8 @@ func dumpEntry(b *strings.Builder, e Entry, depth int) {
 		fmt.Fprintf(b, "Mark: %q\n", string(e.Mark))
 	case *MarketPriceDirective:
 		dumpMarketPriceDirective(b, e, depth)
+	case *ConversionDirective:
+		dumpConversionDirective(b, e, depth)
 	case *DefaultCommodityDirective:
 		indent(b, depth)
 		fmt.Fprintf(b, "DefaultCommodityDirective %s\n", e.Span)
@@ -325,6 +327,18 @@ func dumpMarketPriceDirective(b *strings.Builder, m *MarketPriceDirective, depth
 	indent(b, depth+1)
 	fmt.Fprintf(b, "Commodity: %q\n", m.Commodity)
 	dumpAmount(b, &m.Amount, depth+1)
+}
+
+func dumpConversionDirective(b *strings.Builder, c *ConversionDirective, depth int) {
+	indent(b, depth)
+	fmt.Fprintf(b, "ConversionDirective %s\n", c.Span)
+	indent(b, depth+1)
+	fmt.Fprintf(b, "From:\n")
+	dumpAmount(b, &c.From, depth+2)
+	indent(b, depth+1)
+	fmt.Fprintf(b, "To:\n")
+	dumpAmount(b, &c.To, depth+2)
+	dumpOptComment(b, c.Comment, depth+1)
 }
 
 func dumpComment(b *strings.Builder, c *Comment, depth int) {
