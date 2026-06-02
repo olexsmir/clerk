@@ -1,0 +1,15 @@
+!_TAG_FILE_FORMAT	2	/extended format/
+!_TAG_FILE_SORTED	1	/1=sorted/
+!_TAG_PROGRAM_NAME	clerk	//
+!_TAG_PROGRAM_URL	https://olexsmir.xyz/clerk	//
+!_TAG_PROGRAM_VERSION	0.1.0	//
+!_TAG_KIND_DESCRIPTION!a	a,account	/account/
+!_TAG_KIND_DESCRIPTION!c	c,commodity	/commodity/
+!_TAG_KIND_DESCRIPTION!p	p,payee	/payee/
+!_TAG_KIND_DESCRIPTION!t	t,tag	/tag/
+$	kinds.journal	/^commodity $$/;"	kind:c	line:4	language:hledger
+Amazon	kinds.journal	/^2025-03-01 * "Amazon"$/;"	kind:p	line:9	language:hledger
+EUR	kinds.journal	/^commodity EUR$/;"	kind:c	line:5	language:hledger
+assets:bank	kinds.journal	/^    assets:bank$/;"	kind:a	line:11	language:hledger
+expenses:food	kinds.journal	/^account expenses:food$/;"	kind:a	line:3	language:hledger
+receipt	kinds.journal	/^tag receipt$/;"	kind:t	line:7	language:hledger

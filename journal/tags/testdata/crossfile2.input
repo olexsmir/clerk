@@ -1,0 +1,5 @@
+include decls.journal
+
+2024-01-15 "Amazon"
+    expenses:food   $50.00
+    assets:bank

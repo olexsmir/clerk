@@ -1,0 +1,11 @@
+; same account name in directive AND postings — should use directive line
+
+account test
+
+2025-01-01 "test txn"
+    test  1
+    other
+
+2025-02-01 "another"
+    test  2
+    other

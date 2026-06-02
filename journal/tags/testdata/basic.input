@@ -1,0 +1,16 @@
+; basic journal — accounts + commodities from directives and postings
+
+account expenses:food
+account expenses:rent
+account assets:bank
+account assets:cash
+
+2025-01-15 * "Groceries"
+    expenses:food   $50.00
+    assets:bank
+
+2025-02-01 "Rent"
+    expenses:rent   €800.00
+    assets:bank     €-800.00
+
+P 2025-01-15 € $1.05
