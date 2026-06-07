@@ -101,6 +101,94 @@ func (d Decimal) String() string {
 	return sign + digits[:split] + "." + digits[split:]
 }
 
+// StringFixed returns a string representation with exactly places digits
+// after the decimal point. Pads with zeros or truncates as needed.
+// decSep and thousandsSep control formatting; zero values mean no custom separator.
+func (d Decimal) StringFixed(places int, decSep, thousandsSep byte) string {
+	var sb strings.Builder
+	sb.Grow(32)
+	d.WriteFixed(&sb, places, decSep, thousandsSep)
+	return sb.String()
+}
+
+// WriteFixed writes a string representation with exactly places digits
+// after the decimal point directly into sb. Pads with zeros or truncates
+// as needed. decSep and thousandsSep control formatting; zero values mean
+// no custom separator.
+func (d Decimal) WriteFixed(sb *strings.Builder, places int, decSep, thousandsSep byte) {
+	if d.IsZero() {
+		sb.WriteByte('0')
+		if places > 0 {
+			if decSep != 0 {
+				sb.WriteByte(decSep)
+			} else {
+				sb.WriteByte('.')
+			}
+			for range places {
+				sb.WriteByte('0')
+			}
+		}
+		return
+	}
+
+	var digitBuf [128]byte
+	digits := d.coeff.Append(digitBuf[:0], 10)
+
+	sign := false
+	if len(digits) > 0 && digits[0] == '-' {
+		sign = true
+		digits = digits[1:]
+	}
+
+	intLen := len(digits) - d.scale
+
+	if sign {
+		sb.WriteByte('-')
+	}
+
+	// Integer part
+	if intLen <= 0 {
+		sb.WriteByte('0')
+	} else {
+		for i := range intLen {
+			if thousandsSep != 0 && i > 0 && (intLen-i)%3 == 0 {
+				sb.WriteByte(thousandsSep)
+			}
+			sb.WriteByte(digits[i])
+		}
+	}
+
+	// Fractional part
+	if places > 0 {
+		if decSep != 0 {
+			sb.WriteByte(decSep)
+		} else {
+			sb.WriteByte('.')
+		}
+
+		written := 0
+		if intLen > 0 {
+			n := min(d.scale, places)
+			for i := range n {
+				sb.WriteByte(digits[intLen+i])
+				written++
+			}
+		} else {
+			leadingZeros := -intLen
+			for ; written < leadingZeros && written < places; written++ {
+				sb.WriteByte('0')
+			}
+			for i := 0; i < len(digits) && written < places; i++ {
+				sb.WriteByte(digits[i])
+				written++
+			}
+		}
+		for ; written < places; written++ {
+			sb.WriteByte('0')
+		}
+	}
+}
+
 func (d Decimal) Neg() Decimal {
 	if d.coeff == nil || d.coeff.Sign() == 0 {
 		return Decimal{}

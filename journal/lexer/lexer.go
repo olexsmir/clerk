@@ -51,7 +51,8 @@ type Lexer struct {
 	col    int  // current column (1-based)
 	line   int  // current line (1-based)
 
-	postingExpectAccount bool
+	transactionPastStatus bool
+	postingExpectAccount  bool
 }
 
 func New(file string, input []byte) *Lexer {
@@ -137,6 +138,7 @@ func (l *Lexer) lexDefault() token.Token {
 		}
 		tok := l.lexDate()
 		l.mode = ModeTransaction
+		l.transactionPastStatus = false
 		return tok
 	default:
 		s := l.save()
@@ -183,10 +185,18 @@ func (l *Lexer) lexTransaction() token.Token {
 		return l.lexSingle(token.SEMICOLON)
 	case ' ', '\t':
 		return l.lexWhitespace()
-	case '*': // * after date = status
-		return l.lexSingle(token.STAR)
+	case '*':
+		if !l.transactionPastStatus {
+			l.transactionPastStatus = true
+			return l.lexSingle(token.STAR)
+		}
+		return l.lexText()
 	case '!':
-		return l.lexSingle(token.BANG)
+		if !l.transactionPastStatus {
+			l.transactionPastStatus = true
+			return l.lexSingle(token.BANG)
+		}
+		return l.lexText()
 	case '|':
 		return l.lexSingle(token.PIPE)
 	case '+':
@@ -216,9 +226,9 @@ func (l *Lexer) lexPeriodic() token.Token {
 		l.col = 0
 		l.advance()
 		return l.lexNewline()
-	case ';', '%', '#':
+	case ';':
 		l.mode = ModeComment
-		return l.lexSingle(token.SEMICOLON) // todo: ??
+		return l.lexSingle(token.SEMICOLON)
 	case ' ', '\t':
 		return l.lexWhitespace()
 	default:
@@ -239,9 +249,9 @@ func (l *Lexer) lexAutomated() token.Token {
 		return l.lexNewline()
 	case ' ', '\t':
 		return l.lexWhitespace()
-	case ';', '%', '#':
+	case ';':
 		l.mode = ModeComment
-		return l.lexSingle(token.SEMICOLON) // todo: ??
+		return l.lexSingle(token.SEMICOLON)
 	default:
 		return l.lexText()
 	}

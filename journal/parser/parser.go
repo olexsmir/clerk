@@ -167,7 +167,7 @@ func (p *Parser) parseTransaction() *ast.Transaction {
 	for p.got(token.INDENT) && p.willGet(token.SEMICOLON) {
 		p.advance() // consume indent
 		c := p.parseComment()
-		tx.HeaderComments = append(tx.HeaderComments, *c)
+		tx.HeaderComments = append(tx.HeaderComments, c)
 	}
 
 	// postings
@@ -1099,7 +1099,7 @@ func (p *Parser) parseDate() ast.Date {
 
 func (p *Parser) parseOptInlineComment() *ast.Comment {
 	p.skipWhitespace() // todo:
-	if p.cur.Type != token.SEMICOLON && p.cur.Type != token.HASH {
+	if p.cur.Type != token.SEMICOLON {
 		return nil
 	}
 

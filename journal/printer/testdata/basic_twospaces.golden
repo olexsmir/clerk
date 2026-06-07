@@ -1,0 +1,11 @@
+2026-01-15 * Test restaurant
+  ; header comment on transaction (before payee)
+  Expenses:Food  50.00$
+  Assets:Cash  -50.00$
+  ; inline comment on posting
+
+; A simple comment line
+
+2026-01-16 another entry
+  Expenses:Food  30.00$
+  Assets:Cash  -30.00$

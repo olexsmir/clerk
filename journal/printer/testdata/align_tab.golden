@@ -1,0 +1,11 @@
+2026-01-15 * Test restaurant
+  Expenses:FoodAndDrinks  50.00$
+  Assets:Cash             -50.00$
+
+2026-01-16 Another entry with longer account
+  Expenses:SuperMarket  120.50$
+  Assets:Cash           -120.50$
+
+2026-01-17 Short accounts
+  a  10.00$
+  b  -10.00$

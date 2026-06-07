@@ -147,7 +147,7 @@ func dumpTransaction(b *strings.Builder, t *Transaction, depth int) {
 		indent(b, depth+1)
 		fmt.Fprintf(b, "HeaderComments %s\n", t.Span)
 		for _, c := range t.HeaderComments {
-			dumpComment(b, &c, depth+2)
+			dumpComment(b, c, depth+2)
 		}
 	}
 	for _, p := range t.Postings {

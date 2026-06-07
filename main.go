@@ -12,6 +12,8 @@ func main() {
 	}
 
 	switch os.Args[1] {
+	case "fmt", "format":
+		runFormat(os.Args[2:])
 	case "tags":
 		runTags(os.Args[2:])
 	default:
@@ -24,6 +26,7 @@ func usage() {
 	fmt.Fprintf(os.Stderr, `Usage: clerk <command> [options]
 
 Commands:
-  tags   Generate ctags-compatibletag file.
+  tags       Generate ctags-compatible tag file
+  format     Format journal files
 `)
 }

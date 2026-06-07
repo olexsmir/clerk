@@ -46,6 +46,10 @@ func TestLexer(t *testing.T) {
     expenses:food  40.00 гривні
     assets:cash
 `},
+{"bangs and stars in transaction description", `2026-06-07 * payee !one | something *important*
+    expenses:food  40.00
+    assets:cash
+`},
 		{"date with secondary", `2024/01/01=2024/01/02 groceries`},
 		{"better date", `2024-01-02`},
 		{"comment line", `; this is a comment`},

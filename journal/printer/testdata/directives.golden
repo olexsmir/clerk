@@ -1,0 +1,27 @@
+; Directives
+account Assets:Cash ; cash account
+commodity $
+include 
+alias Assets:Checking = Assets:Cash
+payee "Test Payee"
+tag 
+year 2026
+decimal-mark ,
+
+; Market price
+P 2026-01-15 12:00:00 GOOG 150.00$
+
+; Conversion
+C 100.00$ = 85.00€ ; test comment
+
+; Default commodity
+D 1,000.00$
+
+; Apply/end
+apply account Expenses
+end
+
+; Comment block
+comment
+Some notes about the file
+end

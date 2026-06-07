@@ -1,0 +1,30 @@
+; accounts {{{
+account assets
+account assets:bank
+account assets:cash
+account equity
+account income
+account income:salary
+account income:invenstment
+account expenses
+account expenses:education
+; }}}
+; 01 Jan {{{
+2026-01-01 opening balances
+  assets:bank  123.00 USD
+  assets:cash  1234.12 USD
+  equity:open
+
+2026-01-04 selary
+  income:salary  $543.22
+  assets:bank
+; }}}
+; 02 Feb {{{
+2026-02-01 internet
+  expenses:utilities  350 UAH
+  assets:bank
+
+2026-02-10 * something | 2 months of *income*
+    assets:bank  1.50 USD ; jan
+    assets:bank  USD 1 ; feb
+    income:invenstment
