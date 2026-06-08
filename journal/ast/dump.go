@@ -107,6 +107,8 @@ func dumpEntry(b *strings.Builder, e Entry, depth int) {
 	case *IgnoredDirective:
 		indent(b, depth)
 		fmt.Fprintf(b, "IgnoredDirective %s\n", e.Span)
+		indent(b, depth+1)
+		fmt.Fprintf(b, "Text: %s\n", e.Text)
 	default:
 		indent(b, depth)
 		fmt.Fprintf(b, "Unknown %T\n", e)

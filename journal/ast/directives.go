@@ -120,6 +120,7 @@ type CommentBlockDirective struct {
 func (CommentBlockDirective) entryNode() {}
 
 type IgnoredDirective struct {
+	Text    string   // content after N (commodity symbol or text)
 	Comment *Comment // optional inline comment
 	Span    token.Span
 }

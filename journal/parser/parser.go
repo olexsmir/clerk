@@ -597,16 +597,18 @@ func (p *Parser) parseIgnoredDirective() *ast.IgnoredDirective {
 	s := p.cur.Span
 	p.expect(token.N)
 	p.skipWhitespace()
+
+	id := &ast.IgnoredDirective{}
 	if p.got(token.TEXT) || p.got(token.COMMODITYMARK) {
+		id.Text = p.cur.Literal
 		p.advance()
 	}
 	p.skipWhitespace()
-	comment := p.parseOptInlineComment()
+	id.Comment = p.parseOptInlineComment()
+
 	p.expectNewline()
-	return &ast.IgnoredDirective{
-		Comment: comment,
-		Span:    p.span(s),
-	}
+	id.Span = p.span(s)
+	return id
 }
 
 func (p *Parser) parseMarketPriceDirective() *ast.MarketPriceDirective {

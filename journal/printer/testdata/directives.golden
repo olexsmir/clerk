@@ -17,6 +17,8 @@ C 100.00$ = 85.00€ ; test comment
 ; Default commodity
 D 1,000.00$
 
+; N directive
+N $
 ; Apply/end
 apply account Expenses
 end

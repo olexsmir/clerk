@@ -118,7 +118,8 @@ func (p *printer) formatEntry(e ast.Entry) {
 		return
 
 	case *ast.IgnoredDirective:
-		return // TODO:
+		p.writeIgnoredDirective(e)
+		return
 
 	case *ast.Comment:
 		p.writeComment(e)

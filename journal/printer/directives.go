@@ -117,6 +117,12 @@ func (p *printer) writeEndDirective(e *ast.EndDirective) {
 	p.writeInlineComment(e.Comment)
 }
 
+func (p *printer) writeIgnoredDirective(e *ast.IgnoredDirective) {
+	p.buf.WriteString("N ")
+	p.buf.WriteString(e.Text)
+	p.writeInlineComment(e.Comment)
+}
+
 func quoteString(s string) string {
 	needsQuote := false
 	for _, c := range s {
