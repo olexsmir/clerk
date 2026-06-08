@@ -16,16 +16,16 @@ account expenses:education
   equity:open
 
 2026-01-04 selary
-  income:salary  $543.22
+  income:salary  543.22$
   assets:bank
 ; }}}
 ; 02 Feb {{{
 2026-02-01 internet
-  expenses:utilities  350 UAH
+  expenses:utilities  350.00 UAH
   assets:bank
 
 
 2026-02-10 * something | 2 months of *income*
-    assets:bank  1.50 USD ; jan
-    assets:bank  USD 1 ; feb
-    income:invenstment
+  assets:bank  1.50 USD ; jan
+  assets:bank  1.00 USD ; feb
+  income:invenstment

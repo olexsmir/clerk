@@ -26,19 +26,21 @@ const (
 )
 
 type Config struct {
-	TabIndent    bool         // true = tabs, false = spaces
-	IndentWidth  int          // spaces per indent level (default: 2)
-	AlignStyle   AlignStyle   // (default AlignTwoSpaces)
-	AlignColumn  int          // fixed column for AlignRight
-	CommodityPos CommodityPos // where to place commodity
+	TabIndent          bool         // true = tabs, false = spaces
+	IndentWidth        int          // spaces per indent level (default: 2)
+	PreserveBlankLines bool         // preserve consecutive blank lines as-is
+	AlignStyle         AlignStyle   // (default AlignTwoSpaces)
+	AlignColumn        int          // fixed column for AlignRight
+	CommodityPos       CommodityPos // where to place commodity
 }
 
 var defaultConfig = &Config{
-	TabIndent:    false,
-	IndentWidth:  2,
-	AlignStyle:   AlignTwoSpaces,
-	AlignColumn:  70,
-	CommodityPos: CommodityAfter,
+	TabIndent:          false,
+	IndentWidth:        2,
+	PreserveBlankLines: false,
+	AlignStyle:         AlignTwoSpaces,
+	AlignColumn:        70,
+	CommodityPos:       CommodityAfter,
 }
 
 func (c *Config) indent() string {
@@ -54,9 +56,10 @@ func (c *Config) indent() string {
 
 // printer holds formatting state for a single Fprint call.
 type printer struct {
-	buf    strings.Builder
-	cfg    *Config
-	indent string
+	buf          strings.Builder
+	cfg          *Config
+	indent       string
+	prevWasBlank bool
 }
 
 // Fprint formats using the default config.
@@ -80,9 +83,7 @@ func (c *Config) Fprint(w io.Writer, j *ast.Journal) error {
 }
 
 // FprintEntry formats a single ast entry using the default config.
-func FprintEntry(w io.Writer, e ast.Entry) error {
-	return defaultConfig.FprintEntry(w, e)
-}
+func FprintEntry(w io.Writer, e ast.Entry) error { return defaultConfig.FprintEntry(w, e) }
 
 // FprintEntry formats a single journal entry.
 func (c *Config) FprintEntry(w io.Writer, e ast.Entry) error {
@@ -97,18 +98,25 @@ func (c *Config) FprintEntry(w io.Writer, e ast.Entry) error {
 
 func (p *printer) formatEntry(e ast.Entry) {
 	switch e := e.(type) {
+	case *ast.BlankLine:
+		if !p.prevWasBlank || p.cfg.PreserveBlankLines {
+			p.buf.WriteByte('\n')
+		}
+		p.prevWasBlank = true
+		return
 	case *ast.Transaction:
+		p.prevWasBlank = false
 		p.writeTransaction(e)
 		return
 	case *ast.PeriodicTransaction:
+		p.prevWasBlank = false
 		p.writePeriodicTransaction(e)
 		return
 	case *ast.AutomatedTransaction:
+		p.prevWasBlank = false
 		p.writeAutomatedTransaction(e)
 		return
-	case *ast.BlankLine:
-		p.buf.WriteByte('\n')
-		return
+
 	case *ast.IgnoredDirective:
 		return // TODO:
 
@@ -145,6 +153,7 @@ func (p *printer) formatEntry(e ast.Entry) {
 	default:
 		fmt.Fprintf(&p.buf, "; unknown entry %T", e)
 	}
+	p.prevWasBlank = false
 	p.buf.WriteByte('\n')
 }
 
