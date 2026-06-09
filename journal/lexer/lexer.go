@@ -357,8 +357,6 @@ func (l *Lexer) lexDirective() token.Token {
 		return l.lexSingle(token.PLUS)
 	case '-':
 		return l.lexSingle(token.MINUS)
-	case '.':
-		return l.lexSingle(token.TEXT)
 	case '"', '\'':
 		return l.lexString()
 	default:

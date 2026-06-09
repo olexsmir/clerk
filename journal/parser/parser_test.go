@@ -26,6 +26,8 @@ D 10 UAH
 		{"P directive", "P 2024/01/01 USD 40.50 UAH\n"},
 		{"P directive with time", "P 2024-01-01 12:00:00 USD 40.50 UAH\n"},
 		{"N directive", "N $\n"},
+		{"inclue directive", "include ./path-to.journal\n"},
+		{"inclue directive with comment", "include ./path.journal ; something importnat\n"},
 		{"apply tag directive", "apply tag hashtag\n"},
 		{"apply fixed directive", "apply fixed CAD $0.90\n"},
 		{"end apply directive", "end apply tag\n"},
@@ -182,7 +184,7 @@ payee grocery store 1
 2013/1/1 * pay taxes
     expenses:personal:tax              $1250
     assets:bank:checking               $-1250
-    
+
 `},
 		{"transaction with balance assertion", `2024/01/01 groceries
 	expenses:food  $10.00 = $100.00

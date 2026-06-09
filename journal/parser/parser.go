@@ -434,22 +434,20 @@ func (p *Parser) parseIncludeDirective() *ast.IncludeDirective {
 	p.expect(token.INCLUDE)
 	p.skipWhitespace()
 
-	path := ""
+	id := &ast.IncludeDirective{}
+
 	if p.got(token.TEXT) {
-		path = p.cur.Literal
+		id.Path = p.cur.Literal
 		p.advance()
 	} else {
 		p.errorf("expected file path, got %s", p.cur.Type)
 	}
 
-	comment := p.parseOptInlineComment()
+	p.skipWhitespace()
+	id.Comment = p.parseOptInlineComment()
 	p.expectNewline()
-
-	return &ast.IncludeDirective{
-		Path:    path,
-		Comment: comment,
-		Span:    p.span(s),
-	}
+	id.Span = p.span(s)
+	return id
 }
 
 func (p *Parser) parseAliasDirective() *ast.AliasDirective {
