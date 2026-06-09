@@ -1,5 +1,5 @@
 ; Directives
-account Assets:Cash ; cash account
+account Assets:Cash  ; cash account
 commodity $
 include 
 alias Assets:Checking = Assets:Cash
@@ -12,7 +12,7 @@ decimal-mark ,
 P 2026-01-15 12:00:00 GOOG 150.00$
 
 ; Conversion
-C 100.00$ = 85.00€ ; test comment
+C 100.00$ = 85.00€  ; test comment
 
 ; Default commodity
 D 1,000.00$

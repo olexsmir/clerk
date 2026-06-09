@@ -107,7 +107,7 @@ func (p *printer) writeAutomatedTransaction(t *ast.AutomatedTransaction) {
 
 	// comment
 	if t.Comment != nil && t.Comment.Text != "" {
-		p.buf.WriteString(" ; ")
+		p.buf.WriteString("  ; ")
 		p.buf.WriteString(t.Comment.Text)
 	}
 

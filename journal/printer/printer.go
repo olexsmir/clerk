@@ -181,6 +181,7 @@ func (p *printer) writeComment(c *ast.Comment) {
 func (p *printer) writeInlineComment(c *ast.Comment) {
 	if c != nil && c.Text != "" {
 		p.buf.WriteByte(' ')
+		p.buf.WriteByte(' ')
 		p.buf.WriteByte(c.Marker)
 		if !isCommentChar(c.Text[0]) {
 			p.buf.WriteByte(' ')

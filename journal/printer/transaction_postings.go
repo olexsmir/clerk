@@ -121,7 +121,7 @@ func (p *printer) writePostingLine(pt *ast.Posting, maxAcct int) {
 
 	if pt.Comment != nil && pt.Comment.Text != "" {
 		if p.cfg.AlignStyle == AlignTwoSpaces {
-			p.buf.WriteString(" ")
+			p.buf.WriteString("  ")
 		} else {
 			p.buf.WriteByte('\v')
 		}
