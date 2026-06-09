@@ -189,6 +189,16 @@ func (d Decimal) WriteFixed(sb *strings.Builder, places int, decSep, thousandsSe
 	}
 }
 
+func (d Decimal) Abs() Decimal {
+	if d.coeff == nil || d.coeff.Sign() == 0 {
+		return Decimal{}
+	}
+	if d.coeff.Sign() > 0 {
+		return Decimal{coeff: new(big.Int).Set(d.coeff), scale: d.scale}
+	}
+	return Decimal{coeff: new(big.Int).Neg(d.coeff), scale: d.scale}
+}
+
 func (d Decimal) Neg() Decimal {
 	if d.coeff == nil || d.coeff.Sign() == 0 {
 		return Decimal{}
@@ -209,6 +219,30 @@ func (d Decimal) Mul(other Decimal) Decimal {
 	}
 	product := new(big.Int).Mul(d.coeffOrZero(), other.coeffOrZero())
 	return Decimal{coeff: product, scale: d.scale + other.scale}.normalized()
+}
+
+func (d Decimal) Div(other Decimal) Decimal {
+	if other.IsZero() {
+		panic("decimal: division by zero")
+	}
+	if d.IsZero() {
+		return Decimal{}
+	}
+
+	scale := max(d.scale, other.scale) + 10
+
+	dCoeff := d.coeffOrZero()
+	oCoeff := other.coeffOrZero()
+
+	shift := scale + other.scale - d.scale
+	if shift > 0 {
+		dCoeff = new(big.Int).Mul(dCoeff, pow10(shift))
+	} else if shift < 0 {
+		oCoeff = new(big.Int).Mul(oCoeff, pow10(-shift))
+	}
+
+	quo := new(big.Int).Quo(dCoeff, oCoeff)
+	return Decimal{coeff: quo, scale: scale}.normalized()
 }
 
 func (d Decimal) Cmp(other Decimal) int {

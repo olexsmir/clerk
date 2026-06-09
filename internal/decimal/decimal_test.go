@@ -104,6 +104,75 @@ func TestArithmetic(t *testing.T) {
 	}
 }
 
+func TestAbs(t *testing.T) {
+	tests := []struct {
+		in, want string
+	}{
+		{"0", "0"},
+		{"-0", "0"},
+		{"0.00", "0"},
+		{"1.5", "1.5"},
+		{"-1.5", "1.5"},
+		{"100", "100"},
+		{"-100", "100"},
+		{"0.001", "0.001"},
+		{"-0.001", "0.001"},
+		{"123.456", "123.456"},
+		{"-123.456", "123.456"},
+	}
+	for _, tt := range tests {
+		d, err := FromString(tt.in)
+		if err != nil {
+			t.Fatalf("FromString(%q) unexpected error: %v", tt.in, err)
+		}
+		if got := d.Abs().String(); got != tt.want {
+			t.Fatalf("Abs(%q) = %q, want %q", tt.in, got, tt.want)
+		}
+	}
+}
+
+func TestDiv(t *testing.T) {
+	tests := []struct {
+		a, b, want string
+	}{
+		{"1", "2", "0.5"},
+		{"10", "3", "3.3333333333"},
+		{"1.50", "3.00", "0.5"},
+		{"0.1", "0.3", "0.33333333333"},
+		{"100", "10", "10"},
+		{"-1", "2", "-0.5"},
+		{"1", "-2", "-0.5"},
+		{"-1", "-2", "0.5"},
+		{"0", "5", "0"},
+		{"5.50", "5", "1.1"},
+		{"1000", "3", "333.3333333333"},
+	}
+	for _, tt := range tests {
+		a, err := FromString(tt.a)
+		if err != nil {
+			t.Fatalf("FromString(%q) unexpected error: %v", tt.a, err)
+		}
+		b, err := FromString(tt.b)
+		if err != nil {
+			t.Fatalf("FromString(%q) unexpected error: %v", tt.b, err)
+		}
+		got := a.Div(b).String()
+		if got != tt.want {
+			t.Fatalf("Div(%q, %q) = %q, want %q", tt.a, tt.b, got, tt.want)
+		}
+	}
+}
+
+func TestDivByZero(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Fatal("expected panic on division by zero")
+		}
+	}()
+	d, _ := FromString("1")
+	d.Div(Decimal{})
+}
+
 func TestCmpAndNeg(t *testing.T) {
 	a, _ := FromString("1.0")
 	b, _ := FromString("1")
