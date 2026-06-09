@@ -34,6 +34,8 @@ func TestLexer(t *testing.T) {
 		{"transaction with code", `2024/01/01 (123) groceries
     expenses:food  $10.00
     assets:checking
+
+2024/01/02 (ABS) groceries
 `},
 		{"transaction with virtual accounts", `2024/01/01 * groceries
 	(virtual:account)  1 PESO
@@ -46,7 +48,21 @@ func TestLexer(t *testing.T) {
     expenses:food  40.00 гривні
     assets:cash
 `},
-{"bangs and stars in transaction description", `2026-06-07 * payee !one | something *important*
+		{"special chars in description", `
+2024/01/01 * groceries + water| 1 + 2
+2024/01/01 groceries * water | 1 * 2
+2024/01/01 groceries ! water | 1 ! 2
+2024/01/01 groceries # water | 1 # 2
+2024/01/01 groceries % water | 1 % 2
+2024/01/01 groceries ^ water | 1 ^ 2
+2024/01/01 groceries & water | 1 & 2
+2024/01/01 groceries ( water | 1 ( 2
+2024/01/01 groceries ) water | 1 ) 2
+2024/01/01 groceries [ water | 1 [ 2
+2024/01/01 groceries ] water | 1 ] 2
+2024/01/01 groceries { water | 1 { 2
+2024/01/01 groceries } water | 1 } 2
+2026-06-07 * payee !one | something *important*
     expenses:food  40.00
     assets:cash
 `},

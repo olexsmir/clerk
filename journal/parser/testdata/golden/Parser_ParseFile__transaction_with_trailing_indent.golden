@@ -1,6 +1,6 @@
 Journal
   BlankLine j:2:0-2:1
-  Transaction j:2:1-6:1
+  Transaction j:2:1-6:0
     Date: 2013/01/01
     State: "*"
     Payee: "pay taxes" j:2:12-3:0
@@ -13,7 +13,7 @@ Journal
         HasSpace: false
         Precision: 0
         Decimal: "."
-    Posting j:4:1-5:1
+    Posting j:4:1-6:0
       Account "assets:bank:checking" j:4:5-4:25
       Amount j:4:40-4:40
         Quantity: -1250
@@ -22,3 +22,4 @@ Journal
         HasSpace: false
         Precision: 0
         Decimal: "."
+  BlankLine j:6:0-6:1

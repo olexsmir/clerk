@@ -51,8 +51,9 @@ type Lexer struct {
 	col    int  // current column (1-based)
 	line   int  // current line (1-based)
 
-	transactionPastStatus bool
-	postingExpectAccount  bool
+	transactionPastStatus  bool
+	postingExpectAccount   bool
+	readingNoteAfterPipe  bool
 }
 
 func New(file string, input []byte) *Lexer {
@@ -170,6 +171,11 @@ func (l *Lexer) lexComment() token.Token {
 }
 
 func (l *Lexer) lexTransaction() token.Token {
+	if l.readingNoteAfterPipe {
+		l.readingNoteAfterPipe = false
+		return l.lexNote()
+	}
+
 	switch l.ch {
 	case 0:
 		return l.token(token.EOF, "")
@@ -180,11 +186,11 @@ func (l *Lexer) lexTransaction() token.Token {
 		l.col = 0
 		l.advance()
 		return l.lexNewline()
+	case ' ', '\t':
+		return l.lexWhitespace()
 	case ';':
 		l.mode = ModeComment
 		return l.lexSingle(token.SEMICOLON)
-	case ' ', '\t':
-		return l.lexWhitespace()
 	case '*':
 		if !l.transactionPastStatus {
 			l.transactionPastStatus = true
@@ -198,6 +204,8 @@ func (l *Lexer) lexTransaction() token.Token {
 		}
 		return l.lexText()
 	case '|':
+		l.transactionPastStatus = true
+		l.readingNoteAfterPipe = true
 		return l.lexSingle(token.PIPE)
 	case '+':
 		return l.lexSingle(token.PLUS)
@@ -213,6 +221,24 @@ func (l *Lexer) lexTransaction() token.Token {
 		}
 		return l.lexText()
 	}
+}
+
+func (l *Lexer) lexNote() token.Token {
+	for l.ch == ' ' || l.ch == '\t' {
+		l.advance()
+	}
+	if l.ch == 0 || l.ch == '\n' || l.ch == ';' {
+		return l.Next()
+	}
+	s := l.save()
+	for l.ch != 0 && l.ch != '\n' && l.ch != ';' {
+		l.advance()
+	}
+	lit := string(l.input[s.offset:l.pos])
+	for len(lit) > 0 && (lit[len(lit)-1] == ' ' || lit[len(lit)-1] == '\t') {
+		lit = lit[:len(lit)-1]
+	}
+	return token.Token{Type: token.TEXT, Literal: lit, Span: l.span(s)}
 }
 
 func (l *Lexer) lexPeriodic() token.Token {

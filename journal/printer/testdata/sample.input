@@ -25,7 +25,7 @@ account expenses:education
   assets:bank
 
 
-2026-02-10 * something | 2 months of *income*
+2026-02-10 * something | 2 months of *income* + idk
     assets:bank  1.50 USD ; jan
     assets:bank  USD 1 ; feb
     income:invenstment

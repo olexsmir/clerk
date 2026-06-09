@@ -114,9 +114,12 @@ func (p *Parser) parseTransaction() *ast.Transaction {
 
 	tx.Date = p.parseDate()
 
+	p.skipWhitespace()
+
 	// optional secondary date
 	if p.got(token.EQ) {
 		p.advance()
+		p.skipWhitespace()
 		d := p.parseDate()
 		tx.SecondDate = &d
 	}
@@ -135,6 +138,7 @@ func (p *Parser) parseTransaction() *ast.Transaction {
 			p.advance()
 		}
 		tx.Code = new(code.String())
+		p.advance() // TODO: why?
 		p.skipWhitespace()
 	}
 
@@ -149,14 +153,11 @@ func (p *Parser) parseTransaction() *ast.Transaction {
 
 		if p.got(token.PIPE) {
 			p.advance()
-			p.skipWhitespace()
-
-			var note strings.Builder
-			for p.got(token.TEXT) || p.got(token.WHITESPACE) {
-				_, _ = note.WriteString(p.cur.Literal)
+			if p.got(token.TEXT) {
+				n := p.cur.Literal
 				p.advance()
+				tx.Note = &n
 			}
-			tx.Note = new(note.String())
 		}
 	}
 

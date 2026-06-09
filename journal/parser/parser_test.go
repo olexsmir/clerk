@@ -131,7 +131,24 @@ payee grocery store 1
   asdf  123 bytes
   asdf2
 `},
-
+		{"special chars in description", `
+2024/01/01 groceries | 1 + 2
+2024/01/01 groceries | 1 * 2
+2024/01/01 groceries | 1 ! 2
+2024/01/01 groceries | 1 # 2
+2024/01/01 groceries | 1 % 2
+2024/01/01 groceries | 1 ^ 2
+2024/01/01 groceries | 1 & 2
+2024/01/01 groceries | 1 ( 2
+2024/01/01 groceries | 1 ) 2
+2024/01/01 groceries | 1 [ 2
+2024/01/01 groceries | 1 ] 2
+2024/01/01 groceries | 1 { 2
+2024/01/01 groceries | 1 } 2
+2026-06-07 * payee !one | something *important*
+    expenses:food  40.00
+    assets:cash
+`},
 		{"transaction with tabs", `2024-01-01 groceries
 	expenses:food  $10.00
 	assets:checking
@@ -161,7 +178,7 @@ payee grocery store 1
 	expenses:food  $10.00
 	assets:checking
 `},
-		{"transaction with trilling indent", `
+		{"transaction with trailing indent", `
 2013/1/1 * pay taxes
     expenses:personal:tax              $1250
     assets:bank:checking               $-1250
