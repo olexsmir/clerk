@@ -15,9 +15,14 @@ func (p *printer) writeAmount(a *ast.Amount, pos CommodityPos) {
 		return
 	}
 
+	prec := a.QuantityFmt.Precision
+	if prec < 2 {
+		prec = 2
+	}
+
 	comm := a.Commodity
 	if comm == "" {
-		p.writeDecimal(a.Quantity, a.QuantityFmt, 2)
+		p.writeDecimal(a.Quantity, a.QuantityFmt, prec)
 		return
 	}
 
@@ -27,9 +32,9 @@ func (p *printer) writeAmount(a *ast.Amount, pos CommodityPos) {
 		if a.HasSpace {
 			p.buf.WriteByte(' ')
 		}
-		p.writeDecimal(a.Quantity, a.QuantityFmt, 2)
+		p.writeDecimal(a.Quantity, a.QuantityFmt, prec)
 	case CommodityAfter:
-		p.writeDecimal(a.Quantity, a.QuantityFmt, 2)
+		p.writeDecimal(a.Quantity, a.QuantityFmt, prec)
 		if a.HasSpace {
 			p.buf.WriteByte(' ')
 		}
