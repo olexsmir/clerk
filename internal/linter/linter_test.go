@@ -9,9 +9,10 @@ import (
 )
 
 var tests = map[string][]Rule{
-	"correct":        Rules,
-	"empty-postings": {&EmptyPostings{}},
-	"parse-error":    {&ParseError{}},
+	"correct":           Rules,
+	"empty-postings":    {&EmptyPostings{}},
+	"parse-error":       {&ParseError{}},
+	"omitted-precision": {&OmittedPrecision{}},
 }
 
 func TestLinter(t *testing.T) {

@@ -27,4 +27,5 @@ type JournalChecker interface {
 var Rules = []Rule{
 	&ParseError{},
 	&EmptyPostings{},
+	&OmittedPrecision{},
 }
