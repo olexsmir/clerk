@@ -84,7 +84,7 @@ func TestLexer(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			l := New("j", []byte(tt.input))
-			golden.Assert(t, l.Dump())
+			golden.Assert(t, tt.name, l.Dump())
 		})
 	}
 }

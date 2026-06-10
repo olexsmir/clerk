@@ -24,7 +24,7 @@ func TestRoundTrip(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			golden.AssertInput(t, b.String(), tname)
+			golden.Assert(t, tname, b.String())
 		})
 	}
 }
@@ -71,7 +71,7 @@ func TestRoundTrip_WithConfig(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			golden.AssertInput(t, b.String(), tname)
+			golden.Assert(t, tname, b.String())
 		})
 	}
 }

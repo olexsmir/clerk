@@ -322,7 +322,7 @@ payee grocery store 1
 		t.Run(tt.name, func(t *testing.T) {
 			l := lexer.New("j", []byte(tt.inp))
 			f := New(l).ParseJournal()
-			golden.Assert(t, ast.Dump(f))
+			golden.Assert(t, tt.name, ast.Dump(f))
 		})
 	}
 }

@@ -16,7 +16,7 @@ func TestTagsGeneration(t *testing.T) {
 		t.Run(tt, func(t *testing.T) {
 			inp := golden.Load(t, tt)
 			out := generateTags(t, inp, tt+".journal")
-			golden.AssertInput(t, out, tt)
+			golden.Assert(t, tt, out)
 		})
 	}
 }
@@ -41,7 +41,7 @@ func TestCrossFileResolution(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	golden.AssertInput(t, buf.String(), "crossfile")
+	golden.Assert(t, "crossfile", buf.String())
 }
 
 func generateTags(t *testing.T, src []byte, fname string) string {
