@@ -16,6 +16,8 @@ func main() {
 		runFormat(os.Args[2:])
 	case "tags":
 		runTags(os.Args[2:])
+	case "lint":
+		runLint(os.Args[2:])
 	default:
 		usage()
 		os.Exit(1)
@@ -28,5 +30,6 @@ func usage() {
 Commands:
   tags       Generate ctags-compatible tag file
   format     Format journal files
+  lint       Lint journal files
 `)
 }
