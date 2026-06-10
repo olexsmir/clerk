@@ -28,4 +28,5 @@ var Rules = []Rule{
 	&ParseError{},
 	&EmptyPostings{},
 	&OmittedPrecision{},
+	&MissingCommodity{},
 }

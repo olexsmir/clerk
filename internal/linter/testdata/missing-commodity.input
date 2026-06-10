@@ -1,0 +1,11 @@
+2024-06-01 "no commodity"
+    expenses:food   50.00
+    assets:cash
+
+2024-06-02 "with commodity"
+    expenses:food   50.00 USD
+    assets:cash
+
+2024-06-03 "another missing"
+    expenses:food   100
+    assets:cash

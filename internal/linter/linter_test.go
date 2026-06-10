@@ -13,6 +13,7 @@ var tests = map[string][]Rule{
 	"empty-postings":    {&EmptyPostings{}},
 	"parse-error":       {&ParseError{}},
 	"omitted-precision": {&OmittedPrecision{}},
+	"missing-commodity": {&MissingCommodity{}},
 }
 
 func TestLinter(t *testing.T) {
