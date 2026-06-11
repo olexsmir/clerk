@@ -3,7 +3,9 @@ Journal
     Date: 2024/01/01
     Payee: "groceries" j:1:12-2:0
     Posting j:2:1-3:1
-      Account "expenses:food" j:2:2-2:15
+      Account j:2:2-2:15
+        SubAccount: "expenses" j:2:2-2:10
+        SubAccount: "food" j:2:11-2:15
       Amount j:2:17-2:17
         Quantity: 10
         Commodity: "$"
@@ -22,14 +24,18 @@ Journal
           Precision: 2
           Decimal: "."
     Posting j:3:1-5:0
-      Account "assets:checking" j:3:2-4:0
+      Account j:3:2-4:0
+        SubAccount: "assets" j:3:2-3:8
+        SubAccount: "checking" j:3:9-4:0
       Amount: <elided>
   BlankLine j:5:0-5:1
   Transaction j:5:1-9:0
     Date: 2025/03/07
     Payee: "groceries2" j:5:12-6:0
     Posting j:6:1-7:1
-      Account "expenses:food" j:6:2-6:15
+      Account j:6:2-6:15
+        SubAccount: "expenses" j:6:2-6:10
+        SubAccount: "food" j:6:11-6:15
       Amount j:6:17-6:17
         Quantity: 10
         Commodity: "$"
@@ -48,7 +54,9 @@ Journal
           Precision: 2
           Decimal: "."
     Posting j:7:1-9:0
-      Account "assets:checking" j:7:2-7:17
+      Account j:7:2-7:17
+        SubAccount: "assets" j:7:2-7:8
+        SubAccount: "checking" j:7:9-7:17
       Amount: <elided>
       BalanceAssertion j:7:19-8:0
         IsStrict: true
@@ -65,7 +73,9 @@ Journal
     Date: 2025/04/08
     Payee: "groceries3" j:9:12-10:0
     Posting j:10:1-11:1
-      Account "expenses:food" j:10:2-10:15
+      Account j:10:2-10:15
+        SubAccount: "expenses" j:10:2-10:10
+        SubAccount: "food" j:10:11-10:15
       Amount j:10:17-10:17
         Quantity: 10
         Commodity: "$"
@@ -74,7 +84,9 @@ Journal
         Precision: 2
         Decimal: "."
     Posting j:11:1-12:1
-      Account "assets:checking" j:11:2-11:17
+      Account j:11:2-11:17
+        SubAccount: "assets" j:11:2-11:8
+        SubAccount: "checking" j:11:9-11:17
       Amount: <elided>
       BalanceAssertion j:11:19-12:0
         IsStrict: false

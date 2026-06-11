@@ -44,7 +44,7 @@ type IncludeDirective struct {
 func (IncludeDirective) entryNode() {}
 
 type AliasDirective struct {
-	From, To string
+	From, To Account
 	Comment  *Comment // optional inline comment
 	Span     token.Span
 }

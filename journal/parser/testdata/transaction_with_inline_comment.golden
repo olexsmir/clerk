@@ -3,7 +3,9 @@ Journal
     Date: 2024/01/01
     Payee: "groceries" j:1:12-2:0
     Posting j:2:1-3:1
-      Account "Expenses:Good" j:2:2-2:15
+      Account j:2:2-2:15
+        SubAccount: "Expenses" j:2:2-2:10
+        SubAccount: "Good" j:2:11-2:15
       Amount j:2:17-2:17
         Quantity: 10
         Commodity: "$"
@@ -15,5 +17,7 @@ Journal
         Marker: ";"
         Text: "food"
     Posting j:3:1-4:1
-      Account "Assets:Checking" j:3:2-4:0
+      Account j:3:2-4:0
+        SubAccount: "Assets" j:3:2-3:8
+        SubAccount: "Checking" j:3:9-4:0
       Amount: <elided>

@@ -67,7 +67,7 @@ func (p *printer) writePostingLine(pt *ast.Posting, maxAcct int) {
 		p.buf.WriteByte(' ')
 	}
 
-	acct := pt.Account.Name
+	acct := pt.Account.String()
 	switch pt.Type {
 	case ast.PostingVirtualUnbalanced:
 		acct = "(" + acct + ")"

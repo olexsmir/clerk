@@ -51,8 +51,8 @@ type Lexer struct {
 	col    int  // current column (1-based)
 	line   int  // current line (1-based)
 
-	transactionPastStatus  bool
-	postingExpectAccount   bool
+	transactionPastStatus bool
+	postingExpectAccount  bool
 	readingNoteAfterPipe  bool
 }
 
@@ -321,9 +321,10 @@ func (l *Lexer) lexPosting() token.Token {
 		return l.lexSingle(token.LBRACKET)
 	case l.ch == ']':
 		return l.lexSingle(token.RBRACKET)
+	case l.ch == ':':
+		return l.lexSingle(token.COLON)
 	case l.postingExpectAccount && l.ch != '*' && l.ch != '!' && l.ch != '(' && l.ch != '[':
-		l.postingExpectAccount = false
-		return l.lexAccountText()
+		return l.lexAccountNamePosting()
 	case l.ch == '*': // after account name
 		return l.lexSingle(token.STAR)
 	case l.isDigit(), l.ch == '.':
@@ -334,10 +335,12 @@ func (l *Lexer) lexPosting() token.Token {
 		return l.lexSingle(token.PLUS)
 	case l.isCommodityStart():
 		return l.lexCommodityMark()
+	case l.ch == '"' || l.ch == '\'':
+		return l.lexString()
 	case l.ch >= 'a' && l.ch <= 'z':
 		return l.lexCommodityMark()
 	default:
-		return l.lexAccountText()
+		return l.lexAccountNamePosting()
 	}
 }
 
@@ -359,6 +362,8 @@ func (l *Lexer) lexDirective() token.Token {
 		return l.lexSingle(token.MINUS)
 	case '"', '\'':
 		return l.lexString()
+	case ':':
+		return l.lexSingle(token.COLON)
 	default:
 		if l.isCommodityStart() {
 			return l.lexCommodityMark()
@@ -372,10 +377,8 @@ func (l *Lexer) lexDirective() token.Token {
 		if l.isDigit() {
 			return l.lexNumber()
 		}
-		return l.lexText()
+		return l.lexAccountNameDirective()
 	}
-	// case l.ch == '/': // regex in 'alias'
-	// 	return l.lexSingle(token.SLASH)
 }
 
 func (l *Lexer) lexSingle(kind token.Type) token.Token {
@@ -452,14 +455,29 @@ func (l *Lexer) lexText() token.Token {
 	return token.Token{Type: token.TEXT, Literal: lit, Span: l.span(s)}
 }
 
-func (l *Lexer) lexAccountText() token.Token {
+// lexAccountNameDirective reads accout name in directive context.
+// stops at any whitespace, supports multi-word names("Taxi Fare").
+func (l *Lexer) lexAccountNameDirective() token.Token {
 	s := l.save()
-	for l.ch != '\n' && l.ch != ';' && l.ch != 0 && l.ch != ')' && l.ch != ']' {
-		// two spaces = end of account name
+	for l.ch != '\n' && l.ch != ';' && l.ch != 0 && l.ch != ')' && l.ch != ']' && l.ch != ':' && l.ch != ' ' && l.ch != '\t' {
+		l.advance()
+	}
+	lit := string(l.input[s.offset:l.pos])
+	return token.Token{Type: token.TEXT, Literal: lit, Span: l.span(s)}
+}
+
+// lexAccountNamePosting reads an account name in posting context.
+// stops at two consecutive spaces.
+func (l *Lexer) lexAccountNamePosting() token.Token {
+	s := l.save()
+	for l.ch != '\n' && l.ch != ';' && l.ch != 0 && l.ch != ')' && l.ch != ']' && l.ch != ':' {
 		if l.isTwoSpaces() {
 			break
 		}
 		l.advance()
+	}
+	if l.ch != ':' {
+		l.postingExpectAccount = false
 	}
 	lit := string(l.input[s.offset:l.pos])
 	return token.Token{Type: token.TEXT, Literal: lit, Span: l.span(s)}

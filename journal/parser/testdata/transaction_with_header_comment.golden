@@ -7,7 +7,9 @@ Journal
         Marker: ";"
         Text: "header comment"
     Posting j:3:1-4:1
-      Account "expenses:food" j:3:2-3:15
+      Account j:3:2-3:15
+        SubAccount: "expenses" j:3:2-3:10
+        SubAccount: "food" j:3:11-3:15
       Amount j:3:17-3:17
         Quantity: 10
         Commodity: "$"
@@ -16,5 +18,7 @@ Journal
         Precision: 2
         Decimal: "."
     Posting j:4:1-5:1
-      Account "assets:checking" j:4:2-5:0
+      Account j:4:2-5:0
+        SubAccount: "assets" j:4:2-4:8
+        SubAccount: "checking" j:4:9-5:0
       Amount: <elided>

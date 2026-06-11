@@ -3,7 +3,9 @@ Journal
     Expr: "^income"
     Posting j:2:1-4:0
       Type: unbalanced virtual
-      Account "liabilities:tax" j:2:6-2:21
+      Account j:2:6-2:21
+        SubAccount: "liabilities" j:2:6-2:17
+        SubAccount: "tax" j:2:18-2:21
       Amount j:2:25-2:25
         Quantity: 0.33
         Commodity: ""
@@ -16,7 +18,9 @@ Journal
   AutomatedTransaction j:4:1-4:3
     Expr: "expenses:gifts"
     Posting j:5:1-6:1
-      Account "budget:gifts" j:5:5-5:17
+      Account j:5:5-5:17
+        SubAccount: "budget" j:5:5-5:11
+        SubAccount: "gifts" j:5:12-5:17
       Amount j:5:20-5:20
         Quantity: -1
         Commodity: ""
@@ -26,7 +30,9 @@ Journal
         Precision: 0
         Decimal: "."
     Posting j:6:1-8:0
-      Account "assets:budget" j:6:5-6:18
+      Account j:6:5-6:18
+        SubAccount: "assets" j:6:5-6:11
+        SubAccount: "budget" j:6:12-6:18
       Amount j:6:21-6:21
         Quantity: 1
         Commodity: ""
@@ -39,7 +45,9 @@ Journal
   AutomatedTransaction j:8:1-8:3
     Expr: "income:salary"
     Posting j:9:1-10:1
-      Account "budget:savings" j:9:5-9:19
+      Account j:9:5-9:19
+        SubAccount: "budget" j:9:5-9:11
+        SubAccount: "savings" j:9:12-9:19
       Amount j:9:21-10:0
         Quantity: 0
         Commodity: ""

@@ -455,11 +455,11 @@ func (p *Parser) parseAliasDirective() *ast.AliasDirective {
 	alias := &ast.AliasDirective{}
 	p.expect(token.ALIAS)
 	p.skipWhitespace()
-	alias.From = p.parseAccount().Name
+	alias.From = p.parseAccount()
 	p.skipWhitespace()
 	p.expect(token.EQ)
 	p.skipWhitespace()
-	alias.To = p.parseAccount().Name
+	alias.To = p.parseAccount()
 	p.skipWhitespace()
 	alias.Comment = p.parseOptInlineComment()
 	p.expectNewline()
@@ -627,7 +627,6 @@ func (p *Parser) parseMarketPriceDirective() *ast.MarketPriceDirective {
 	tok, _ := p.expect(token.COMMODITYMARK)
 	mp.Commodity = tok.Literal
 	p.advance()
-	p.skipWhitespace()
 
 	mp.Amount = *p.parseAmount()
 
@@ -931,6 +930,10 @@ func (p *Parser) parsePosting() *ast.Posting {
 	// optional amount - after two spaces
 	if p.got(token.WHITESPACE) {
 		p.skipWhitespace()
+		if p.got(token.STRING) { // e.g "Plans: Wildthorn Mail" 1 @ 125s
+			p.advance()
+			p.skipWhitespace()
+		}
 		if p.isAmountStart() || p.got(token.STAR) {
 			posting.Amount = p.parseAmountWithOptExpr()
 		}
@@ -1002,29 +1005,58 @@ func (p *Parser) parseBalanceAssertion() *ast.BalanceAssertion {
 	return ba
 }
 
-func (p *Parser) parseAccount() ast.Account {
-	s := p.cur.Span
-	var name strings.Builder
-
+func (p *Parser) readAccountSegment() (ast.SubAccount, bool) {
 	switch p.cur.Type {
 	case token.TEXT:
-		_, _ = name.WriteString(p.cur.Literal)
+		sub := ast.SubAccount{Name: p.cur.Literal, Span: p.cur.Span}
 		p.advance()
-		if p.got(token.WHITESPACE) && p.willGet(token.TEXT) && p.peek.Literal[0] != '(' {
-			_, _ = name.WriteString(" ")
+
+		// handle multi work segment, e.g: "credit card"
+		if p.got(token.WHITESPACE) && p.willGet(token.TEXT) && len(p.peek.Literal) > 0 && p.peek.Literal[0] != '(' {
+			sub.Name += " "
 			p.advance()
-			_, _ = name.WriteString(p.cur.Literal)
+			sub.Name += p.cur.Literal
 			p.advance()
 		}
+		return sub, true
+
 	case token.COMMODITYMARK:
-		_, _ = name.WriteString(p.cur.Literal)
+		sub := ast.SubAccount{Name: p.cur.Literal, Span: p.cur.Span}
 		p.advance()
+		// merge "EUR" + "-HRK" to "EUR-HRK"
 		for p.got(token.TEXT) {
-			_, _ = name.WriteString(p.cur.Literal)
+			sub.Name += p.cur.Literal
 			p.advance()
 		}
+		return sub, true
+
+	default:
+		return ast.SubAccount{}, false
 	}
-	return ast.Account{Name: name.String(), Span: p.span(s)}
+}
+
+func (p *Parser) parseAccount() ast.Account {
+	s := p.cur.Span
+	acc := ast.Account{}
+
+	sub, ok := p.readAccountSegment()
+	if !ok {
+		p.errorf("expected account, got %s", p.cur.Type)
+		return ast.Account{}
+	}
+	acc.Name = append(acc.Name, sub)
+
+	for p.got(token.COLON) {
+		p.advance()
+		sub, ok := p.readAccountSegment()
+		if !ok {
+			break
+		}
+		acc.Name = append(acc.Name, sub)
+	}
+
+	acc.Span = p.span(s)
+	return acc
 }
 
 func (p *Parser) parseDate() ast.Date {

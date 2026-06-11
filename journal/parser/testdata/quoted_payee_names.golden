@@ -3,7 +3,9 @@ Journal
     Date: 2024-01-01
     Payee: "groceries store" j:1:12-2:0
     Posting j:2:1-3:1
-      Account "expenses:food" j:2:3-2:16
+      Account j:2:3-2:16
+        SubAccount: "expenses" j:2:3-2:11
+        SubAccount: "food" j:2:12-2:16
       Amount j:2:18-2:18
         Quantity: 10
         Commodity: "$"
@@ -12,5 +14,7 @@ Journal
         Precision: 0
         Decimal: "."
     Posting j:3:1-4:1
-      Account "assets:checking" j:3:3-4:0
+      Account j:3:3-4:0
+        SubAccount: "assets" j:3:3-3:9
+        SubAccount: "checking" j:3:10-4:0
       Amount: <elided>

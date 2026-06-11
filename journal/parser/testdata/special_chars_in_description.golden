@@ -58,7 +58,9 @@ Journal
     Payee: "payee !one" j:15:14-15:24
     Note: "something *important*"
     Posting j:16:1-17:1
-      Account "expenses:food" j:16:5-16:18
+      Account j:16:5-16:18
+        SubAccount: "expenses" j:16:5-16:13
+        SubAccount: "food" j:16:14-16:18
       Amount j:16:20-16:20
         Quantity: 40
         Commodity: ""
@@ -67,5 +69,7 @@ Journal
         Precision: 2
         Decimal: "."
     Posting j:17:1-18:1
-      Account "assets:cash" j:17:5-18:0
+      Account j:17:5-18:0
+        SubAccount: "assets" j:17:5-17:11
+        SubAccount: "cash" j:17:12-18:0
       Amount: <elided>

@@ -129,7 +129,7 @@ func (t *Tagger) collect() []tags.Entry {
 func (t *Tagger) collectFromEntry(pf *journal.ParsedFile, fpath string, entry ast.Entry) {
 	switch e := entry.(type) {
 	case *ast.AccountDirective:
-		t.addCandidate(e.Account.Name, fpath, e.Account.Span, pf.Src, KindAccount, prioAccountDirective)
+		t.addCandidate(e.Account.String(), fpath, e.Account.Span, pf.Src, KindAccount, prioAccountDirective)
 
 	case *ast.CommodityDirective:
 		t.addCandidate(e.Commodity, fpath, e.Span, pf.Src, KindCommodity, prioCommodityDirective)
@@ -178,13 +178,13 @@ func (t *Tagger) collectFromEntry(pf *journal.ParsedFile, fpath string, entry as
 		}
 
 	case *ast.AliasDirective:
-		t.addCandidate(e.From, fpath, e.Span, pf.Src, KindAccount, prioAliasDirective)
-		t.addCandidate(e.To, fpath, e.Span, pf.Src, KindAccount, prioAliasDirective)
+		t.addCandidate(e.From.String(), fpath, e.Span, pf.Src, KindAccount, prioAliasDirective)
+		t.addCandidate(e.To.String(), fpath, e.Span, pf.Src, KindAccount, prioAliasDirective)
 	}
 }
 
 func (t *Tagger) collectFromPosting(p *ast.Posting, filePath string, src []byte) {
-	t.addCandidate(p.Account.Name, filePath, p.Account.Span, src, KindAccount, prioAccountPosting)
+	t.addCandidate(p.Account.String(), filePath, p.Account.Span, src, KindAccount, prioAccountPosting)
 	if p.Amount != nil && p.Amount.Commodity != "" {
 		t.addCandidate(p.Amount.Commodity, filePath, p.Amount.Span, src, KindCommodity, prioAmountCommodity)
 	}

@@ -1,6 +1,10 @@
 package ast
 
-import "olexsmir.xyz/clerk/journal/token"
+import (
+	"strings"
+
+	"olexsmir.xyz/clerk/journal/token"
+)
 
 type Journal struct {
 	Entries []Entry
@@ -69,7 +73,6 @@ const (
 )
 
 type Status struct {
-	// Value byte // '!' '*'
 	Value StatusType
 	Span  token.Span
 }
@@ -79,7 +82,26 @@ type Payee struct {
 	Span token.Span
 }
 
-type Account struct {
-	Name string // 'expenses:food'
+type SubAccount struct {
+	Name string
 	Span token.Span
+}
+
+type Account struct {
+	Name []SubAccount // ['expenses' 'food']
+	Span token.Span
+}
+
+func (a Account) String() string {
+	if len(a.Name) == 0 {
+		return ""
+	}
+	var name strings.Builder
+	name.Grow(len(a.Name))
+	name.WriteString(a.Name[0].Name)
+	for _, s := range a.Name[1:] {
+		name.WriteByte(':')
+		name.WriteString(s.Name)
+	}
+	return name.String()
 }

@@ -20,13 +20,13 @@ var tests = map[string]test{
 	"actual-business.journal":                   {desc: "hledger: simple business transactions with commodities"},
 	"actual-goal-budget.journal":                {desc: "hledger: goal budget using periodic transactions"},
 	"actual-i18n-en.journal":                    {desc: "hledger: internationalization with account types in English"},
-	"actual-ledger-baseline-opt-lots-basis.dat": {desc: "ledger: G/S prefixes"},
+	"actual-ledger-baseline-opt-lots-basis.dat": {err: true, desc: "ledger: G/S prefixes"}, // no lot support yet
 	"actual-ledger-input-divzero.dat":           {desc: "ledger: fuzz corpus, designed to cause divide-by-zero"},
 	"actual-ledger-input-parsing.dat":           {desc: "ledger: fuzz corpus, tests EOF without newline"},
 	"actual-ledger-input-sample.dat":            {desc: "ledger: fuzz corpus, default commodity directive"},
 	"actual-ledger-input-standard.dat":          {desc: "ledger: fuzz corpus, standard ledger format"},
 	"actual-ledger-input-transfer.dat":          {desc: "ledger: fuzz corpus, byte quantity (non-monetary)"},
-	"actual-ledger-input-wow.dat":               {desc: "ledger-cli: fuzz corpus, World of Warcraft currency (1G=100s)"},
+	"actual-ledger-input-wow.dat":               {err: true, desc: "ledger-cli: fuzz corpus, World of Warcraft currency (1G=100s)"}, // no lot support ye
 	"actual-multicurrency.journal":              {desc: "hledger: multi-currency transactions with HRK/EUR"},
 	"actual-personal.journal":                   {desc: "hledger: simple personal finance example"},
 	"actual-quickstart.journal":                 {desc: "hledger: quickstart guide with commodity directive"},

@@ -159,11 +159,15 @@ PIPE         "|"                  15:25-15:26
 TEXT         "something *important*" 15:27-16:0
 NEWLINE      "\n"                 16:0-16:1
 INDENT       "    "               16:1-16:5
-TEXT         "expenses:food"      16:5-16:18
+TEXT         "expenses"           16:5-16:13
+COLON        ":"                  16:13-16:14
+TEXT         "food"               16:14-16:18
 WHITESPACE   "  "                 16:18-16:20
 DECIMAL      "40.00"              16:20-17:0
 NEWLINE      "\n"                 17:0-17:1
 INDENT       "    "               17:1-17:5
-TEXT         "assets:cash"        17:5-18:0
+TEXT         "assets"             17:5-17:11
+COLON        ":"                  17:11-17:12
+TEXT         "cash"               17:12-18:0
 NEWLINE      "\n"                 18:0-18:1
 EOF          ""                   18:1-18:1

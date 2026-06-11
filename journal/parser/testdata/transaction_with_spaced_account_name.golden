@@ -3,7 +3,8 @@ Journal
     Date: 2022-01-01
     Payee: "opening balances" j:1:12-2:0
     Posting j:2:1-3:1
-      Account "assets" j:2:5-2:11
+      Account j:2:5-2:11
+        SubAccount: "assets" j:2:5-2:11
       Amount j:2:31-2:31
         Quantity: 21
         Commodity: ""
@@ -22,5 +23,7 @@ Journal
           Precision: 0
           Decimal: "."
     Posting j:3:1-4:1
-      Account "equity:opening/closing balances" j:3:5-4:0
+      Account j:3:5-4:0
+        SubAccount: "equity" j:3:5-3:11
+        SubAccount: "opening/closing balances" j:3:12-4:0
       Amount: <elided>

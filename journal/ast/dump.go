@@ -296,7 +296,11 @@ func dumpBalanceAssertion(b *strings.Builder, ba *BalanceAssertion, depth int) {
 
 func dumpAccount(b *strings.Builder, a Account, depth int) {
 	indent(b, depth)
-	fmt.Fprintf(b, "Account %q %s\n", a.Name, a.Span)
+	fmt.Fprintf(b, "Account %s\n", a.Span)
+	for _, sub := range a.Name {
+		indent(b, depth+1)
+		fmt.Fprintf(b, "SubAccount: %q %s\n", sub.Name, sub.Span)
+	}
 }
 
 func dumpAccountDirective(b *strings.Builder, a *AccountDirective, depth int) {

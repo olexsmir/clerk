@@ -39,7 +39,7 @@ func TestLexer(t *testing.T) {
 `},
 		{"transaction with virtual accounts", `2024/01/01 * groceries
 	(virtual:account)  1 PESO
-	[something:else]   5 PESO
+	[some thing:else]   5 PESO
 `},
 		{"transaction with unicode commodity symbols", `2024/01/01 groceries
     expenses:food  €10.00

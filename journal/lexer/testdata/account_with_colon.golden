@@ -1,7 +1,7 @@
 ACCOUNT      "account"            1:1-1:8
 WHITESPACE   " "                  1:8-1:9
-TEXT         "expenses"           1:9-1:17
-COLON        ":"                  1:17-1:18
-TEXT         "food"               1:18-1:22
+TEXT         "income"              1:9-1:15
+COLON        ":"                  1:15-1:16
+TEXT         "salary"              1:16-1:22
 NEWLINE      "\n"                 1:22-1:23
 EOF          ""                   1:23-1:23

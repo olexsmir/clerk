@@ -3,7 +3,9 @@ Journal
   PeriodicTransaction j:2:1-2:3
     Period: "monthly"
     Posting j:3:1-4:1
-      Account "expenses:rent" j:3:5-3:18
+      Account j:3:5-3:18
+        SubAccount: "expenses" j:3:5-3:13
+        SubAccount: "rent" j:3:14-3:18
       Amount j:3:28-3:28
         Quantity: 2000
         Commodity: "$"
@@ -12,7 +14,10 @@ Journal
         Precision: 0
         Decimal: "."
     Posting j:4:1-6:0
-      Account "assets:bank:checking" j:4:5-5:0
+      Account j:4:5-5:0
+        SubAccount: "assets" j:4:5-4:11
+        SubAccount: "bank" j:4:12-4:16
+        SubAccount: "checking" j:4:17-5:0
       Amount: <elided>
   BlankLine j:6:0-6:1
   PeriodicTransaction j:6:1-6:3
@@ -20,7 +25,9 @@ Journal
     From: 2023-04-15
     To: 2023-06-16
     Posting j:7:1-8:1
-      Account "expenses:utilities" j:7:5-7:23
+      Account j:7:5-7:23
+        SubAccount: "expenses" j:7:5-7:13
+        SubAccount: "utilities" j:7:14-7:23
       Amount j:7:33-7:33
         Quantity: 400
         Commodity: "$"
@@ -29,14 +36,19 @@ Journal
         Precision: 0
         Decimal: "."
     Posting j:8:1-10:0
-      Account "assets:bank:checking" j:8:5-9:0
+      Account j:8:5-9:0
+        SubAccount: "assets" j:8:5-8:11
+        SubAccount: "bank" j:8:12-8:16
+        SubAccount: "checking" j:8:17-9:0
       Amount: <elided>
   BlankLine j:10:0-10:1
   PeriodicTransaction j:10:1-10:3
     Period: "every 2 months"
     Description: "in 2023, we will review"
     Posting j:11:1-12:1
-      Account "expenses:utilities" j:11:5-11:23
+      Account j:11:5-11:23
+        SubAccount: "expenses" j:11:5-11:13
+        SubAccount: "utilities" j:11:14-11:23
       Amount j:11:33-11:33
         Quantity: 400
         Commodity: "$"
@@ -45,14 +57,19 @@ Journal
         Precision: 0
         Decimal: "."
     Posting j:12:1-14:0
-      Account "assets:bank:checking" j:12:5-13:0
+      Account j:12:5-13:0
+        SubAccount: "assets" j:12:5-12:11
+        SubAccount: "bank" j:12:12-12:16
+        SubAccount: "checking" j:12:17-13:0
       Amount: <elided>
   BlankLine j:14:0-14:1
   PeriodicTransaction j:14:1-14:3
     Period: "monthly"
     Description: "Next year blah blah"
     Posting j:15:1-16:1
-      Account "expenses:food" j:15:5-15:18
+      Account j:15:5-15:18
+        SubAccount: "expenses" j:15:5-15:13
+        SubAccount: "food" j:15:14-15:18
       Amount j:15:20-15:20
         Quantity: 100
         Commodity: "$"
@@ -61,7 +78,9 @@ Journal
         Precision: 0
         Decimal: "."
     Posting j:16:1-18:0
-      Account "assets:checking" j:16:5-17:0
+      Account j:16:5-17:0
+        SubAccount: "assets" j:16:5-16:11
+        SubAccount: "checking" j:16:12-17:0
       Amount: <elided>
   BlankLine j:18:0-18:1
   PeriodicTransaction j:18:1-18:3
@@ -70,7 +89,9 @@ Journal
       Marker: ";"
       Text: "In 2019 we will change this"
     Posting j:19:1-20:1
-      Account "expenses:food" j:19:5-19:18
+      Account j:19:5-19:18
+        SubAccount: "expenses" j:19:5-19:13
+        SubAccount: "food" j:19:14-19:18
       Amount j:19:20-19:20
         Quantity: 100
         Commodity: "$"
@@ -79,5 +100,7 @@ Journal
         Precision: 0
         Decimal: "."
     Posting j:20:1-21:1
-      Account "assets:checking" j:20:5-21:0
+      Account j:20:5-21:0
+        SubAccount: "assets" j:20:5-20:11
+        SubAccount: "checking" j:20:12-21:0
       Amount: <elided>

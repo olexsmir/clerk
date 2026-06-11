@@ -15,7 +15,7 @@ func (p *printer) writeIncludeDirective(i *ast.IncludeDirective) {
 
 func (p *printer) writeAccountDirective(a *ast.AccountDirective) {
 	p.buf.WriteString("account ")
-	p.buf.WriteString(a.Account.Name)
+	p.buf.WriteString(a.Account.String())
 	p.writeInlineComment(a.Comment)
 }
 
@@ -27,9 +27,9 @@ func (p *printer) writeCommodityDirective(c *ast.CommodityDirective) {
 
 func (p *printer) writeAliasDirective(a *ast.AliasDirective) {
 	p.buf.WriteString("alias ")
-	p.buf.WriteString(a.From)
+	p.buf.WriteString(a.From.String())
 	p.buf.WriteString(" = ")
-	p.buf.WriteString(a.To)
+	p.buf.WriteString(a.To.String())
 	p.writeInlineComment(a.Comment)
 }
 

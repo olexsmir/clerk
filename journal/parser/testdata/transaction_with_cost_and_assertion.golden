@@ -3,7 +3,9 @@ Journal
     Date: 2026-05-11
     Payee: "testies" j:1:12-2:0
     Posting j:2:1-3:1
-      Account "expenses:atm" j:2:2-2:14
+      Account j:2:2-2:14
+        SubAccount: "expenses" j:2:2-2:10
+        SubAccount: "atm" j:2:11-2:14
       Amount j:2:16-2:16
         Quantity: 20
         Commodity: "UAH"
@@ -30,5 +32,7 @@ Journal
           Precision: 0
           Decimal: "."
     Posting j:3:1-4:1
-      Account "assets:bank" j:3:2-4:0
+      Account j:3:2-4:0
+        SubAccount: "assets" j:3:2-3:8
+        SubAccount: "bank" j:3:9-4:0
       Amount: <elided>
