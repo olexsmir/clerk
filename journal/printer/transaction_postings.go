@@ -76,8 +76,6 @@ func (p *printer) writePostingLine(pt *ast.Posting, maxAcct int) {
 	}
 	p.buf.WriteString(acct)
 
-	pos := p.cfg.CommodityPos
-
 	if pt.Amount != nil || pt.Balance != nil {
 		switch p.cfg.AlignStyle {
 		case AlignTwoSpaces:
@@ -106,9 +104,9 @@ func (p *printer) writePostingLine(pt *ast.Posting, maxAcct int) {
 	}
 
 	if pt.Amount != nil {
-		p.writeAmount(pt.Amount, pos)
+		p.writeAmount(pt.Amount, p.cfg.CommodityPos)
 		if pt.Cost != nil {
-			p.writeCost(pt.Cost, pos)
+			p.writeCost(pt.Cost, p.cfg.CommodityPos)
 		}
 	}
 
@@ -116,7 +114,7 @@ func (p *printer) writePostingLine(pt *ast.Posting, maxAcct int) {
 		if pt.Amount != nil {
 			p.buf.WriteByte(' ')
 		}
-		p.writeBalanceAssertion(pt.Balance, pos)
+		p.writeBalanceAssertion(pt.Balance, p.cfg.CommodityPos)
 	}
 
 	if pt.Comment != nil && pt.Comment.Text != "" {
