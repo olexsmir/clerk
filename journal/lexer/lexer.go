@@ -576,7 +576,7 @@ func (l *Lexer) lexCommodityMark() token.Token {
 	}
 
 	if unicode.IsLetter(l.ch) {
-		for unicode.IsLetter(l.ch) || unicode.IsDigit(l.ch) {
+		for unicode.IsLetter(l.ch) {
 			l.advance()
 		}
 		return token.Token{Type: token.COMMODITYMARK, Literal: string(l.input[s.offset:l.pos]), Span: l.span(s)}

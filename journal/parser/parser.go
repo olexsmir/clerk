@@ -378,11 +378,11 @@ func (p *Parser) parseCommodityDirective() *ast.CommodityDirective {
 	var format *ast.Amount
 
 	switch p.cur.Type {
-	case token.TEXT, token.INT, token.DECIMAL:
-		format = p.parseAmount()
-		commodity = format.Commodity
-	case token.COMMODITYMARK:
+	case token.COMMODITYMARK, token.TEXT, token.STRING:
 		commodity = p.cur.Literal
+		if p.got(token.STRING) {
+			commodity = unquote(commodity)
+		}
 		p.advance()
 		hadSpace := p.got(token.WHITESPACE)
 		p.skipWhitespace()
@@ -392,6 +392,9 @@ func (p *Parser) parseCommodityDirective() *ast.CommodityDirective {
 			format.CommodityPos = ast.CommodityBefore
 			format.HasSpace = hadSpace
 		}
+	case token.INT, token.DECIMAL:
+		format = p.parseAmount()
+		commodity = format.Commodity
 	default:
 		p.errorf("expected commodity name or amount, got %s", p.cur.Type)
 	}
@@ -770,7 +773,7 @@ func (p *Parser) isAmountStart() bool {
 	switch p.cur.Type {
 	default:
 		return false
-	case token.COMMODITYMARK, token.INT, token.DECIMAL, token.MINUS, token.PLUS, token.PARENEXPR:
+	case token.COMMODITYMARK, token.STRING, token.INT, token.DECIMAL, token.MINUS, token.PLUS, token.PARENEXPR:
 		return true
 	case token.TEXT:
 		return len(p.cur.Literal) > 0 && p.cur.Literal[0] >= '0' && p.cur.Literal[0] <= '9'
@@ -784,9 +787,9 @@ func (p *Parser) parseAmount() *ast.Amount {
 		Span:        p.span(s),
 	}
 
-	// commodity before quantity: $10.00
-	if p.got(token.COMMODITYMARK) {
-		amt.Commodity = p.cur.Literal
+	// commodity before quantity: $10.00, eur 10.00
+	if p.got(token.COMMODITYMARK) || p.got(token.TEXT) || p.got(token.STRING) {
+		amt.Commodity = unquote(p.cur.Literal)
 		amt.CommodityPos = ast.CommodityBefore
 		p.advance()
 		if p.got(token.WHITESPACE) {
@@ -811,9 +814,9 @@ func (p *Parser) parseAmount() *ast.Amount {
 			p.advance()
 		}
 
-		// commodity before quantity: -$120:
-		if p.got(token.COMMODITYMARK) {
-			amt.Commodity = p.cur.Literal
+		// commodity before quantity: -$120, -eur 120:
+		if p.got(token.COMMODITYMARK) || p.got(token.TEXT) || p.got(token.STRING) {
+			amt.Commodity = unquote(p.cur.Literal)
 			amt.CommodityPos = ast.CommodityBefore
 			p.advance()
 			if p.got(token.WHITESPACE) {
@@ -824,19 +827,19 @@ func (p *Parser) parseAmount() *ast.Amount {
 
 		p.parseQuantityInto(amt)
 
-		// commodity after quantity: 10.00 UAH (only if not set)
+		// commodity after quantity: 10.00 UAH, 10.00 "EUR" (only if not set)
 		if amt.Commodity == "" {
 			switch p.cur.Type {
 			case token.WHITESPACE:
 				p.skipWhitespace()
-				if p.got(token.COMMODITYMARK) || p.got(token.TEXT) {
+				if p.got(token.COMMODITYMARK) || p.got(token.TEXT) || p.got(token.STRING) {
 					amt.HasSpace = true
-					amt.Commodity = p.cur.Literal
+					amt.Commodity = unquote(p.cur.Literal)
 					amt.CommodityPos = ast.CommodityAfter
 					p.advance()
 				}
-			case token.COMMODITYMARK, token.TEXT:
-				amt.Commodity = p.cur.Literal
+			case token.COMMODITYMARK, token.TEXT, token.STRING:
+				amt.Commodity = unquote(p.cur.Literal)
 				amt.CommodityPos = ast.CommodityAfter
 				p.advance()
 			}
@@ -930,10 +933,6 @@ func (p *Parser) parsePosting() *ast.Posting {
 	// optional amount - after two spaces
 	if p.got(token.WHITESPACE) {
 		p.skipWhitespace()
-		if p.got(token.STRING) { // e.g "Plans: Wildthorn Mail" 1 @ 125s
-			p.advance()
-			p.skipWhitespace()
-		}
 		if p.isAmountStart() || p.got(token.STAR) {
 			posting.Amount = p.parseAmountWithOptExpr()
 		}

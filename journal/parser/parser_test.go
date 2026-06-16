@@ -111,7 +111,7 @@ payee grocery store 1
     assets:cash  150.60 HRK
 `},
 		{"transaction with cost and assertion", `2026-05-11 testies
-	expenses:atm  20.00 UAH @ 1 USD = 0 UAH
+	expenses:atm  UAH 20.00 @ 1 USD = 0 UAH
 	assets:bank
 `},
 		{"transaction with posting", `2024-01-01 groceries
@@ -123,6 +123,10 @@ payee grocery store 1
     expenses:food  £5.00
     expenses:food  ₹700.00
     assets:checking
+`},
+		{"transaction with quoted commodity", `2025-06-16 groceries
+    expenses:food  10.00 "EUR"
+    assets:cash
 `},
 		{"transaction with strange commodity symbols", `2024-01-01 groceries
 2026-05-20

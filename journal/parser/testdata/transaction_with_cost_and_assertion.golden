@@ -9,7 +9,7 @@ Journal
       Amount j:2:16-2:16
         Quantity: 20
         Commodity: "UAH"
-        CommodityPos: After
+        CommodityPos: Before
         HasSpace: true
         Precision: 2
         Decimal: "."
