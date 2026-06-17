@@ -224,22 +224,19 @@ func (p *Parser) parsePeriodicTransaction() *ast.PeriodicTransaction {
 	comment := p.parseOptInlineComment()
 	p.expectNewline()
 
-	var headerComments []*ast.Comment
-	var postings []*ast.Posting
-	for p.got(token.INDENT) || p.got(token.SEMICOLON) {
-		if p.got(token.SEMICOLON) {
-			c := p.parseComment()
-			headerComments = append(headerComments, c)
-			continue
-		}
-		posting := p.parsePosting()
-		if posting != nil {
-			postings = append(postings, posting)
+	// header comment
+	for p.got(token.INDENT) && p.willGet(token.SEMICOLON) {
+		p.advance()
+		pt.HeaderComments = append(pt.HeaderComments, p.parseComment())
+	}
+
+	// postings
+	for p.got(token.INDENT) {
+		if posting := p.parsePosting(); posting != nil {
+			pt.Postings = append(pt.Postings, posting)
 		}
 	}
 
-	pt.HeaderComments = headerComments
-	pt.Postings = postings
 	pt.Comment = comment
 	return pt
 }
