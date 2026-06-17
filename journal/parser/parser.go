@@ -1306,44 +1306,35 @@ func normalizeLiteral(lit string, thousands, decimal byte) string {
 }
 
 func detectFormat(lit string) ast.QuantityFormat {
-	var separators []int
+	var seps []int
 	for i, ch := range []byte(lit) {
 		if ch == '.' || ch == ',' || ch == ' ' || ch == '_' || ch == '\'' {
-			separators = append(separators, i)
+			seps = append(seps, i)
 		}
 	}
 
-	if len(separators) == 0 {
+	if len(seps) == 0 {
 		return ast.QuantityFormat{Decimal: '.', Thousands: 0, Precision: 0}
 	}
 
-	var decimal byte
-	thousands := byte(0)
-	precision := 0
-
-	if len(separators) == 1 {
-		pos := separators[0]
-		sepChar := lit[pos]
-		if sepChar == ' ' || sepChar == '_' || sepChar == '\'' {
-			thousands = sepChar
-			decimal = '.' // default
-			precision = 0
-		} else {
-			decimal = sepChar
-			precision = len(lit) - pos - 1
-		}
-	} else {
-		last := separators[len(separators)-1]
-		decimal = lit[last]
-		thousands = lit[separators[0]]
-		precision = len(lit) - last - 1
+	last := seps[len(seps)-1]
+	dec := lit[last]
+	var thou byte
+	if len(seps) > 1 {
+		thou = lit[seps[0]]
+	} else if dec == ' ' || dec == '_' || dec == '\'' {
+		// single space/underscore/apostrophe is always thousands
+		thou = dec
+		dec = '.'
 	}
 
-	return ast.QuantityFormat{
-		Decimal:   decimal,
-		Thousands: thousands,
-		Precision: precision,
+	// calculate precision when the last separator is a real decimal
+	prec := 0
+	if thou == 0 || len(seps) > 1 {
+		prec = len(lit) - last - 1
 	}
+
+	return ast.QuantityFormat{Decimal: dec, Thousands: thou, Precision: prec}
 }
 
 func parseSimpleDate(s string) ast.Date {
