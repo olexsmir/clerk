@@ -128,7 +128,7 @@ func dumpTransaction(b *strings.Builder, t *Transaction, depth int) {
 		indent(b, depth+1)
 		fmt.Fprintf(b, "SecondDate: %s\n", dumpDate(*t.SecondDate))
 	}
-	if t.Status != nil {
+	if t.Status.Value != StatusNone {
 		indent(b, depth+1)
 		fmt.Fprintf(b, "State: %q\n", t.Status.Value)
 	}
@@ -188,7 +188,7 @@ func dumpPeriodicTransaction(b *strings.Builder, t *PeriodicTransaction, depth i
 		indent(b, depth+1)
 		fmt.Fprintf(b, "To: %s\n", dumpDate(*t.Period.To))
 	}
-	if t.Status != nil {
+	if t.Status.Value != StatusNone {
 		indent(b, depth+1)
 		fmt.Fprintf(b, "Status: %q\n", t.Status.Value)
 	}
@@ -220,7 +220,7 @@ func dumpPosting(b *strings.Builder, p *Posting, depth int) {
 		indent(b, depth+1)
 		fmt.Fprintf(b, "Type: %s\n", p.Type)
 	}
-	if p.Status != nil {
+	if p.Status.Value != StatusNone {
 		indent(b, depth+1)
 		fmt.Fprintf(b, "Status: %q\n", p.Status.Value)
 	}

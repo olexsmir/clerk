@@ -29,4 +29,5 @@ var Rules = []Rule{
 	&EmptyPostings{},
 	&OmittedPrecision{},
 	&MissingCommodity{},
+	&MissingStatus{},
 }

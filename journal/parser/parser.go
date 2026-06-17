@@ -752,18 +752,23 @@ func (p *Parser) parseCommentBlockDirective() *ast.CommentBlockDirective {
 	}
 }
 
-func (p *Parser) parseStatus() *ast.Status {
-	if p.got(token.STAR) || p.got(token.BANG) {
-		status := ast.StatusPending
-		if p.cur.Literal[0] == '*' {
-			status = ast.StatusCleared
-		}
-		st := &ast.Status{Value: status, Span: p.cur.Span}
+func (p *Parser) parseStatus() ast.Status {
+	s := p.cur.Span
+	st := ast.Status{}
+	switch p.cur.Type {
+	case token.STAR:
 		p.advance()
 		p.skipWhitespace()
-		return st
+		st.Value = ast.StatusCleared
+	case token.BANG:
+		p.advance()
+		p.skipWhitespace()
+		st.Value = ast.StatusPending
+	default:
+		st.Value = ast.StatusNone
 	}
-	return nil
+	st.Span = p.span(s)
+	return st
 }
 
 func (p *Parser) isAmountStart() bool {

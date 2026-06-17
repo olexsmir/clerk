@@ -62,7 +62,7 @@ func (p *printer) writePostingsTabbed(postings []*ast.Posting, maxAcct int) {
 func (p *printer) writePostingLine(pt *ast.Posting, maxAcct int) {
 	p.buf.WriteString(p.indent)
 
-	if pt.Status != nil && pt.Status.Value != ast.StatusNone {
+	if pt.Status.Value != ast.StatusNone {
 		p.buf.WriteString(pt.Status.Value.String())
 		p.buf.WriteByte(' ')
 	}
@@ -82,7 +82,7 @@ func (p *printer) writePostingLine(pt *ast.Posting, maxAcct int) {
 			p.buf.WriteString("  ")
 		case AlignRight:
 			current := len(p.indent) + len(acct)
-			if pt.Status != nil && pt.Status.Value != ast.StatusNone {
+			if pt.Status.Value != ast.StatusNone {
 				current++
 			}
 			if pad := p.cfg.AlignColumn - current; pad > 0 {
@@ -91,7 +91,7 @@ func (p *printer) writePostingLine(pt *ast.Posting, maxAcct int) {
 			p.buf.WriteByte('\v')
 		case AlignTab:
 			current := len(p.indent) + len(acct)
-			if pt.Status != nil && pt.Status.Value != ast.StatusNone {
+			if pt.Status.Value != ast.StatusNone {
 				current++
 			}
 			if pad := maxAcct + len(p.indent) - current; pad > 0 {

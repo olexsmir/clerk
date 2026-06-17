@@ -15,7 +15,7 @@ func (p *printer) writeTransaction(t *ast.Transaction) {
 	}
 
 	// status
-	if t.Status != nil && t.Status.Value != ast.StatusNone {
+	if t.Status.Value != ast.StatusNone {
 		p.buf.WriteByte(' ')
 		p.buf.WriteString(t.Status.Value.String())
 	}
@@ -63,7 +63,7 @@ func (p *printer) writePeriodicTransaction(t *ast.PeriodicTransaction) {
 	}
 
 	// status
-	if t.Status != nil && t.Status.Value != ast.StatusNone {
+	if t.Status.Value != ast.StatusNone {
 		p.buf.WriteByte(' ')
 		p.buf.WriteString(t.Status.Value.String())
 	}

@@ -2,6 +2,7 @@ Journal
   BlankLine j:2:0-2:1
   PeriodicTransaction j:2:1-2:3
     Period: "monthly"
+    Status: "*"
     Posting j:3:1-4:1
       Account j:3:5-3:18
         SubAccount: "expenses" j:3:5-3:13
@@ -24,6 +25,7 @@ Journal
     Period: "monthly from 2023-04-15 to 2023-06-16"
     From: 2023-04-15
     To: 2023-06-16
+    Status: "*"
     Posting j:7:1-8:1
       Account j:7:5-7:23
         SubAccount: "expenses" j:7:5-7:13
@@ -44,6 +46,7 @@ Journal
   BlankLine j:10:0-10:1
   PeriodicTransaction j:10:1-10:3
     Period: "every 2 months"
+    Status: "*"
     Description: "in 2023, we will review"
     Posting j:11:1-12:1
       Account j:11:5-11:23
@@ -65,6 +68,7 @@ Journal
   BlankLine j:14:0-14:1
   PeriodicTransaction j:14:1-14:3
     Period: "monthly"
+    Status: "*"
     Description: "Next year blah blah"
     Posting j:15:1-16:1
       Account j:15:5-15:18
@@ -85,6 +89,7 @@ Journal
   BlankLine j:18:0-18:1
   PeriodicTransaction j:18:1-18:3
     Period: "monthly from 2018/6"
+    Status: "*"
     Comment j:18:23-19:0
       Marker: ";"
       Text: "In 2019 we will change this"

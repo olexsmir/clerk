@@ -11,11 +11,11 @@ func (BlankLine) entryNode() {}
 
 type Transaction struct {
 	Date           Date
-	SecondDate     *Date      // optional =2026-05-18 date
-	Status         *Status    // optional */! status
-	Code           *string    // optional (123) code
-	Payee          *Payee     // optional payee
-	Note           *string    // part after |
+	SecondDate     *Date    // optional =2026-05-18 date
+	Status         Status   // optional */! status
+	Code           *string  // optional (123) code
+	Payee          *Payee   // optional payee
+	Note           *string  // part after |
 	Comment        *Comment   // inline ; on header line
 	HeaderComments []*Comment // indented ; lines before first posting
 	Postings       []*Posting
@@ -35,7 +35,7 @@ func (Period) entryNode() {}
 
 type PeriodicTransaction struct {
 	Period         Period   // period-expr
-	Status         *Status  // optional */! status
+	Status         Status   // optional */! status
 	Code           *string  // optional (123) code
 	Description    *string  // optional description
 	Comment        *Comment // optional inline comment
@@ -79,7 +79,7 @@ func (p PostingType) String() string {
 
 type Posting struct {
 	Type     PostingType
-	Status   *Status
+	Status   Status
 	Account  Account
 	Amount   *Amount // nil == auto-balancing
 	Cost     *Cost   // @ @@

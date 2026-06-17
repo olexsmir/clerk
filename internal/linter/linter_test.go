@@ -14,6 +14,7 @@ var tests = map[string][]Rule{
 	"parse-error":       {&ParseError{}},
 	"omitted-precision": {&OmittedPrecision{}},
 	"missing-commodity": {&MissingCommodity{}},
+	"missing-status":    {&MissingStatus{}},
 }
 
 func TestLinter(t *testing.T) {
