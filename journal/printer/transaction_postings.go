@@ -104,9 +104,9 @@ func (p *printer) writePostingLine(pt *ast.Posting, maxAcct int) {
 	}
 
 	if pt.Amount != nil {
-		p.writeAmount(pt.Amount, p.cfg.CommodityPos)
+		p.writeAmount(pt.Amount)
 		if pt.Cost != nil {
-			p.writeCost(pt.Cost, p.cfg.CommodityPos)
+			p.writeCost(pt.Cost)
 		}
 	}
 
@@ -114,7 +114,7 @@ func (p *printer) writePostingLine(pt *ast.Posting, maxAcct int) {
 		if pt.Amount != nil {
 			p.buf.WriteByte(' ')
 		}
-		p.writeBalanceAssertion(pt.Balance, p.cfg.CommodityPos)
+		p.writeBalanceAssertion(pt.Balance)
 	}
 
 	if pt.Comment != nil && pt.Comment.Text != "" {

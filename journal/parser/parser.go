@@ -952,10 +952,6 @@ func (p *Parser) parsePosting() *ast.Posting {
 	}
 	if p.got(token.EQ) || p.got(token.EQEQ) || p.got(token.EQEQEQ) {
 		posting.Balance = p.parseBalanceAssertion()
-		p.skipWhitespace()
-		if p.got(token.AT) || p.got(token.ATAT) {
-			p.parseCost()
-		}
 	}
 
 	posting.Comment = p.parseOptInlineComment()
@@ -1000,6 +996,11 @@ func (p *Parser) parseBalanceAssertion() *ast.BalanceAssertion {
 	p.skipWhitespace()
 
 	ba.Amount = *p.parseAmount()
+	p.skipWhitespace()
+	if p.got(token.AT) || p.got(token.ATAT) {
+		c := p.parseCost()
+		ba.Cost = c
+	}
 	ba.Span = p.span(s)
 	return ba
 }

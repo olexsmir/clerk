@@ -292,6 +292,9 @@ func dumpBalanceAssertion(b *strings.Builder, ba *BalanceAssertion, depth int) {
 	indent(b, depth+1)
 	fmt.Fprintf(b, "IsInclusive: %v\n", ba.IsInclusive)
 	dumpAmount(b, &ba.Amount, depth+1)
+	if ba.Cost != nil {
+		dumpCost(b, ba.Cost, depth+1)
+	}
 }
 
 func dumpAccount(b *strings.Builder, a Account, depth int) {

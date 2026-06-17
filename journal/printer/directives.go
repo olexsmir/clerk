@@ -59,15 +59,15 @@ func (p *printer) writeDecimalMarkDirective(d *ast.DecimalMarkDirective) {
 
 func (p *printer) writeDefaultCommodityDirective(d *ast.DefaultCommodityDirective) {
 	p.buf.WriteString("D ")
-	p.writeAmount(&d.Amount, p.cfg.CommodityPos)
+	p.writeAmount(&d.Amount)
 	p.writeInlineComment(d.Comment)
 }
 
 func (p *printer) writeConversionDirective(c *ast.ConversionDirective) {
 	p.buf.WriteString("C ")
-	p.writeAmount(&c.From, p.cfg.CommodityPos)
+	p.writeAmount(&c.From)
 	p.buf.WriteString(" = ")
-	p.writeAmount(&c.To, p.cfg.CommodityPos)
+	p.writeAmount(&c.To)
 	p.writeInlineComment(c.Comment)
 }
 
@@ -78,7 +78,7 @@ func (p *printer) writeMarketPriceDirective(m *ast.MarketPriceDirective) {
 	p.buf.WriteByte(' ')
 	p.buf.WriteString(m.Commodity)
 	p.buf.WriteByte(' ')
-	p.writeAmount(&m.Amount, p.cfg.CommodityPos)
+	p.writeAmount(&m.Amount)
 	p.writeInlineComment(m.Comment)
 }
 

@@ -111,6 +111,7 @@ type BalanceAssertion struct {
 	IsStrict    bool // ==  vs =
 	IsInclusive bool // ===
 	Amount      Amount
+	Cost        *Cost // price after @/@@
 	Span        token.Span
 }
 

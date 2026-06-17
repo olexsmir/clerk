@@ -5,7 +5,7 @@ import (
 	"olexsmir.xyz/clerk/journal/ast"
 )
 
-func (p *printer) writeAmount(a *ast.Amount, pos CommodityPos) {
+func (p *printer) writeAmount(a *ast.Amount) {
 	if a == nil {
 		return
 	}
@@ -15,10 +15,7 @@ func (p *printer) writeAmount(a *ast.Amount, pos CommodityPos) {
 		return
 	}
 
-	prec := a.QuantityFmt.Precision
-	if prec < 2 {
-		prec = 2
-	}
+	prec := max(a.QuantityFmt.Precision, 2)
 
 	comm := a.Commodity
 	if comm == "" {
@@ -26,7 +23,7 @@ func (p *printer) writeAmount(a *ast.Amount, pos CommodityPos) {
 		return
 	}
 
-	switch pos {
+	switch p.cfg.CommodityPos {
 	case CommodityBefore:
 		p.buf.WriteString(comm)
 		if a.HasSpace {
@@ -44,19 +41,16 @@ func (p *printer) writeAmount(a *ast.Amount, pos CommodityPos) {
 	}
 }
 
-func (p *printer) writeCost(c *ast.Cost, pos CommodityPos) {
-	if c == nil {
-		return
-	}
+func (p *printer) writeCost(c *ast.Cost) {
 	if c.IsTotal {
 		p.buf.WriteString(" @@ ")
 	} else {
 		p.buf.WriteString(" @ ")
 	}
-	p.writeAmount(&c.Amount, pos)
+	p.writeAmount(&c.Amount)
 }
 
-func (p *printer) writeBalanceAssertion(ba *ast.BalanceAssertion, pos CommodityPos) {
+func (p *printer) writeBalanceAssertion(ba *ast.BalanceAssertion) {
 	if ba == nil {
 		return
 	}
@@ -68,7 +62,10 @@ func (p *printer) writeBalanceAssertion(ba *ast.BalanceAssertion, pos CommodityP
 	default:
 		p.buf.WriteString("= ")
 	}
-	p.writeAmount(&ba.Amount, pos)
+	p.writeAmount(&ba.Amount)
+	if ba.Cost != nil {
+		p.writeCost(ba.Cost)
+	}
 }
 
 func (p *printer) writeDecimal(d decimal.Decimal, fmt ast.QuantityFormat, forcePrec int) {
