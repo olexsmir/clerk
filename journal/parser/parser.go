@@ -138,7 +138,7 @@ func (p *Parser) parseTransaction() *ast.Transaction {
 			p.advance()
 		}
 		tx.Code = new(code.String())
-		p.advance() // TODO: why?
+		p.advance()
 		p.skipWhitespace()
 	}
 
@@ -772,8 +772,6 @@ func (p *Parser) isAmountStart() bool {
 		return false
 	case token.COMMODITYMARK, token.STRING, token.INT, token.DECIMAL, token.MINUS, token.PLUS, token.PARENEXPR:
 		return true
-	case token.TEXT:
-		return len(p.cur.Literal) > 0 && p.cur.Literal[0] >= '0' && p.cur.Literal[0] <= '9'
 	}
 }
 
@@ -1128,7 +1126,7 @@ func (p *Parser) parseDate() ast.Date {
 }
 
 func (p *Parser) parseOptInlineComment() *ast.Comment {
-	p.skipWhitespace() // todo:
+	p.skipWhitespace()
 	if p.cur.Type != token.SEMICOLON {
 		return nil
 	}
