@@ -13,7 +13,6 @@ type AccountDepthLimit struct {
 
 func (AccountDepthLimit) ID() RuleID          { return "account-depth" }
 func (AccountDepthLimit) Severity() Severity  { return SeverityWarning }
-func (AccountDepthLimit) Description() string { return "account name depth exceeds limit" }
 func (a *AccountDepthLimit) CheckEntry(entry ast.Entry) []Find {
 	var finds []Find
 	switch e := entry.(type) {

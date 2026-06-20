@@ -8,19 +8,18 @@ type RuleID string
 type Rule interface {
 	ID() RuleID
 	Severity() Severity
-	Description() string
 }
 
 // EntryChecker implements pre entry linting during.
 type EntryChecker interface {
-	CheckEntry(entry ast.Entry) []Find
 	Rule
+	CheckEntry(entry ast.Entry) []Find
 }
 
 // JournalChecker implements whole journal linting.
 type JournalChecker interface {
-	CheckJournal(journal *ast.Journal) []Find
 	Rule
+	CheckJournal(journal *ast.Journal) []Find
 }
 
 // Rules is list of all available rules.

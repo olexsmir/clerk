@@ -5,9 +5,8 @@ import "olexsmir.xyz/clerk/journal/ast"
 // OmittedPrecision flags amounts with insufficient decimal precision (<2 digits).
 type OmittedPrecision struct{}
 
-func (OmittedPrecision) ID() RuleID          { return "omitted-precision" }
-func (OmittedPrecision) Severity() Severity  { return SeverityWarning }
-func (OmittedPrecision) Description() string { return "amount has insufficient precision" }
+func (OmittedPrecision) ID() RuleID         { return "omitted-precision" }
+func (OmittedPrecision) Severity() Severity { return SeverityWarning }
 func (o *OmittedPrecision) CheckEntry(entry ast.Entry) []Find {
 	txn, ok := entry.(*ast.Transaction)
 	if !ok || (txn.Postings != nil && len(txn.Postings) == 0) {
@@ -23,7 +22,7 @@ func (o *OmittedPrecision) CheckEntry(entry ast.Entry) []Find {
 			finds = append(finds, Find{
 				Code:     o.ID(),
 				Severity: o.Severity(),
-				Message:  o.Description(),
+				Message:  "amount has insufficient precision",
 				Span:     posting.Amount.Span,
 			})
 		}

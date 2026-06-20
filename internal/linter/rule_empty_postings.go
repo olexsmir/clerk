@@ -7,7 +7,6 @@ type EmptyPostings struct{}
 
 func (EmptyPostings) ID() RuleID          { return "empty-postings" }
 func (EmptyPostings) Severity() Severity  { return SeverityError }
-func (EmptyPostings) Description() string { return "transaction has no postings" }
 func (e *EmptyPostings) CheckEntry(entry ast.Entry) []Find {
 	txn, ok := entry.(*ast.Transaction)
 	if !ok {
@@ -17,7 +16,7 @@ func (e *EmptyPostings) CheckEntry(entry ast.Entry) []Find {
 		return []Find{{
 			Code:     e.ID(),
 			Severity: e.Severity(),
-			Message:  e.Description(),
+			Message:  "transaction has no postings",
 			Span:     txn.Span,
 		}}
 	}
