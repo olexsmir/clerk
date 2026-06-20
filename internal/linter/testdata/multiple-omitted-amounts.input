@@ -1,0 +1,23 @@
+2025-01-01 "two omitted amounts"
+    Expenses:Food
+    Expenses:Fun
+    Assets:Cash  100 USD
+
+2025-01-02 "three omitted amounts"
+    Expenses:Food
+    Expenses:Fun
+    Expenses:Play
+    Assets:Cash  100 USD
+    Equity:Opening-Balances
+
+2025-01-03 "one omitted amount (ok)"
+    Expenses:Food  50 USD
+    Assets:Cash
+
+2025-01-04 "all have amounts (ok)"
+    Expenses:Food  50 USD
+    Assets:Cash  50 USD
+
+2025-01-05 * reconcile or some s..stuff
+  Assets:Bank  = 1.69 UAH
+  Assets:Cash  = 2.00 UAH

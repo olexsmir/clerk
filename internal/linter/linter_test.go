@@ -9,13 +9,14 @@ import (
 )
 
 var tests = map[string][]Rule{
-	"correct":           Rules,
-	"empty-postings":    {&EmptyPostings{}},
-	"parse-error":       {&ParseError{}},
-	"omitted-precision": {&OmittedPrecision{}},
-	"missing-commodity": {&MissingCommodity{}},
-	"missing-status":    {&MissingStatus{}},
-	"account-depth":     {&AccountDepthLimit{MaxDepth: 3}},
+	"correct":                  Rules,
+	"empty-postings":           {&EmptyPostings{}},
+	"parse-error":              {&ParseError{}},
+	"omitted-precision":        {&OmittedPrecision{}},
+	"missing-commodity":        {&MissingCommodity{}},
+	"missing-status":           {&MissingStatus{}},
+	"account-depth":            {&AccountDepthLimit{MaxDepth: 3}},
+	"multiple-omitted-amounts": {&MultipleOmittedAmounts{}},
 }
 
 func TestLinter(t *testing.T) {

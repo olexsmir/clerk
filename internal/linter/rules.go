@@ -30,4 +30,5 @@ var Rules = []Rule{
 	&MissingCommodity{},
 	&MissingStatus{},
 	&AccountDepthLimit{MaxDepth: 4},
+	&MultipleOmittedAmounts{},
 }
