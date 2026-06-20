@@ -2,6 +2,7 @@ package linter
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -50,6 +51,33 @@ func FprintJSON(w io.Writer, style PathStyle, finds []Find) error {
 		}
 	}
 	return json.NewEncoder(w).Encode(jsonFinds)
+}
+
+// Reporter collects lint findings across files and flushes them in the desired format.
+type Reporter struct {
+	w     io.Writer
+	finds []Find
+	style PathStyle
+}
+
+func NewReporter(w io.Writer, style PathStyle) *Reporter {
+	return &Reporter{w: w, style: style}
+}
+
+func (r *Reporter) Collect(finds []Find) {
+	r.finds = append(r.finds, finds...)
+}
+
+func (r *Reporter) Flush(format string) error {
+	switch format {
+	case "json":
+		return FprintJSON(r.w, r.style, r.finds)
+	case "text":
+		Fprint(r.w, r.style, r.finds)
+		return nil
+	default:
+		return errors.New("unsupported format")
+	}
 }
 
 func formatPath(style PathStyle, p string) string {

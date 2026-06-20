@@ -24,11 +24,13 @@ func runLint(args []string) {
 
 	style := parsePathStyle(*pathStyle)
 	l := linter.NewLinter(linter.Rules)
+	reporter := linter.NewReporter(os.Stdout, style)
 	paths := fs.Args()
 
 	if len(paths) == 0 {
 		finds := lintStdin(l)
-		report(finds, *format, style)
+		reporter.Collect(finds)
+		reporter.Flush(*format)
 		if hasFatal(finds) {
 			os.Exit(1)
 		}
@@ -48,7 +50,8 @@ func runLint(args []string) {
 				if err != nil || finfo.IsDir() || !journal.IsJournalFile(fpath) {
 					return nil
 				}
-				fatal := lintFileAndReport(l, fpath, *format, style)
+				finds, fatal := lintFile(l, fpath)
+				reporter.Collect(finds)
 				if fatal {
 					exitCode = 1
 				}
@@ -56,28 +59,29 @@ func runLint(args []string) {
 			})
 			continue
 		}
-		if lintFileAndReport(l, path, *format, style) {
+		finds, fatal := lintFile(l, path)
+		reporter.Collect(finds)
+		if fatal {
 			exitCode = 1
 		}
 	}
+	reporter.Flush(*format)
 	os.Exit(exitCode)
 }
 
-// lintFileAndReport reads, lints, reports, and returns whether a fatal finding was found.
-func lintFileAndReport(l *linter.Linter, path, format string, style linter.PathStyle) bool {
+func lintFile(l *linter.Linter, path string) ([]linter.Find, bool) {
 	src, err := os.ReadFile(path)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %s: %v\n", path, err)
-		return true
+		return nil, true
 	}
 	pf, err := journal.NewLoader().LoadBytes(path, src)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %s: %v\n", path, err)
-		return true
+		return nil, true
 	}
 	finds := l.Run(pf.Ast)
-	report(finds, format, style)
-	return hasFatal(finds)
+	return finds, hasFatal(finds)
 }
 
 func lintStdin(l *linter.Linter) []linter.Find {
@@ -92,15 +96,6 @@ func lintStdin(l *linter.Linter) []linter.Find {
 		os.Exit(1)
 	}
 	return l.Run(pf.Ast)
-}
-
-func report(finds []linter.Find, format string, style linter.PathStyle) {
-	switch format {
-	case "json":
-		linter.FprintJSON(os.Stdout, style, finds)
-	default:
-		linter.Fprint(os.Stdout, style, finds)
-	}
 }
 
 func hasFatal(finds []linter.Find) bool {
