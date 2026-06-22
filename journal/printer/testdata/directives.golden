@@ -1,10 +1,16 @@
 ; Directives
 account Assets:Cash  ; cash account
 commodity $
-include 
+commodity UAH
+commodity 1000.00 USD
+commodity $1000.00
+commodity 1,000.00 UAH
+include ./other.journal
+include ../one../another.journal
 alias Assets:Checking = Assets:Cash
 payee "Test Payee"
-tag 
+tag important
+tag something-else
 year 2026
 decimal-mark ,
 

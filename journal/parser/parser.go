@@ -496,6 +496,9 @@ func (p *Parser) parseTagDirective() *ast.TagDirective {
 	if p.got(token.TEXT) {
 		name = p.cur.Literal
 		p.advance()
+	} else if p.got(token.STRING) {
+		name = unquote(p.cur.Literal)
+		p.advance()
 	}
 
 	comment := p.parseOptInlineComment()

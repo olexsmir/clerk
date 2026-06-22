@@ -21,7 +21,26 @@ func (p *printer) writeAccountDirective(a *ast.AccountDirective) {
 
 func (p *printer) writeCommodityDirective(c *ast.CommodityDirective) {
 	p.buf.WriteString("commodity ")
-	p.buf.WriteString(c.Commodity)
+	if c.Format.Quantity.IsZero() {
+		p.buf.WriteString(c.Commodity)
+		p.writeInlineComment(c.Comment)
+		return
+	}
+	prec := max(c.Format.QuantityFmt.Precision, 2)
+	switch c.Format.CommodityPos {
+	case ast.CommodityBefore:
+		p.buf.WriteString(c.Format.Commodity)
+		if c.Format.HasSpace {
+			p.buf.WriteByte(' ')
+		}
+		p.writeDecimal(c.Format.Quantity, c.Format.QuantityFmt, prec)
+	case ast.CommodityAfter:
+		p.writeDecimal(c.Format.Quantity, c.Format.QuantityFmt, prec)
+		if c.Format.HasSpace {
+			p.buf.WriteByte(' ')
+		}
+		p.buf.WriteString(c.Format.Commodity)
+	}
 	p.writeInlineComment(c.Comment)
 }
 
