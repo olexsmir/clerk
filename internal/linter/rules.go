@@ -33,4 +33,5 @@ var Rules = []Rule{
 	&MultipleOmittedAmounts{},
 	&OrderDate{},
 	&DuplicatedAccount{},
+	&DuplicatedCommodity{},
 }

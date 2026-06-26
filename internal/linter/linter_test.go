@@ -19,6 +19,7 @@ var tests = map[string][]Rule{
 	"multiple-omitted-amounts": {&MultipleOmittedAmounts{}},
 	"orderdate":                {&OrderDate{}},
 	"duplicated-account":       {&DuplicatedAccount{}},
+	"duplicated-commodity":     {&DuplicatedCommodity{}},
 }
 
 func TestLinter(t *testing.T) {
