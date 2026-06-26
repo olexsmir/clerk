@@ -1,0 +1,20 @@
+files (2):
+  0: include0.journal
+  1: include1.journal
+
+commodities (1):
+  $
+    directives: 0
+    usages: 1
+      file 1: $ ("10")
+
+accounts (2):
+  assets:checking
+    directives: 0
+    usages: 1
+      file 1: assets:checking
+  expenses:food
+    directives: 1
+      account expenses:food
+    usages: 1
+      file 1: expenses:food

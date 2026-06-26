@@ -1,0 +1,27 @@
+account expenses:food
+account expenses:food
+account expenses:transport
+
+commodity $
+commodity $
+commodity EUR
+
+~ monthly
+    expenses:transport  $50
+    assets:checking
+
+= expr:big
+    expenses:food  $100
+    assets:credit
+
+2024/01/01 groceries
+    expenses:food  $10
+    assets:checking
+
+2024/01/02 lunch
+    expenses:food  $5
+    assets:cash
+
+2024/01/04 aws
+    expenses:food  1000000.00 USD
+    assets:cash
