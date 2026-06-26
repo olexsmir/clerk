@@ -32,4 +32,5 @@ var Rules = []Rule{
 	&AccountDepthLimit{MaxDepth: 4},
 	&MultipleOmittedAmounts{},
 	&OrderDate{},
+	&DuplicatedAccount{},
 }
