@@ -20,6 +20,7 @@ var tests = map[string][]Rule{
 	"orderdate":                {&OrderDate{}},
 	"duplicated-account":       {&DuplicatedAccount{}},
 	"duplicated-commodity":     {&DuplicatedCommodity{}},
+	"undeclared-account":       {&UndeclaredAccount{}},
 }
 
 func TestLinter(t *testing.T) {

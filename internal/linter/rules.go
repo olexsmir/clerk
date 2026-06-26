@@ -34,4 +34,5 @@ var Rules = []Rule{
 	&OrderDate{},
 	&DuplicatedAccount{},
 	&DuplicatedCommodity{},
+	&UndeclaredAccount{},
 }
