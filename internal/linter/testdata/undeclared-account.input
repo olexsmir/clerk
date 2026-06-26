@@ -7,5 +7,3 @@ account Expenses:Food
 2026-01-16 * "Dinner"
   Expenses:Food      $15
   Assets:Cash
-
-account Assets:Cash

@@ -10,6 +10,7 @@ import (
 
 	"olexsmir.xyz/clerk/internal/linter"
 	"olexsmir.xyz/clerk/journal"
+	"olexsmir.xyz/clerk/journal/semantic"
 )
 
 func runLint(args []string) {
@@ -80,7 +81,9 @@ func lintFile(l *linter.Linter, path string) ([]linter.Find, bool) {
 		fmt.Fprintf(os.Stderr, "error: %s: %v\n", path, err)
 		return nil, true
 	}
-	finds := l.Run(pf.Ast)
+	_ = pf // top-level file kept via ldr, not directly needed
+	ctx := semantic.Build(ldr.Ordered())
+	finds := l.Run(ctx)
 	return finds, hasFatal(finds)
 }
 
@@ -95,7 +98,8 @@ func lintStdin(l *linter.Linter) []linter.Find {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
 	}
-	return l.Run(pf.Ast)
+	ctx := semantic.Build(ldr.Ordered())
+	return l.Run(ctx)
 }
 
 func hasFatal(finds []linter.Find) bool {

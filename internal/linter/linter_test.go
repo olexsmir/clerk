@@ -6,6 +6,7 @@ import (
 
 	"olexsmir.xyz/clerk/internal/testutil/golden"
 	"olexsmir.xyz/clerk/journal"
+	"olexsmir.xyz/clerk/journal/semantic"
 )
 
 var tests = map[string][]Rule{
@@ -32,7 +33,8 @@ func TestLinter(t *testing.T) {
 				t.Fatalf("failed to load test journal: %v\n", err)
 			}
 
-			finds := NewLinter(trules).Run(pf.Ast)
+			ctx := semantic.Build([]*journal.ParsedFile{pf})
+			finds := NewLinter(trules).Run(ctx)
 
 			var b strings.Builder
 			Fprint(&b, PathBasename, finds)
@@ -42,17 +44,20 @@ func TestLinter(t *testing.T) {
 }
 
 func BenchmarkLinter(b *testing.B) {
-	pf, err := journal.NewLoader().Load(
+	ldr := journal.NewLoader()
+	_, err := ldr.Load(
 		"../../journal/testdata/journals/actual-1ktxns-100accts.journal",
 	)
 	if err != nil {
 		b.Fatalf("failed to load benchmark journal: %v", err)
 	}
+
+	ctx := semantic.Build(ldr.Ordered())
 	l := NewLinter(Rules)
 
 	b.ResetTimer()
 	b.ReportAllocs()
 	for b.Loop() {
-		l.Run(pf.Ast)
+		l.Run(ctx)
 	}
 }

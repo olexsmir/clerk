@@ -1,2 +1,4 @@
+duplicated-account.journal:1:9: duplicated-account: duplicated account declaration: Expenses:Food
 duplicated-account.journal:4:9: duplicated-account: duplicated account declaration: Expenses:Food
+duplicated-account.journal:2:9: duplicated-account: duplicated account declaration: Expenses:Transport
 duplicated-account.journal:6:9: duplicated-account: duplicated account declaration: Expenses:Transport

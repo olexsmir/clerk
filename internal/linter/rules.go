@@ -1,6 +1,10 @@
 package linter
 
-import "olexsmir.xyz/clerk/journal/ast"
+import (
+	"olexsmir.xyz/clerk/journal/ast"
+
+	"olexsmir.xyz/clerk/journal/semantic"
+)
 
 type RuleID string
 
@@ -10,16 +14,16 @@ type Rule interface {
 	Severity() Severity
 }
 
-// EntryChecker implements pre entry linting during.
+// EntryChecker implements per-entry linting.
 type EntryChecker interface {
 	Rule
 	CheckEntry(entry ast.Entry) []Find
 }
 
-// JournalChecker implements whole journal linting.
+// JournalChecker implements whole-journal linting using the semantic context.
 type JournalChecker interface {
 	Rule
-	CheckJournal(journal *ast.Journal) []Find
+	CheckJournal(ctx *semantic.Context) []Find
 }
 
 // Rules is list of all available rules.
