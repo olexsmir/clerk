@@ -1,0 +1,4 @@
+orderdate.journal:5:1: orderdate: transaction is out of chronological order (date 2026-01-10 before 2026-01-15)
+orderdate.journal:9:1: orderdate: transaction is out of chronological order (date 2026-01-12 before 2026-01-15)
+orderdate.journal:17:1: orderdate: transaction is out of chronological order (date 2026-01-20 before 2026-02-01)
+orderdate.journal:25:1: orderdate: transaction is out of chronological order (date 2025-12-01 before 2026-03-01)

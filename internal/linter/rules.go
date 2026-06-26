@@ -31,4 +31,5 @@ var Rules = []Rule{
 	&MissingStatus{},
 	&AccountDepthLimit{MaxDepth: 4},
 	&MultipleOmittedAmounts{},
+	&OrderDate{},
 }

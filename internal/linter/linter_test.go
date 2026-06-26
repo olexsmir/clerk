@@ -17,6 +17,7 @@ var tests = map[string][]Rule{
 	"missing-status":           {&MissingStatus{}},
 	"account-depth":            {&AccountDepthLimit{MaxDepth: 3}},
 	"multiple-omitted-amounts": {&MultipleOmittedAmounts{}},
+	"orderdate":                {&OrderDate{}},
 }
 
 func TestLinter(t *testing.T) {
