@@ -21,6 +21,7 @@ var tests = map[string][]Rule{
 	"orderdate":                {&OrderDate{}},
 	"duplicated-account":       {&DuplicatedAccount{}},
 	"duplicated-commodity":     {&DuplicatedCommodity{}},
+	"undeclared-commodity":     {&UndeclaredCommodity{}},
 	"undeclared-account":       {&UndeclaredAccount{}},
 }
 

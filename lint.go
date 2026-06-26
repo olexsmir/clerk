@@ -47,17 +47,7 @@ func runLint(args []string) {
 			continue
 		}
 		if info.IsDir() {
-			filepath.Walk(path, func(fpath string, finfo os.FileInfo, err error) error {
-				if err != nil || finfo.IsDir() || !journal.IsJournalFile(fpath) {
-					return nil
-				}
-				finds, fatal := lintFile(l, fpath)
-				reporter.Collect(finds)
-				if fatal {
-					exitCode = 1
-				}
-				return nil
-			})
+			exitCode = lintDir(l, reporter, path)
 			continue
 		}
 		finds, fatal := lintFile(l, path)
@@ -70,13 +60,52 @@ func runLint(args []string) {
 	os.Exit(exitCode)
 }
 
+func lintDir(l *linter.Linter, reporter *linter.Reporter, dir string) int {
+	ldr := journal.NewLoader()
+	var paths []string
+	filepath.Walk(dir, func(fpath string, finfo os.FileInfo, err error) error {
+		if err != nil || finfo.IsDir() || !journal.IsJournalFile(fpath) {
+			return nil
+		}
+		paths = append(paths, fpath)
+		return nil
+	})
+	if len(paths) == 0 {
+		return 0
+	}
+	var lastErr error
+	for _, fpath := range paths {
+		src, err := os.ReadFile(fpath)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error: %s: %v\n", fpath, err)
+			lastErr = err
+			continue
+		}
+		if _, err := ldr.LoadBytes(fpath, src); err != nil {
+			fmt.Fprintf(os.Stderr, "error: %s: %v\n", fpath, err)
+			lastErr = err
+		}
+	}
+	ctx := semantic.Build(ldr.Ordered())
+	finds := l.Run(ctx)
+	reporter.Collect(finds)
+	if lastErr != nil {
+		return 1
+	}
+	if hasFatal(finds) {
+		return 1
+	}
+	return 0
+}
+
 func lintFile(l *linter.Linter, path string) ([]linter.Find, bool) {
 	src, err := os.ReadFile(path)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %s: %v\n", path, err)
 		return nil, true
 	}
-	pf, err := journal.NewLoader().LoadBytes(path, src)
+	ldr := journal.NewLoader()
+	pf, err := ldr.LoadBytes(path, src)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %s: %v\n", path, err)
 		return nil, true
@@ -93,7 +122,8 @@ func lintStdin(l *linter.Linter) []linter.Find {
 		fmt.Fprintf(os.Stderr, "error reading stdin: %v\n", err)
 		os.Exit(1)
 	}
-	pf, err := journal.NewLoader().LoadBytes("stdin", src)
+	ldr := journal.NewLoader()
+	_, err = ldr.LoadBytes("stdin", src)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
