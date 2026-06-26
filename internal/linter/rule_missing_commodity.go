@@ -20,7 +20,9 @@ func (m *MissingCommodity) CheckEntry(entry ast.Entry) []Find {
 		m.check(&finds, e.From)
 		m.check(&finds, e.To)
 	case *ast.CommodityDirective:
-		m.check(&finds, e.Format)
+		if e.Format.Commodity != "" {
+			m.check(&finds, e.Format)
+		}
 	case *ast.DefaultCommodityDirective:
 		m.check(&finds, e.Amount)
 	case *ast.MarketPriceDirective:
