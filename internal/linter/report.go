@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
 )
 
 // PathStyle controls how file paths are shown in output.
@@ -20,6 +21,7 @@ const (
 
 // Fprint writes finds in text format: file:line:col code: message.
 func Fprint(w io.Writer, style PathStyle, finds []Find) {
+	sortFinds(finds)
 	for _, find := range finds {
 		fmt.Fprintf(w, "%s:%d:%d: %s: %s\n",
 			formatPath(style, find.Span.Start.File),
@@ -39,6 +41,7 @@ type FindJSON struct {
 
 // FprintJSON writes finds as [FindJSON] array.
 func FprintJSON(w io.Writer, style PathStyle, finds []Find) error {
+	sortFinds(finds)
 	jsonFinds := make([]FindJSON, len(finds))
 	for i, find := range finds {
 		jsonFinds[i] = FindJSON{
@@ -97,4 +100,19 @@ func formatPath(style PathStyle, p string) string {
 	default:
 		panic("impossible PathStyle value")
 	}
+}
+
+func sortFinds(finds []Find) {
+	sort.Slice(finds, func(i, j int) bool {
+		if finds[i].Span.Start.Line != finds[j].Span.Start.Line {
+			return finds[i].Span.Start.Line < finds[j].Span.Start.Line
+		}
+		if finds[i].Span.Start.Col != finds[j].Span.Start.Col {
+			return finds[i].Span.Start.Col < finds[j].Span.Start.Col
+		}
+		if finds[i].Code != finds[j].Code {
+			return finds[i].Code < finds[j].Code
+		}
+		return finds[i].Message < finds[j].Message
+	})
 }

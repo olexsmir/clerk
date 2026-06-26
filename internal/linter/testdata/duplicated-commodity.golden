@@ -1,4 +1,4 @@
 duplicated-commodity.journal:1:1: duplicated-commodity: duplicated commodity declaration: USD
-duplicated-commodity.journal:4:1: duplicated-commodity: duplicated commodity declaration: USD
 duplicated-commodity.journal:2:1: duplicated-commodity: duplicated commodity declaration: EUR
+duplicated-commodity.journal:4:1: duplicated-commodity: duplicated commodity declaration: USD
 duplicated-commodity.journal:6:1: duplicated-commodity: duplicated commodity declaration: EUR
