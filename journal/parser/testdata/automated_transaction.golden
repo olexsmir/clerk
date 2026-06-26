@@ -1,5 +1,5 @@
 Journal
-  AutomatedTransaction j:1:1-1:3
+  AutomatedTransaction j:1:1-4:0
     Expr: "^income"
     Posting j:2:1-4:0
       Type: unbalanced virtual
@@ -15,7 +15,7 @@ Journal
         Precision: 2
         Decimal: "."
   BlankLine j:4:0-4:1
-  AutomatedTransaction j:4:1-4:3
+  AutomatedTransaction j:4:1-8:0
     Expr: "expenses:gifts"
     Posting j:5:1-6:1
       Account j:5:5-5:17
@@ -42,7 +42,7 @@ Journal
         Precision: 0
         Decimal: "."
   BlankLine j:8:0-8:1
-  AutomatedTransaction j:8:1-8:3
+  AutomatedTransaction j:8:1-10:1
     Expr: "income:salary"
     Posting j:9:1-10:1
       Account j:9:5-9:19

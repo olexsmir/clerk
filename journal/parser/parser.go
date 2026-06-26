@@ -214,7 +214,6 @@ func (p *Parser) parsePeriodicTransaction() *ast.PeriodicTransaction {
 
 	pt := &ast.PeriodicTransaction{}
 
-	pt.Span = p.span(s)
 	pt.Period = p.parsePeriod()
 
 	if desc := p.parseOptPeriodicDescription(); desc != "" {
@@ -237,6 +236,7 @@ func (p *Parser) parsePeriodicTransaction() *ast.PeriodicTransaction {
 		}
 	}
 
+	pt.Span = p.span(s)
 	pt.Comment = comment
 	return pt
 }
@@ -247,7 +247,6 @@ func (p *Parser) parseAutomatedTransaction() *ast.AutomatedTransaction {
 	p.skipWhitespace()
 
 	at := &ast.AutomatedTransaction{}
-	at.Span = p.span(s)
 
 	at.Expr = p.parseDirectiveExpr()
 	at.Comment = p.parseOptInlineComment()
@@ -266,6 +265,7 @@ func (p *Parser) parseAutomatedTransaction() *ast.AutomatedTransaction {
 		}
 	}
 
+	at.Span = p.span(s)
 	return at
 }
 

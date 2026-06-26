@@ -23,6 +23,7 @@ var tests = map[string][]Rule{
 	"duplicated-commodity":     {&DuplicatedCommodity{}},
 	"undeclared-commodity":     {&UndeclaredCommodity{}},
 	"undeclared-account":       {&UndeclaredAccount{}},
+	"unbalanced-transaction":   {&UnbalancedTransaction{}},
 }
 
 func TestLinter(t *testing.T) {

@@ -1,6 +1,6 @@
 Journal
   BlankLine j:2:0-2:1
-  PeriodicTransaction j:2:1-2:3
+  PeriodicTransaction j:2:1-6:0
     Period: "monthly"
     Status: "*"
     Posting j:3:1-4:1
@@ -21,7 +21,7 @@ Journal
         SubAccount: "checking" j:4:17-5:0
       Amount: <elided>
   BlankLine j:6:0-6:1
-  PeriodicTransaction j:6:1-6:3
+  PeriodicTransaction j:6:1-10:0
     Period: "monthly from 2023-04-15 to 2023-06-16"
     From: 2023-04-15
     To: 2023-06-16
@@ -44,7 +44,7 @@ Journal
         SubAccount: "checking" j:8:17-9:0
       Amount: <elided>
   BlankLine j:10:0-10:1
-  PeriodicTransaction j:10:1-10:3
+  PeriodicTransaction j:10:1-14:0
     Period: "every 2 months"
     Status: "*"
     Description: "in 2023, we will review"
@@ -66,7 +66,7 @@ Journal
         SubAccount: "checking" j:12:17-13:0
       Amount: <elided>
   BlankLine j:14:0-14:1
-  PeriodicTransaction j:14:1-14:3
+  PeriodicTransaction j:14:1-18:0
     Period: "monthly"
     Status: "*"
     Description: "Next year blah blah"
@@ -87,7 +87,7 @@ Journal
         SubAccount: "checking" j:16:12-17:0
       Amount: <elided>
   BlankLine j:18:0-18:1
-  PeriodicTransaction j:18:1-18:3
+  PeriodicTransaction j:18:1-21:1
     Period: "monthly from 2018/6"
     Status: "*"
     Comment j:18:23-19:0

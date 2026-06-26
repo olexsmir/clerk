@@ -1,0 +1,38 @@
+2024-01-01 "auto-balance"
+    expenses:food    10.00 USD
+    assets:cash
+
+2024-01-01 "multiple-omitted"
+    expenses:food    10.00 USD
+    assets:cash
+    equity:draw
+
+2024-01-01 "balanced"
+    expenses:food    10.00 USD
+    assets:cash     -10.00 USD
+
+2024-01-01 "unbalanced"
+    expenses:food    15.00 USD
+    assets:cash     -10.00 USD
+
+2024-01-01 "multi-currency" | partial imbalance
+    expenses:food    10.00 USD
+    expenses:fun      5.00 EUR
+    assets:cash      -5.00 USD
+
+2024-01-01 "expression" | skip
+    expenses:food    10.00 USD
+    assets:cash     *-1
+
+2024-01-01 "virtual-ignored"
+    expenses:food    10.00 USD
+    assets:cash     -10.00 USD
+    (Budget:fun)      5.00 USD
+
+~ monthly   ; unbalanced
+    expenses:food   100.00 USD
+    assets:cash     -90.00 USD
+
+2024-01-01 "all-virtual"
+    (Budget:fun)    10.00 USD
+    (Budget:fun)   -10.00 USD

@@ -40,4 +40,5 @@ var Rules = []Rule{
 	&DuplicatedCommodity{},
 	&UndeclaredCommodity{},
 	&UndeclaredAccount{},
+	&UnbalancedTransaction{},
 }
