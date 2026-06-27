@@ -11,11 +11,11 @@ func (BlankLine) entryNode() {}
 
 type Transaction struct {
 	Date           Date
-	SecondDate     *Date    // optional =2026-05-18 date
-	Status         Status   // optional */! status
-	Code           *string  // optional (123) code
-	Payee          *Payee   // optional payee
-	Note           *string  // part after |
+	SecondDate     *Date      // optional =2026-05-18 date
+	Status         Status     // optional */! status
+	Code           *string    // optional (123) code
+	Payee          *Payee     // optional payee
+	Note           *string    // part after |
 	Comment        *Comment   // inline ; on header line
 	HeaderComments []*Comment // indented ; lines before first posting
 	Postings       []*Posting

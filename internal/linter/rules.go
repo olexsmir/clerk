@@ -33,6 +33,7 @@ var Rules = []Rule{
 	&OmittedPrecision{},
 	&MissingCommodity{},
 	&MissingStatus{},
+	&MissingPayee{},
 	&AccountDepthLimit{MaxDepth: 4},
 	&MultipleOmittedAmounts{},
 	&OrderDate{},

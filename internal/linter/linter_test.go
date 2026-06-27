@@ -16,6 +16,7 @@ var tests = map[string][]Rule{
 	"omitted-precision":        {&OmittedPrecision{}},
 	"missing-commodity":        {&MissingCommodity{}},
 	"missing-status":           {&MissingStatus{}},
+	"missing-payee":            {&MissingPayee{}},
 	"account-depth":            {&AccountDepthLimit{MaxDepth: 3}},
 	"multiple-omitted-amounts": {&MultipleOmittedAmounts{}},
 	"orderdate":                {&OrderDate{}},
