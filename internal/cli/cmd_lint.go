@@ -1,0 +1,86 @@
+package cli
+
+import (
+	"context"
+	"fmt"
+	"os"
+	"strings"
+
+	"github.com/urfave/cli/v3"
+
+	"olexsmir.xyz/clerk/internal/linter"
+	"olexsmir.xyz/clerk/journal"
+	"olexsmir.xyz/clerk/journal/semantic"
+)
+
+func (c *Cli) lintAction(ctx context.Context, cmd *cli.Command) error {
+	format := cmd.String("format")
+	pathStyle := cmd.String("path-style")
+
+	lint := linter.NewLinter(linter.Rules)
+	reporter := linter.NewReporter(os.Stdout, parsePathStyle(pathStyle))
+
+	journals := cmd.StringArgs("journals")
+	if len(journals) == 0 {
+		return c.lintStdin(lint, reporter, format)
+	}
+
+	journalFiles, err := resolvePaths(journals)
+	if err != nil {
+		return err
+	}
+	if len(journalFiles) == 0 {
+		return nil
+	}
+
+	loader := journal.NewLoader()
+
+	var errs []error
+	for _, f := range journalFiles {
+		if _, err := loadFile(loader, f); err != nil {
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+			errs = append(errs, err)
+		}
+	}
+
+	sema := semantic.Build(loader.Ordered())
+	reporter.Collect(lint.Run(sema))
+
+	if err := reporter.Flush(format); err != nil {
+		return fmt.Errorf("flushing report: %w", err)
+	}
+
+	if reporter.HasIssues() || len(errs) > 0 {
+		return fmt.Errorf("lint found issues")
+	}
+	return nil
+}
+
+func (c *Cli) lintStdin(lint *linter.Linter, reporter *linter.Reporter, format string) error {
+	loader := journal.NewLoader()
+	if _, err := loadStdin(loader); err != nil {
+		return err
+	}
+
+	sema := semantic.Build(loader.Ordered())
+	reporter.Collect(lint.Run(sema))
+
+	if err := reporter.Flush(format); err != nil {
+		return fmt.Errorf("flushing report: %w", err)
+	}
+	if reporter.HasIssues() {
+		return fmt.Errorf("lint found issues")
+	}
+	return nil
+}
+
+func parsePathStyle(s string) linter.PathStyle {
+	switch strings.ToLower(s) {
+	case "basename":
+		return linter.PathBasename
+	case "absolute":
+		return linter.PathAbsolute
+	default:
+		return linter.PathRelative
+	}
+}

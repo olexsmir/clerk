@@ -4,6 +4,8 @@ go 1.26.2
 
 tool golang.org/x/tools/cmd/stringer
 
+require github.com/urfave/cli/v3 v3.10.0
+
 require (
 	golang.org/x/mod v0.36.0 // indirect
 	golang.org/x/sync v0.20.0 // indirect

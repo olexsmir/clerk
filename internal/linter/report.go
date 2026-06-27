@@ -71,6 +71,10 @@ func (r *Reporter) Collect(finds []Find) {
 	r.finds = append(r.finds, finds...)
 }
 
+func (r *Reporter) HasIssues() bool {
+	return len(r.finds) > 0
+}
+
 func (r *Reporter) Flush(format string) error {
 	switch format {
 	case "json":

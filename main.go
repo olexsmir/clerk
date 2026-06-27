@@ -1,35 +1,20 @@
 package main
 
 import (
-	"fmt"
+	"context"
+	"log/slog"
 	"os"
+
+	"olexsmir.xyz/clerk/internal/cli"
 )
 
+// NOTE: sets during build
+// go build -ldflags="-X 'main.version=v1.0.0'"
+var version = "develop"
+
 func main() {
-	if len(os.Args) < 2 {
-		usage()
+	if err := cli.New(version).Run(context.Background(), os.Args); err != nil {
+		slog.Error("mugit", "err", err)
 		os.Exit(1)
 	}
-
-	switch os.Args[1] {
-	case "fmt", "format":
-		runFormat(os.Args[2:])
-	case "tags":
-		runTags(os.Args[2:])
-	case "lint":
-		runLint(os.Args[2:])
-	default:
-		usage()
-		os.Exit(1)
-	}
-}
-
-func usage() {
-	fmt.Fprintf(os.Stderr, `Usage: clerk <command> [options]
-
-Commands:
-  tags       Generate ctags-compatible tag file
-  format     Format journal files
-  lint       Lint journal files
-`)
 }
