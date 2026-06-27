@@ -49,3 +49,17 @@ accounts (5):
       account expenses:transport
     usages: 1
       file 0: expenses:transport
+
+payees (3):
+  aws
+    directives: 0
+    usages: 1
+      file 0: aws
+  groceries
+    directives: 0
+    usages: 1
+      file 0: groceries
+  lunch
+    directives: 0
+    usages: 1
+      file 0: lunch

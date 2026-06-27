@@ -12,6 +12,7 @@ type Context struct {
 
 	Accounts    map[string]*AccountInfo
 	Commodities map[string]*CommodityInfo
+	Payees      map[string]*PayeeInfo
 }
 
 type AccountInfo struct {
@@ -38,4 +39,14 @@ type CommodityInfo struct {
 type CommodityUsage struct {
 	FileIndex int
 	Amount    *ast.Amount
+}
+
+type PayeeInfo struct {
+	Directives []*ast.Payee
+	Usage      []PayeeUsage
+}
+
+type PayeeUsage struct {
+	FileIndex int
+	Payee     *ast.Payee
 }

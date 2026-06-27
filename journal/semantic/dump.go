@@ -55,4 +55,25 @@ func fprint(w io.Writer, ctx *Context) {
 			fmt.Fprintf(w, "      file %d: %s\n", u.FileIndex, u.Posting.Account.String())
 		}
 	}
+
+	// Payees
+	pnames := make([]string, 0, len(ctx.Payees))
+	for name := range ctx.Payees {
+		pnames = append(pnames, name)
+	}
+	sort.Strings(pnames)
+
+	fmt.Fprintf(w, "\npayees (%d):\n", len(ctx.Payees))
+	for _, name := range pnames {
+		info := ctx.Payees[name]
+		fmt.Fprintf(w, "  %s\n", name)
+		fmt.Fprintf(w, "    directives: %d\n", len(info.Directives))
+		for _, d := range info.Directives {
+			fmt.Fprintf(w, "      payee %s\n", d.Name)
+		}
+		fmt.Fprintf(w, "    usages: %d\n", len(info.Usage))
+		for _, u := range info.Usage {
+			fmt.Fprintf(w, "      file %d: %s\n", u.FileIndex, u.Payee.Name)
+		}
+	}
 }

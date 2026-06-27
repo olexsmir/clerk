@@ -12,6 +12,7 @@ func Build(files []*journal.ParsedFile) *Context {
 		Files:       files,
 		Accounts:    make(map[string]*AccountInfo),
 		Commodities: make(map[string]*CommodityInfo),
+		Payees:      make(map[string]*PayeeInfo),
 	}
 	for i, pf := range files {
 		for _, entry := range pf.Ast.Entries {
@@ -20,8 +21,11 @@ func Build(files []*journal.ParsedFile) *Context {
 				c.addAccountDirective(e)
 			case *ast.CommodityDirective:
 				c.addCommodityDirective(e)
+			case *ast.PayeeDirective:
+				c.addPayeeDirective(e)
 			case *ast.Transaction:
 				c.addPostings(i, e.Postings)
+				c.addPayee(i, e.Payee)
 			case *ast.PeriodicTransaction:
 				c.addPostings(i, e.Postings)
 			case *ast.AutomatedTransaction:
@@ -42,6 +46,18 @@ func (c *Context) addAccountDirective(ad *ast.AccountDirective) {
 	info.Directives = append(info.Directives, ad)
 }
 
+func (c *Context) addPayeeDirective(pd *ast.PayeeDirective) {
+	info, ok := c.Payees[pd.Name]
+	if !ok {
+		info = &PayeeInfo{}
+		c.Payees[pd.Name] = info
+	}
+	info.Directives = append(info.Directives, &ast.Payee{
+		Name: pd.Name,
+		Span: pd.Span,
+	})
+}
+
 func (c *Context) addCommodityDirective(cd *ast.CommodityDirective) {
 	info, ok := c.Commodities[cd.Commodity]
 	if !ok {
@@ -49,6 +65,21 @@ func (c *Context) addCommodityDirective(cd *ast.CommodityDirective) {
 		c.Commodities[cd.Commodity] = info
 	}
 	info.Directives = append(info.Directives, cd)
+}
+
+func (c *Context) addPayee(fileIndex int, payee *ast.Payee) {
+	if payee == nil {
+		return
+	}
+	info, ok := c.Payees[payee.Name]
+	if !ok {
+		info = &PayeeInfo{}
+		c.Payees[payee.Name] = info
+	}
+	info.Usage = append(info.Usage, PayeeUsage{
+		FileIndex: fileIndex,
+		Payee:     payee,
+	})
 }
 
 func (c *Context) addPostings(fileIndex int, postings []*ast.Posting) {
