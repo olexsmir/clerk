@@ -35,11 +35,11 @@ func (c *Cli) lintAction(ctx context.Context, cmd *cli.Command) error {
 
 	loader := journal.NewLoader()
 
-	var errs []error
+	var hasIssues bool
 	for _, f := range journalFiles {
 		if _, err := loadFile(loader, f); err != nil {
 			fmt.Fprintf(os.Stderr, "error: %v\n", err)
-			errs = append(errs, err)
+			hasIssues = true
 		}
 	}
 
@@ -50,8 +50,8 @@ func (c *Cli) lintAction(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("flushing report: %w", err)
 	}
 
-	if reporter.HasIssues() || len(errs) > 0 {
-		return fmt.Errorf("lint found issues")
+	if reporter.HasIssues() || hasIssues {
+		return cli.Exit("", 1)
 	}
 	return nil
 }
@@ -69,7 +69,7 @@ func (c *Cli) lintStdin(lint *linter.Linter, reporter *linter.Reporter, format s
 		return fmt.Errorf("flushing report: %w", err)
 	}
 	if reporter.HasIssues() {
-		return fmt.Errorf("lint found issues")
+		return cli.Exit("", 1)
 	}
 	return nil
 }

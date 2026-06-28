@@ -32,7 +32,7 @@ func (c *Cli) formatAction(ctx context.Context, cmd *cli.Command) error {
 			for _, fe := range pf.FileErrors {
 				fmt.Fprintf(os.Stderr, "error: stdin: %s\n", fe.Message)
 			}
-			return fmt.Errorf("stdin: has errors, refusing to format")
+			return cli.Exit("", 1)
 		}
 		return c.formatFile("stdin", pf, check, diff, list, write)
 	}
@@ -42,12 +42,12 @@ func (c *Cli) formatAction(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	var errs []error
+	var hasErrors bool
 	for _, path := range files {
 		pf, err := loadFile(loader, path)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error: %v\n", err)
-			errs = append(errs, err)
+			hasErrors = true
 			continue
 		}
 		if len(pf.Errors) > 0 || len(pf.FileErrors) > 0 {
@@ -57,17 +57,17 @@ func (c *Cli) formatAction(ctx context.Context, cmd *cli.Command) error {
 			for _, fe := range pf.FileErrors {
 				fmt.Fprintf(os.Stderr, "error: %s: %s\n", path, fe.Message)
 			}
-			errs = append(errs, fmt.Errorf("%s: has errors, refusing to format", path))
+			hasErrors = true
 			continue
 		}
 
 		if err := c.formatFile(path, pf, check, diff, list, write); err != nil {
 			fmt.Fprintf(os.Stderr, "error: %s: %v\n", path, err)
-			errs = append(errs, err)
+			hasErrors = true
 		}
 	}
-	if len(errs) > 0 {
-		return fmt.Errorf("format: %d error(s)", len(errs))
+	if hasErrors {
+		return cli.Exit("", 1)
 	}
 	return nil
 }

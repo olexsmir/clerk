@@ -34,15 +34,15 @@ func (c *Cli) tagsAction(ctx context.Context, cmd *cli.Command) error {
 
 	loader := journal.NewLoader()
 
-	var errs []error
+	var hasErrors bool
 	for _, file := range journalFiles {
 		if _, err := loadFile(loader, file); err != nil {
 			fmt.Fprintf(os.Stderr, "error: %v\n", err)
-			errs = append(errs, err)
+			hasErrors = true
 		}
 	}
-	if len(errs) > 0 {
-		return fmt.Errorf("tags: %d errors", len(errs))
+	if hasErrors {
+		return cli.Exit("", 1)
 	}
 
 	tagger := tags.New(loader, cwd)

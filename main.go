@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"log/slog"
+	"fmt"
 	"os"
 
 	"olexsmir.xyz/clerk/internal/cli"
@@ -14,7 +14,7 @@ var version = "develop"
 
 func main() {
 	if err := cli.New(version).Run(context.Background(), os.Args); err != nil {
-		slog.Error("mugit", "err", err)
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
 	}
 }
