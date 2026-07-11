@@ -11,6 +11,7 @@ import (
 
 	"olexsmir.xyz/clerk/internal/linter"
 	"olexsmir.xyz/clerk/journal"
+	"olexsmir.xyz/clerk/journal/printer"
 	"olexsmir.xyz/clerk/journal/semantic"
 )
 
@@ -24,6 +25,7 @@ type server struct {
 
 	linter    *linter.Linter
 	loader    *journal.Loader
+	printer   *printer.Config
 	debouncer *time.Timer
 
 	mu          sync.Mutex

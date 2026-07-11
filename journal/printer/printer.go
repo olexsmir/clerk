@@ -34,7 +34,7 @@ type Config struct {
 	CommodityPos       CommodityPos // where to place commodity
 }
 
-var defaultConfig = &Config{
+var DefaultConfig = &Config{
 	TabIndent:          false,
 	IndentWidth:        2,
 	PreserveBlankLines: false,
@@ -63,12 +63,12 @@ type printer struct {
 }
 
 // Fprint formats using the default config.
-func Fprint(w io.Writer, j *ast.Journal) error { return defaultConfig.Fprint(w, j) }
+func Fprint(w io.Writer, j *ast.Journal) error { return DefaultConfig.Fprint(w, j) }
 
 // Fprint formats a parsed journal.
 func (c *Config) Fprint(w io.Writer, j *ast.Journal) error {
 	if c == nil {
-		c = defaultConfig
+		c = DefaultConfig
 	}
 	p := printer{cfg: c, indent: c.indent()}
 
@@ -83,12 +83,12 @@ func (c *Config) Fprint(w io.Writer, j *ast.Journal) error {
 }
 
 // FprintEntry formats a single ast entry using the default config.
-func FprintEntry(w io.Writer, e ast.Entry) error { return defaultConfig.FprintEntry(w, e) }
+func FprintEntry(w io.Writer, e ast.Entry) error { return DefaultConfig.FprintEntry(w, e) }
 
 // FprintEntry formats a single journal entry.
 func (c *Config) FprintEntry(w io.Writer, e ast.Entry) error {
 	if c == nil {
-		c = defaultConfig
+		c = DefaultConfig
 	}
 	p := printer{cfg: c, indent: c.indent()}
 	p.formatEntry(e)

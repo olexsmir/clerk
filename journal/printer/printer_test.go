@@ -20,7 +20,7 @@ func TestRoundTrip(t *testing.T) {
 				t.Fatal(err)
 			}
 			var b strings.Builder
-			if err := defaultConfig.Fprint(&b, pf.Ast); err != nil {
+			if err := DefaultConfig.Fprint(&b, pf.Ast); err != nil {
 				t.Fatal(err)
 			}
 
@@ -41,7 +41,7 @@ func BenchmarkPrinter(b *testing.B) {
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
 				var buf strings.Builder
-				if err := defaultConfig.Fprint(&buf, pf.Ast); err != nil {
+				if err := DefaultConfig.Fprint(&buf, pf.Ast); err != nil {
 					b.Fatal(err)
 				}
 			}

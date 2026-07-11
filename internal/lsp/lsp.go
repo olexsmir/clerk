@@ -12,6 +12,7 @@ import (
 
 	"olexsmir.xyz/clerk/internal/linter"
 	"olexsmir.xyz/clerk/journal"
+	"olexsmir.xyz/clerk/journal/printer"
 )
 
 type Server struct{ server *server }
@@ -24,8 +25,9 @@ func NewServer(version string) Server {
 
 			openDocs: make(map[uri.URI]docState),
 
-			linter: linter.NewLinter(linter.Rules),
-			loader: journal.NewLoader(),
+			linter:  linter.NewLinter(linter.Rules),
+			loader:  journal.NewLoader(),
+			printer: printer.DefaultConfig,
 
 			log: slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{})),
 		},
