@@ -58,6 +58,11 @@ func (c *Cli) Run(ctx context.Context, args []string) error {
 				},
 			},
 			{
+				Name:   "lsp",
+				Usage:  "lsp server",
+				Action: c.lspAction,
+			},
+			{
 				Name:   "tags",
 				Usage:  "generate a tags file for journal entries",
 				Action: c.tagsAction,

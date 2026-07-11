@@ -37,6 +37,51 @@ func (l *Loader) LoadBytes(path string, src []byte) (*ParsedFile, error) {
 	return l.loadBytes(path, src, nil)
 }
 
+func (l *Loader) Reload(path string, src []byte) (*ParsedFile, error) {
+	abs, err := filepath.Abs(path)
+	if err != nil {
+		return nil, err
+	}
+	delete(l.files, abs)
+	return l.loadBytes(abs, src, nil)
+}
+
+// Roots returns files not transitively included by any loaded file.
+func (l *Loader) Roots() []*ParsedFile {
+	included := make(map[string]bool)
+	for _, pf := range l.files {
+		for _, inc := range pf.Includes {
+			included[inc.Path] = true
+		}
+	}
+	var roots []*ParsedFile
+	for _, pf := range l.files {
+		if !included[pf.Path] {
+			roots = append(roots, pf)
+		}
+	}
+	return roots
+}
+
+// CollectFiles returns root and all its transitive includes.
+func CollectFiles(root *ParsedFile) []*ParsedFile {
+	var files []*ParsedFile
+	visited := make(map[*ParsedFile]bool)
+	var walk func(*ParsedFile)
+	walk = func(pf *ParsedFile) {
+		if visited[pf] {
+			return
+		}
+		visited[pf] = true
+		files = append(files, pf)
+		for _, inc := range pf.Includes {
+			walk(inc)
+		}
+	}
+	walk(root)
+	return files
+}
+
 // Ordered returns all files in dependency order (included before includer)
 func (l *Loader) Ordered() []*ParsedFile {
 	visited := make(map[string]bool)

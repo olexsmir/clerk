@@ -43,8 +43,9 @@ func (c *Cli) lintAction(ctx context.Context, cmd *cli.Command) error {
 		}
 	}
 
-	sema := semantic.Build(loader.Ordered())
-	reporter.Collect(lint.Run(sema))
+	for _, root := range loader.Roots() {
+		reporter.Collect(lint.Run(semantic.Build(journal.CollectFiles(root))))
+	}
 
 	if err := reporter.Flush(format); err != nil {
 		return fmt.Errorf("flushing report: %w", err)
@@ -62,8 +63,9 @@ func (c *Cli) lintStdin(lint *linter.Linter, reporter *linter.Reporter, format s
 		return err
 	}
 
-	sema := semantic.Build(loader.Ordered())
-	reporter.Collect(lint.Run(sema))
+	for _, root := range loader.Roots() {
+		reporter.Collect(lint.Run(semantic.Build(journal.CollectFiles(root))))
+	}
 
 	if err := reporter.Flush(format); err != nil {
 		return fmt.Errorf("flushing report: %w", err)
