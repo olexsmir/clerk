@@ -11,7 +11,6 @@ import (
 
 	"olexsmir.xyz/clerk/internal/analyzer"
 	"olexsmir.xyz/clerk/internal/linter"
-	"olexsmir.xyz/clerk/journal"
 	"olexsmir.xyz/clerk/journal/token"
 )
 
@@ -44,7 +43,6 @@ func (s *server) publishDiagnostics(ctx context.Context) {
 	for u, st := range s.openDocs {
 		openDocs[u] = st
 	}
-	ordered := s.loader.Ordered()
 	s.mu.Unlock()
 
 	if ctx.Err() != nil {
@@ -55,19 +53,23 @@ func (s *server) publishDiagnostics(ctx context.Context) {
 		return
 	}
 
-	for uri, state := range openDocs {
-		path := uri.Path()
-		if _, err := s.loader.Reload(path, []byte(state.text)); err != nil {
-			s.log.Warn("failed to reload open document", "uri", uri, "err", err)
+	activePaths := make(map[string]bool)
+
+	var a *analyzer.Analysis
+	for duri, state := range openDocs {
+		path := duri.Path()
+		rj := s.loader.ResolveBytes(path, []byte(state.text))
+		if a == nil {
+			a = analyzer.Build(rj)
+		} else {
+			// Merge: only one root in practice for now.
+		}
+		for _, pf := range rj.Occurrences {
+			activePaths[pf.Path] = true
 		}
 	}
 
-	if ctx.Err() != nil {
-		return
-	}
-
-	ordered = s.loader.Ordered()
-	if len(ordered) == 0 {
+	if a == nil {
 		s.log.Debug("no files in workspace")
 		return
 	}
@@ -76,7 +78,6 @@ func (s *server) publishDiagnostics(ctx context.Context) {
 		return
 	}
 
-	a := analyzer.Build(ordered)
 	finds := dedupFinds(s.linter.Run(a))
 
 	s.mu.Lock()
@@ -89,11 +90,7 @@ func (s *server) publishDiagnostics(ctx context.Context) {
 
 	diagsByFile := s.groupFindsByFile(finds)
 
-	s.mu.Lock()
-	activeFiles := s.activeFileSet(openDocs, ordered)
-	s.mu.Unlock()
-
-	for fpath := range activeFiles {
+	for fpath := range activePaths {
 		if ctx.Err() != nil {
 			return
 		}
@@ -105,36 +102,7 @@ func (s *server) publishDiagnostics(ctx context.Context) {
 		}
 	}
 
-	s.log.Debug("diagnostics published", "files", len(ordered), "findings", len(finds))
-}
-
-func (s *server) activeFileSet(docs map[uri.URI]docState, ordered []*journal.ParsedFile) map[string]bool {
-	active := make(map[string]bool)
-	for duri := range docs {
-		active[duri.Path()] = true
-	}
-	visited := make(map[string]bool)
-	var walk func(*journal.ParsedFile)
-	walk = func(pf *journal.ParsedFile) {
-		if visited[pf.Path] {
-			return
-		}
-		active[pf.Path] = true
-		visited[pf.Path] = true
-		for _, inc := range pf.Includes {
-			walk(inc)
-		}
-	}
-	byPath := make(map[string]*journal.ParsedFile, len(ordered))
-	for _, pf := range ordered {
-		byPath[pf.Path] = pf
-	}
-	for duri := range docs {
-		if pf, ok := byPath[duri.Path()]; ok {
-			walk(pf)
-		}
-	}
-	return active
+	s.log.Debug("diagnostics published", "files", len(a.Files), "findings", len(finds))
 }
 
 func (s *server) groupFindsByFile(finds []linter.Find) map[string][]protocol.Diagnostic {

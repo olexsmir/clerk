@@ -6,85 +6,56 @@ import (
 	"olexsmir.xyz/clerk/journal"
 )
 
-func BenchmarkBuild_BasicJournal(b *testing.B) {
-	files := loadJournal("../../journal/testdata/journals/basic.journal")
-	b.ResetTimer()
-	for b.Loop() {
-		Build(files)
-	}
-}
+func BenchmarkBuild(b *testing.B) {
+	b.Run("basic", bench("../../journal/testdata/journals/basic.journal"))
+	b.Run("standard", bench("../../journal/testdata/journals/actual-ledger-input-standard.dat"))
+	b.Run("personal", bench("../../journal/testdata/journals/actual-personal.journal"))
+	b.Run("1k txns", bench("../../journal/testdata/journals/actual-1ktxns-100accts.journal"))
+	b.Run("wow", bench("../../journal/testdata/journals/actual-ledger-input-wow.dat"))
+	b.Run("1k txns, prefix lookup", func(b *testing.B) {
+		rj := loadJournal("../../journal/testdata/journals/actual-1ktxns-100accts.journal")
+		a := Build(rj)
+		prefixes := make([]string, 0, len(a.AccountsByPrefix))
+		for p := range a.AccountsByPrefix {
+			prefixes = append(prefixes, p)
+		}
+		b.ResetTimer()
+		for b.Loop() {
+			for _, p := range prefixes {
+				_ = a.AccountsByPrefix[p]
+			}
+		}
+	})
 
-func BenchmarkBuild_1kTxns(b *testing.B) {
-	files := loadJournal("../../journal/testdata/journals/actual-1ktxns-100accts.journal")
-	b.ResetTimer()
-	for b.Loop() {
-		Build(files)
-	}
-}
-
-func BenchmarkBuild_Standard(b *testing.B) {
-	files := loadJournal("../../journal/testdata/journals/actual-ledger-input-standard.dat")
-	b.ResetTimer()
-	for b.Loop() {
-		Build(files)
-	}
-}
-
-func BenchmarkBuild_Wow(b *testing.B) {
-	files := loadJournal("../../journal/testdata/journals/actual-ledger-input-wow.dat")
-	b.ResetTimer()
-	for b.Loop() {
-		Build(files)
-	}
-}
-
-func BenchmarkBuild_1kTxns_Allocs(b *testing.B) {
-	files := loadJournal("../../journal/testdata/journals/actual-1ktxns-100accts.journal")
-	b.ResetTimer()
-	b.ReportAllocs()
-	for b.Loop() {
-		Build(files)
-	}
-}
-
-func BenchmarkBuild_Parallel_1kTxns(b *testing.B) {
-	files := loadJournal("../../journal/testdata/journals/actual-1ktxns-100accts.journal")
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			Build(files)
+	b.Run("1k txns, account iter", func(b *testing.B) {
+		rj := loadJournal("../../journal/testdata/journals/actual-1ktxns-100accts.journal")
+		a := Build(rj)
+		names := a.AccountNames
+		b.ResetTimer()
+		for b.Loop() {
+			for _, name := range names {
+				_ = a.Accounts[name].UsedCount
+			}
 		}
 	})
 }
 
-func BenchmarkPrefixLookup_1kTxns(b *testing.B) {
-	a := Build(loadJournal("../../journal/testdata/journals/actual-1ktxns-100accts.journal"))
-	prefixes := make([]string, 0, len(a.AccountsByPrefix))
-	for p := range a.AccountsByPrefix {
-		prefixes = append(prefixes, p)
-	}
-	b.ResetTimer()
-	for b.Loop() {
-		for _, p := range prefixes {
-			_ = a.AccountsByPrefix[p]
+func bench(fpath string) func(b *testing.B) {
+	files := loadJournal(fpath)
+	return func(b *testing.B) {
+		b.ResetTimer()
+		b.ReportAllocs()
+		for b.Loop() {
+			Build(files)
 		}
 	}
 }
 
-func BenchmarkAccountIteration_1kTxns(b *testing.B) {
-	a := Build(loadJournal("../../journal/testdata/journals/actual-1ktxns-100accts.journal"))
-	names := a.AccountNames
-	b.ResetTimer()
-	for b.Loop() {
-		for _, name := range names {
-			_ = a.Accounts[name].UsedCount
-		}
-	}
-}
-
-func loadJournal(path string) []*journal.ParsedFile {
+func loadJournal(path string) *journal.ResolvedJournal {
 	ldr := journal.NewLoader()
-	if _, err := ldr.Load(path); err != nil {
+	rj, err := ldr.Resolve(path)
+	if err != nil {
 		panic("loadJournal: " + err.Error())
 	}
-	return ldr.Ordered()
+	return rj
 }

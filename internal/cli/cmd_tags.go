@@ -34,18 +34,25 @@ func (c *Cli) tagsAction(ctx context.Context, cmd *cli.Command) error {
 
 	loader := journal.NewLoader()
 
-	var hasErrors bool
+	var rj *journal.ResolvedJournal
 	for _, file := range journalFiles {
-		if _, err := loadFile(loader, file); err != nil {
+		resolved, err := loader.Resolve(file)
+		if err != nil {
 			fmt.Fprintf(os.Stderr, "error: %v\n", err)
-			hasErrors = true
+			continue
+		}
+		if rj == nil {
+			rj = resolved
+		} else {
+			// Merge: not supported for multi-root yet — use the last.
+			rj = resolved
 		}
 	}
-	if hasErrors {
+	if rj == nil {
 		return cli.Exit("", 1)
 	}
 
-	tagger := tags.New(loader, cwd)
+	tagger := tags.New(rj, cwd)
 
 	out := cmd.String("out")
 	var w io.Writer = os.Stdout

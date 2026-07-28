@@ -16,10 +16,19 @@ type Parser struct {
 	errors []*ast.ParseError
 	cur    token.Token
 	peek   token.Token
+
+	defaultYear int // set by year directive, used for short date inference
 }
 
 func New(lex *lexer.Lexer) *Parser {
 	p := &Parser{lexer: lex}
+	p.advance() // populate .peek
+	p.advance() // populate .cur
+	return p
+}
+
+func NewWithYear(lex *lexer.Lexer, year int) *Parser {
+	p := &Parser{lexer: lex, defaultYear: year}
 	p.advance() // populate .peek
 	p.advance() // populate .cur
 	return p
@@ -519,6 +528,7 @@ func (p *Parser) parseYearDirective() *ast.YearDirective {
 
 	if p.got(token.INT) {
 		year.Year, _ = strconv.Atoi(p.cur.Literal)
+		p.defaultYear = year.Year
 		p.advance()
 	} else {
 		p.errorf("expected year, got %s", p.cur.Type)
@@ -528,6 +538,7 @@ func (p *Parser) parseYearDirective() *ast.YearDirective {
 	year.Comment = p.parseOptInlineComment()
 	p.expectNewline()
 	year.Span = p.span(s)
+
 	return year
 }
 
@@ -1100,7 +1111,7 @@ func (p *Parser) parseDate() ast.Date {
 			p.errorf("invalid day %d in %q", day, lit)
 			return ast.Date{Span: p.span(s)}
 		}
-		return ast.Date{Month: month, Day: day, Sep: sep, Span: p.span(s)}
+		return ast.Date{Year: p.defaultYear, Month: month, Day: day, Sep: sep, Span: p.span(s)}
 	}
 
 	if len(parts) != 3 {

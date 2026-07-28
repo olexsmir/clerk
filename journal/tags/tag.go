@@ -53,15 +53,16 @@ type candidate struct {
 }
 
 type Tagger struct {
-	loader *journal.Loader
+	rj     *journal.ResolvedJournal
 	relDir string
 
 	candidates []candidate
 }
 
-// New creates a [Tagger]. If relDir is not empty, file paths in the tag output are made relative to relDir.
-func New(loader *journal.Loader, relDir string) *Tagger {
-	return &Tagger{loader: loader, relDir: relDir}
+// New creates a [Tagger] from a resolved journal. If relDir is not empty,
+// file paths in the tag output are made relative to relDir.
+func New(rj *journal.ResolvedJournal, relDir string) *Tagger {
+	return &Tagger{rj: rj, relDir: relDir}
 }
 
 // Write generate tags file and write it in tags format.
@@ -80,14 +81,16 @@ func (t *Tagger) Write(w io.Writer) error {
 func (t *Tagger) collect() []tags.Entry {
 	t.candidates = nil
 
-	for _, pf := range t.loader.Ordered() {
+	for _, item := range t.rj.Items {
+		if item.IsInclude {
+			continue
+		}
+		pf := item.Occurrence
 		filePath := pf.Path
 		if t.relDir != "" {
 			filePath = relativePath(filePath, t.relDir)
 		}
-		for _, entry := range pf.Ast.Entries {
-			t.collectFromEntry(pf, filePath, entry)
-		}
+		t.collectFromEntry(pf, filePath, pf.Ast.Entries[item.EntryIndex])
 	}
 
 	// sort by priority

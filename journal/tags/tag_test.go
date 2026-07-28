@@ -19,10 +19,11 @@ func TestTags(t *testing.T) {
 				t.Fatal(err)
 			}
 			l := journal.NewLoader()
-			if _, err := l.LoadFS(fsys, "in.journal"); err != nil {
+			rj, err := l.ResolveFS(fsys, "in.journal")
+			if err != nil {
 				t.Fatalf("loading journal: %v", err)
 			}
-			tagger := New(l, "")
+			tagger := New(rj, "")
 			var buf bytes.Buffer
 			if err := tagger.Write(&buf); err != nil {
 				t.Fatal(err)

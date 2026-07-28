@@ -39,11 +39,12 @@ func TestLinter(t *testing.T) {
 			}
 
 			l := journal.NewLoader()
-			if _, err := l.LoadFS(fsys, "in.journal"); err != nil {
+			rj, err := l.ResolveFS(fsys, "in.journal")
+			if err != nil {
 				t.Fatalf("failed to load test journal: %v", err)
 			}
 
-			ctx := analyzer.Build(l.Ordered())
+			ctx := analyzer.Build(rj)
 			finds := NewLinter(trules).Run(ctx)
 
 			var b strings.Builder
@@ -55,14 +56,14 @@ func TestLinter(t *testing.T) {
 
 func BenchmarkLinter(b *testing.B) {
 	ldr := journal.NewLoader()
-	_, err := ldr.Load(
+	rj, err := ldr.Resolve(
 		"../../journal/testdata/journals/actual-1ktxns-100accts.journal",
 	)
 	if err != nil {
 		b.Fatalf("failed to load benchmark journal: %v", err)
 	}
 
-	ctx := analyzer.Build(ldr.Ordered())
+	ctx := analyzer.Build(rj)
 	l := NewLinter(Rules)
 
 	b.ResetTimer()

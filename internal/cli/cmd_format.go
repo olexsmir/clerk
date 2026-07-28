@@ -21,10 +21,12 @@ func (c *Cli) formatAction(ctx context.Context, cmd *cli.Command) error {
 
 	loader := journal.NewLoader()
 	if len(paths) == 0 {
-		pf, err := loadStdin(loader)
+		src, err := readStdin()
 		if err != nil {
 			return err
 		}
+		rj := loader.ResolveBytes("stdin", src)
+		pf := rj.Occurrences[0]
 		if len(pf.Errors) > 0 || len(pf.FileErrors) > 0 {
 			for _, e := range pf.Errors {
 				fmt.Fprintf(os.Stderr, "error: stdin: %s\n", e.Message)
@@ -44,12 +46,13 @@ func (c *Cli) formatAction(ctx context.Context, cmd *cli.Command) error {
 
 	var hasErrors bool
 	for _, path := range files {
-		pf, err := loadFile(loader, path)
+		rj, err := loader.Resolve(path)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error: %v\n", err)
 			hasErrors = true
 			continue
 		}
+		pf := rj.Occurrences[0]
 		if len(pf.Errors) > 0 || len(pf.FileErrors) > 0 {
 			for _, e := range pf.Errors {
 				fmt.Fprintf(os.Stderr, "error: %s: %s\n", path, e.Message)

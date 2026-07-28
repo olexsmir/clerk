@@ -42,11 +42,12 @@ func TestAnalysis(t *testing.T) {
 			}
 
 			l := journal.NewLoader()
-			if _, err := l.LoadFS(fsys, "in.journal"); err != nil {
+			rj, err := l.ResolveFS(fsys, "in.journal")
+			if err != nil {
 				t.Fatalf("failed to load test journal: %v", err)
 			}
 
-			ctx := Build(l.Ordered())
+			ctx := Build(rj)
 			var b strings.Builder
 			fprint(&b, ctx)
 			golden.Assert(t, a, b.String())

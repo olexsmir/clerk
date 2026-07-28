@@ -10,15 +10,15 @@ account expenses:food
 
 -- expect --
 files (2):
-  0: accounts.journal
-  1: in.journal
+  0: in.journal
+  1: accounts.journal
 
 commodities (1):
   $
     directives: 0
     used: 1
     usages: 1
-      file 1: $ ("10")
+      file 0: $ ("10")
     last-used: 2024-01-01
 
 accounts (2):
@@ -26,14 +26,14 @@ accounts (2):
     directives: 0
     used: 1
     usages: 1
-      file 1: assets:checking
+      file 0: assets:checking
     last-used: 2024-01-01
   expenses:food
     directives: 1
     used: 1
       account expenses:food
     usages: 1
-      file 1: expenses:food
+      file 0: expenses:food
     last-used: 2024-01-01
 
 payees (1):
@@ -41,7 +41,7 @@ payees (1):
     directives: 0
     used: 1
     usages: 1
-      file 1: test
+      file 0: test
 
 prefixes (2):
   assets:
@@ -53,9 +53,8 @@ transactions: 1
 periodic transactions: 0
 automated transactions: 0
 
-directives (2):
+directives (1):
   account expenses:food
-  include accounts.journal
 
 transaction keys (1):
   2024-01-01|test|expenses:food,assets:checking,

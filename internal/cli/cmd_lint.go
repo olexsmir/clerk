@@ -37,14 +37,13 @@ func (c *Cli) lintAction(ctx context.Context, cmd *cli.Command) error {
 
 	var hasIssues bool
 	for _, f := range journalFiles {
-		if _, err := loadFile(loader, f); err != nil {
+		rj, err := loader.Resolve(f)
+		if err != nil {
 			fmt.Fprintf(os.Stderr, "error: %v\n", err)
 			hasIssues = true
+			continue
 		}
-	}
-
-	for _, root := range loader.Roots() {
-		reporter.Collect(lint.Run(analyzer.Build(journal.CollectFiles(root))))
+		reporter.Collect(lint.Run(analyzer.Build(rj)))
 	}
 
 	if err := reporter.Flush(format); err != nil {
@@ -58,14 +57,13 @@ func (c *Cli) lintAction(ctx context.Context, cmd *cli.Command) error {
 }
 
 func (c *Cli) lintStdin(lint *linter.Linter, reporter *linter.Reporter, format string) error {
-	loader := journal.NewLoader()
-	if _, err := loadStdin(loader); err != nil {
+	src, err := readStdin()
+	if err != nil {
 		return err
 	}
-
-	for _, root := range loader.Roots() {
-		reporter.Collect(lint.Run(analyzer.Build(journal.CollectFiles(root))))
-	}
+	loader := journal.NewLoader()
+	rj := loader.ResolveBytes("stdin", src)
+	reporter.Collect(lint.Run(analyzer.Build(rj)))
 
 	if err := reporter.Flush(format); err != nil {
 		return fmt.Errorf("flushing report: %w", err)

@@ -14,10 +14,8 @@ func TestRoundTrip(t *testing.T) {
 	for _, tname := range tests {
 		t.Run(tname, func(t *testing.T) {
 			a := golden.Read(t, tname)
-			pf, err := journal.NewLoader().LoadBytes(tname+".journal", a.Get("input"))
-			if err != nil {
-				t.Fatal(err)
-			}
+			rj := journal.NewLoader().ResolveBytes(tname+".journal", a.Get("input"))
+			pf := rj.Occurrences[0]
 			var b strings.Builder
 			if err := DefaultConfig.Fprint(&b, pf.Ast); err != nil {
 				t.Fatal(err)
@@ -33,10 +31,8 @@ func BenchmarkPrinter(b *testing.B) {
 		b.Run(tname, func(b *testing.B) {
 			b.ReportAllocs()
 			inp := golden.Read(b, tname).Get("input")
-			pf, err := journal.NewLoader().LoadBytes(tname+".journal", inp)
-			if err != nil {
-				b.Fatal(err)
-			}
+			rj := journal.NewLoader().ResolveBytes(tname+".journal", inp)
+			pf := rj.Occurrences[0]
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
 				var buf strings.Builder
@@ -61,10 +57,8 @@ func TestRoundTrip_WithConfig(t *testing.T) {
 	for tname, tt := range testsWithConfig {
 		t.Run(tname, func(t *testing.T) {
 			a := golden.Read(t, tname)
-			pf, err := journal.NewLoader().LoadBytes(tname+".journal", a.Get("input"))
-			if err != nil {
-				t.Fatal(err)
-			}
+			rj := journal.NewLoader().ResolveBytes(tname+".journal", a.Get("input"))
+			pf := rj.Occurrences[0]
 			var b strings.Builder
 			if err := tt.Fprint(&b, pf.Ast); err != nil {
 				t.Fatal(err)
@@ -77,10 +71,8 @@ func TestRoundTrip_WithConfig(t *testing.T) {
 
 func BenchmarkPrinter_Config(b *testing.B) {
 	inp := golden.Read(b, "entries").Get("input")
-	pf, err := journal.NewLoader().LoadBytes("entries.journal", inp)
-	if err != nil {
-		b.Fatal(err)
-	}
+	rj := journal.NewLoader().ResolveBytes("entries.journal", inp)
+	pf := rj.Occurrences[0]
 	for name, cfg := range testsWithConfig {
 		b.Run(name, func(b *testing.B) {
 			b.ReportAllocs()

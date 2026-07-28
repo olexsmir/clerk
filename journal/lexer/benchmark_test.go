@@ -1,13 +1,13 @@
-package parser
+package lexer
 
 import (
 	"os"
 	"testing"
 
-	"olexsmir.xyz/clerk/journal/lexer"
+	"olexsmir.xyz/clerk/journal/token"
 )
 
-func BenchmarkParser(b *testing.B) {
+func BenchmarkLexer(b *testing.B) {
 	b.Run("basic", bench("../../journal/testdata/journals/basic.journal"))
 	b.Run("personal", bench("../../journal/testdata/journals/actual-personal.journal"))
 	b.Run("sample", bench("../../journal/testdata/journals/actual-sample.journal"))
@@ -25,8 +25,9 @@ func bench(fpath string) func(b *testing.B) {
 		b.ResetTimer()
 		b.ReportAllocs()
 		for b.Loop() {
-			l := lexer.New("bench", src)
-			New(l).ParseJournal()
+			l := New("bench", src)
+			for l.Next().Type != token.EOF {
+			}
 		}
 	}
 }

@@ -1,13 +1,14 @@
 package journal
 
 import (
+	"bytes"
 	"fmt"
 	"io/fs"
 	"os"
-	"path"
 	"path/filepath"
 	"slices"
 	"strings"
+	"sync"
 
 	"olexsmir.xyz/clerk/journal/ast"
 	"olexsmir.xyz/clerk/journal/lexer"
@@ -19,148 +20,168 @@ type ParsedFile struct {
 	Src        []byte
 	Ast        *ast.Journal
 	Includes   []*ParsedFile
-	Errors     []*ast.ParseError
 	FileErrors []*ast.FileError
+	Errors     []*ast.ParseError
 }
 
-// CollectFiles returns root and all its transitive includes.
-func CollectFiles(root *ParsedFile) []*ParsedFile {
-	var files []*ParsedFile
-	visited := make(map[*ParsedFile]bool)
-	var walk func(*ParsedFile)
-	walk = func(pf *ParsedFile) {
-		if visited[pf] {
-			return
-		}
-		visited[pf] = true
-		files = append(files, pf)
-		for _, inc := range pf.Includes {
-			walk(inc)
-		}
+// ResolvedItem is one item in an occurrence-ordered flat view; child items inlined at include site.
+type ResolvedItem struct {
+	Occurrence *ParsedFile
+	IsInclude  bool // true for IncludeDirective entries (skipped by consumers)
+	EntryIndex int  // index into Occurrence.Ast.Entries
+}
+
+// ResolvedJournal is a flat, occurrence-ordered view of a journal tree.
+// Resolve/ResolveBytes returns a fresh journal; same source path may appear
+// as multiple occurrences with different parser contexts.
+type ResolvedJournal struct {
+	Primary     *ParsedFile    // first occurrence (root file)
+	Occurrences []*ParsedFile  // all occurrences in depth-first order
+	Items       []ResolvedItem // flat stream, occur-order
+	ByPath      map[string][]*ParsedFile
+}
+
+// FileErrors returns all file errors from all occurrences.
+func (rj *ResolvedJournal) FileErrors() []*ast.FileError {
+	var all []*ast.FileError
+	for _, pf := range rj.Occurrences {
+		all = append(all, pf.FileErrors...)
 	}
-	walk(root)
-	return files
+	return all
 }
 
+// Loader include-aware journal parsing caching.
 type Loader struct {
-	files map[string]*ParsedFile // key is absolute path (OS) or FS-relative path
-	fsys  fs.FS                  // set during LoadFS
+	mu           sync.RWMutex
+	contentCache map[string][]byte // canonical path: normalised content
 }
 
 func NewLoader() *Loader {
-	return &Loader{files: make(map[string]*ParsedFile)}
+	return &Loader{contentCache: make(map[string][]byte)}
 }
 
-func (l *Loader) Load(fpath string) (*ParsedFile, error) {
-	return l.loadFile(fpath, nil)
-}
-
-// LoadFS loads a journal from an [fs.FS], resolving includes through the same filesystem.
-func (l *Loader) LoadFS(fsys fs.FS, fpath string) (*ParsedFile, error) {
-	l.fsys = fsys
-	defer func() { l.fsys = nil }()
-	return l.loadFile(fpath, nil)
-}
-
-func (l *Loader) LoadBytes(path string, src []byte) (*ParsedFile, error) {
-	return l.loadBytes(path, src, nil)
-}
-
-func (l *Loader) Reload(path string, src []byte) (*ParsedFile, error) {
-	abs, err := filepath.Abs(path)
+// Resolve performs a fresh include-aware parse of fpath, returning a flat
+// occurrence view. Same file may appear multiple times when included from
+// multiple sites.
+func (l *Loader) Resolve(fpath string) (*ResolvedJournal, error) {
+	src, err := l.readContent(fpath)
 	if err != nil {
 		return nil, err
 	}
-	delete(l.files, abs)
-	return l.loadBytes(abs, src, nil)
+	return l.ResolveBytes(fpath, src), nil
 }
 
-// Roots returns files not transitively included by any loaded file.
-func (l *Loader) Roots() []*ParsedFile {
-	included := make(map[string]bool)
-	for _, pf := range l.files {
-		for _, inc := range pf.Includes {
-			included[inc.Path] = true
-		}
+// ResolveBytes is like [Loader.Resolve] but parses from a byte slice; includes resolved relative to fpath.
+func (l *Loader) ResolveBytes(fpath string, src []byte) *ResolvedJournal {
+	rj := &ResolvedJournal{
+		ByPath: make(map[string][]*ParsedFile),
 	}
-	var roots []*ParsedFile
-	for _, pf := range l.files {
-		if !included[pf.Path] {
-			roots = append(roots, pf)
-		}
+	l.resolveOccurrence(rj, nil, fpath, src, 0, nil)
+	if len(rj.Occurrences) > 0 {
+		rj.Primary = rj.Occurrences[0]
 	}
-	return roots
+	return rj
 }
 
-// Ordered returns all files in dependency order (included before includer)
-func (l *Loader) Ordered() []*ParsedFile {
-	visited := make(map[string]bool)
-	var res []*ParsedFile
-	var visit func(*ParsedFile)
-	visit = func(pf *ParsedFile) {
-		if visited[pf.Path] {
-			return
-		}
-		visited[pf.Path] = true
-		for _, inc := range pf.Includes {
-			visit(inc)
-		}
-		res = append(res, pf)
+// ResolveFS loads a journal from [fs.FS] via temp dir.
+func (l *Loader) ResolveFS(fsys fs.FS, fpath string) (*ResolvedJournal, error) {
+	dir, err := os.MkdirTemp("", "clerk-loadfs-*")
+	if err != nil {
+		return nil, fmt.Errorf("creating temp dir: %w", err)
 	}
-	for _, pf := range l.files {
-		visit(pf)
-	}
-	return res
-}
+	defer os.RemoveAll(dir)
 
-func (l *Loader) loadFile(fpath string, stack []string) (*ParsedFile, error) {
-	if l.fsys != nil {
-		fpath = path.Clean(fpath)
-		if pf, ok := l.files[fpath]; ok {
-			return pf, nil
-		}
-		src, err := fs.ReadFile(l.fsys, fpath)
-		if err != nil {
-			return nil, err
-		}
-		return l.loadBytes(fpath, src, stack)
+	if err := os.CopyFS(dir, fsys); err != nil {
+		return nil, fmt.Errorf("copying fs to temp dir: %w", err)
 	}
 
-	abs, err := filepath.Abs(fpath)
+	rj, err := l.Resolve(filepath.Join(dir, fpath))
 	if err != nil {
 		return nil, err
 	}
-	if pf, ok := l.files[abs]; ok {
-		return pf, nil
+
+	// remap temp dir paths to FS-relative paths for deterministic output
+	l.remapFilePaths(rj, dir)
+	return rj, nil
+}
+
+func (l *Loader) remapFilePaths(rj *ResolvedJournal, oldRoot string) {
+	// remap paths; keep Include field consistent for walkers
+	for _, pf := range rj.Occurrences {
+		if rel, err := filepath.Rel(oldRoot, pf.Path); err == nil {
+			pf.Path = filepath.ToSlash(rel)
+		}
 	}
-	src, err := os.ReadFile(abs)
+
+	newByPath := make(map[string][]*ParsedFile, len(rj.ByPath))
+	for oldPath, pfs := range rj.ByPath {
+		rel, err := filepath.Rel(oldRoot, oldPath)
+		newPath := oldPath
+		if err == nil {
+			newPath = filepath.ToSlash(rel)
+		}
+		newByPath[newPath] = pfs
+	}
+	rj.ByPath = newByPath
+}
+
+// InvalidateFile removes a file from the content cache
+func (l *Loader) InvalidateFile(fpath string) {
+	canon := canonicalPath(fpath)
+	l.mu.Lock()
+	delete(l.contentCache, canon)
+	l.mu.Unlock()
+}
+
+// ClearCache empties the content cache
+func (l *Loader) ClearCache() {
+	l.mu.Lock()
+	l.contentCache = make(map[string][]byte)
+	l.mu.Unlock()
+}
+
+// readContent reads a file via content cache; normalises line endings and caches.
+func (l *Loader) readContent(fpath string) ([]byte, error) {
+	canon := canonicalPath(fpath)
+
+	l.mu.RLock()
+	content, ok := l.contentCache[canon]
+	l.mu.RUnlock()
+	if ok {
+		return content, nil
+	}
+
+	raw, err := os.ReadFile(fpath)
 	if err != nil {
 		return nil, err
 	}
-	return l.loadBytes(abs, src, stack)
+
+	// normalise line endings for consistent caching and parsing
+	content = bytes.ReplaceAll(raw, []byte("\r\n"), []byte("\n"))
+	content = bytes.ReplaceAll(content, []byte("\r"), []byte("\n"))
+
+	l.mu.Lock()
+	l.contentCache[canon] = content
+	l.mu.Unlock()
+	return content, nil
 }
 
-func (l *Loader) loadBytes(pathStr string, src []byte, stack []string) (*ParsedFile, error) {
-	var fpath string
-	if l.fsys != nil {
-		fpath = path.Clean(pathStr)
-	} else {
-		abs, err := filepath.Abs(pathStr)
-		if err != nil {
-			return nil, err
+// resolveOccurrence recursively parses one occurrence and its includes
+func (l *Loader) resolveOccurrence(rj *ResolvedJournal, parent *ParsedFile, fpath string, src []byte, defaultYear int, stack []string) {
+	// cycle detection uses canonical paths to catch cycles through symlinks.
+	canon := canonicalPath(fpath)
+	if slices.Contains(stack, canon) {
+		if parent != nil {
+			parent.FileErrors = append(parent.FileErrors, &ast.FileError{
+				Path:    fpath,
+				Message: fmt.Sprintf("include cycle: %s", strings.Join(append(stack, canon), " → ")),
+			})
 		}
-		fpath = abs
-	}
-
-	if slices.Contains(stack, fpath) {
-		return nil, fmt.Errorf("include cycle: %s", strings.Join(append(stack, fpath), " → "))
-	}
-	if pf, ok := l.files[fpath]; ok {
-		return pf, nil
+		return
 	}
 
 	lex := lexer.New(fpath, src)
-	par := parser.New(lex)
+	par := parser.NewWithYear(lex, defaultYear)
 	j := par.ParseJournal()
 
 	pf := &ParsedFile{
@@ -170,47 +191,91 @@ func (l *Loader) loadBytes(pathStr string, src []byte, stack []string) (*ParsedF
 		Includes: []*ParsedFile{},
 		Errors:   j.Errors,
 	}
-	l.files[fpath] = pf
+	rj.Occurrences = append(rj.Occurrences, pf)
+	rj.ByPath[fpath] = append(rj.ByPath[fpath], pf)
 
-	for _, entry := range j.Entries {
-		inc, ok := entry.(*ast.IncludeDirective)
-		if !ok {
+	if parent != nil {
+		parent.Includes = append(parent.Includes, pf)
+	}
+
+	currentYear := defaultYear
+	for i, entry := range j.Entries {
+		switch e := entry.(type) {
+		case *ast.BlankLine:
 			continue
-		}
 
-		var incPath string
-		var matches []string
-		var err error
-		if l.fsys != nil {
-			incPath = path.Join(path.Dir(fpath), inc.Path)
-			matches, err = fs.Glob(l.fsys, incPath)
-		} else {
-			incPath = filepath.Join(filepath.Dir(fpath), inc.Path)
-			matches, err = filepath.Glob(incPath)
-		}
-
-		if err != nil || len(matches) == 0 {
-			pf.FileErrors = append(pf.FileErrors, &ast.FileError{
-				Path:    incPath,
-				Span:    inc.Span,
-				Message: fmt.Sprintf("include not found: %s", inc.Path),
+		case *ast.IncludeDirective:
+			rj.Items = append(rj.Items, ResolvedItem{
+				Occurrence: pf,
+				IsInclude:  true,
+				EntryIndex: i,
 			})
-			continue
-		}
 
-		for _, match := range matches {
-			child, err := l.loadFile(match, append(stack, fpath))
+			incPath, err := resolveIncludePath(fpath, e.Path)
 			if err != nil {
 				pf.FileErrors = append(pf.FileErrors, &ast.FileError{
-					Path:    match,
-					Span:    inc.Span,
+					Path:    e.Path,
+					Span:    e.Span,
 					Message: err.Error(),
 				})
 				continue
 			}
-			pf.Includes = append(pf.Includes, child)
+
+			matches, err := filepath.Glob(incPath)
+			if err != nil || len(matches) == 0 {
+				pf.FileErrors = append(pf.FileErrors, &ast.FileError{
+					Path:    incPath,
+					Span:    e.Span,
+					Message: fmt.Sprintf("include not found: %s", e.Path),
+				})
+				continue
+			}
+
+			for _, match := range matches {
+				childSrc, err := l.readContent(match)
+				if err != nil {
+					pf.FileErrors = append(pf.FileErrors, &ast.FileError{
+						Path:    match,
+						Span:    e.Span,
+						Message: err.Error(),
+					})
+					continue
+				}
+				l.resolveOccurrence(rj, pf, match, childSrc, currentYear, append(stack, canon))
+			}
+
+		default:
+			rj.Items = append(rj.Items, ResolvedItem{Occurrence: pf, EntryIndex: i})
+		}
+
+		// track year directive for context propagation to child includes
+		if yd, ok := entry.(*ast.YearDirective); ok && yd.Year > 0 {
+			currentYear = yd.Year
 		}
 	}
+}
 
-	return pf, nil
+func resolveIncludePath(parentPath, incPattern string) (string, error) {
+	base := filepath.Dir(parentPath)
+	target := filepath.Join(base, incPattern)
+	// normalise to detect traversal
+	clean := filepath.Clean(target)
+	if !strings.HasPrefix(clean, filepath.Clean(base)+string(filepath.Separator)) &&
+		clean != filepath.Clean(base) &&
+		!filepath.IsAbs(incPattern) {
+		return "", fmt.Errorf("path traversal: %s", incPattern)
+	}
+	return clean, nil
+}
+
+func canonicalPath(path string) string {
+	abs, err := filepath.Abs(path)
+	if err != nil {
+		return filepath.Clean(path)
+	}
+	canonical, err := filepath.EvalSymlinks(abs)
+	if err != nil {
+		return filepath.Clean(abs)
+	}
+	return filepath.Clean(canonical)
 }

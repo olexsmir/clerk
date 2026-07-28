@@ -67,11 +67,12 @@ func TestParserOnRealJournals(t *testing.T) {
 	for tname, tt := range tests {
 		t.Run(tname, func(t *testing.T) {
 			loader := journal.NewLoader()
-			pf, err := loader.Load(filepath.Join("testdata/journals", tname))
+			rj, err := loader.Resolve(filepath.Join("testdata/journals", tname))
 			if err != nil {
 				t.Fatalf("load err: %v", err)
 			}
 
+			pf := rj.Occurrences[0]
 			if tt.err {
 				if len(pf.Errors)+len(pf.FileErrors) == 0 {
 					t.Errorf("expected parse errors but got none")

@@ -19,12 +19,13 @@ func TestBuild(t *testing.T) {
 			}
 
 			l := journal.NewLoader()
-			if _, err := l.LoadFS(fsys, "in.journal"); err != nil {
-				t.Fatalf("LoadFS: %v", err)
+			rj, err := l.ResolveFS(fsys, "in.journal")
+			if err != nil {
+				t.Fatalf("ResolveFS: %v", err)
 			}
 
 			var buf bytes.Buffer
-			fprint(&buf, Build(l.Ordered()))
+			fprint(&buf, Build(rj))
 			golden.Assert(t, a, buf.String())
 		})
 	}

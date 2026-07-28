@@ -46,34 +46,10 @@ func resolvePaths(paths []string) ([]string, error) {
 	return files, nil
 }
 
-func loadFile(loader *journal.Loader, path string) (*journal.ParsedFile, error) {
-	src, err := os.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("reading %s: %w", path, err)
-	}
-	pf, err := loader.LoadBytes(path, src)
-	if err != nil {
-		return nil, fmt.Errorf("parsing %s: %w", path, err)
-	}
-	return pf, nil
-}
-
 func readStdin() ([]byte, error) {
 	src, err := io.ReadAll(os.Stdin)
 	if err != nil {
 		return nil, fmt.Errorf("reading stdin: %w", err)
 	}
 	return src, nil
-}
-
-func loadStdin(loader *journal.Loader) (*journal.ParsedFile, error) {
-	src, err := readStdin()
-	if err != nil {
-		return nil, err
-	}
-	pf, err := loader.LoadBytes("stdin", src)
-	if err != nil {
-		return nil, fmt.Errorf("parsing stdin: %w", err)
-	}
-	return pf, nil
 }

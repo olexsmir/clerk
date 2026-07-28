@@ -9,11 +9,15 @@ import (
 	"olexsmir.xyz/clerk/journal/ast"
 )
 
-// Build constructs [Analysis] from a list of parsed files.
-// Files should be in dependency order (includes before includers).
-func Build(files []*journal.ParsedFile) *Analysis {
+// Build constructs [Analysis] from a flat resolved journal view.
+func Build(rj *journal.ResolvedJournal) *Analysis {
+	fileIndex := make(map[*journal.ParsedFile]int)
+	for i, pf := range rj.Occurrences {
+		fileIndex[pf] = i
+	}
+
 	a := &Analysis{
-		Files:                 files,
+		Files:                 rj.Occurrences,
 		Accounts:              make(map[string]*AccountInfo),
 		Commodities:           make(map[string]*CommodityInfo),
 		Payees:                make(map[string]*PayeeInfo),
@@ -22,10 +26,12 @@ func Build(files []*journal.ParsedFile) *Analysis {
 		CommodityDecimalMarks: make(map[string]byte),
 		TransactionsByKey:     make(map[string][]*ast.Transaction),
 	}
-	for i, pf := range a.Files {
-		for _, entry := range pf.Ast.Entries {
-			a.addEntry(i, entry)
+	for _, item := range rj.Items {
+		if item.IsInclude {
+			continue
 		}
+		idx := fileIndex[item.Occurrence]
+		a.addEntry(idx, item.Occurrence.Ast.Entries[item.EntryIndex])
 	}
 	a.buildPrefixIndex()
 	a.sortAccountNames()

@@ -4,14 +4,13 @@ Go toolkit for ledger/hledger journal files: parsing, linting, formatting, LSP, 
 
 ## Commands
 ```bash
-go build -ldflags="-X 'main.version=dev'" .   # build
+go build .                                    # build
 go test ./...                                 # all tests
 go test ./internal/linter/ -run TestLinter -v # linter golden suite
 ```
 
 ## Conventions
-- **Golden tests:** `testdata/<name>.input` (fixture) + `<name>.golden` (expected), use `internal/testutil/golden.Load/Assert`
-- **semantic.Build(files):** files must be in include-order (includers after includes)
+- **Golden tests:** `testdata/<name>.txtar`
 
 ## Boundaries
 - Use `internal/decimal.Decimal` for monetary amounts (no float64)

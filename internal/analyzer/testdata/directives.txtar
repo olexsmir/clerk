@@ -48,12 +48,11 @@ transactions: 0
 periodic transactions: 0
 automated transactions: 0
 
-directives (13):
+directives (12):
   account expenses:food
   commodity $
   payee 
   tag mytag
-  include other.journal
   alias expenses:food = expenses:food:old
   year 2024
   D $1000
