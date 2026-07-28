@@ -1,0 +1,11 @@
+-- in.journal --
+account assets:cash
+account equity:opening
+account assets:cash
+
+2024-05-02 * "groceries"
+    expenses:food   40.00 USD
+    assets:cash
+
+-- expect --
+in.journal:2:9: unused-account: unused account: equity:opening

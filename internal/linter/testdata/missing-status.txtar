@@ -1,0 +1,7 @@
+-- in.journal --
+2024-05-01 "groceries"
+    expenses:food   50.00 USD
+    assets:cash
+
+-- expect --
+in.journal:1:12: missing-status: transaction has no status

@@ -1,0 +1,11 @@
+-- input --
+2024/01/01 groceries ; a note
+-- expect --
+DATE         "2024/01/01"         1:1-1:11
+WHITESPACE   " "                  1:11-1:12
+TEXT         "groceries"          1:12-1:21
+WHITESPACE   " "                  1:21-1:22
+SEMICOLON    ";"                  1:22-1:23
+TEXT         "a note"             1:24-2:0
+NEWLINE      "\n"                 2:0-2:1
+EOF          ""                   2:1-2:1

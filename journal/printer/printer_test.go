@@ -13,9 +13,8 @@ var tests = []string{"entries", "directives", "sample"}
 func TestRoundTrip(t *testing.T) {
 	for _, tname := range tests {
 		t.Run(tname, func(t *testing.T) {
-			inp := golden.Load(t, tname)
-
-			pf, err := journal.NewLoader().LoadBytes(tname+".journal", inp)
+			a := golden.Read(t, tname)
+			pf, err := journal.NewLoader().LoadBytes(tname+".journal", a.Get("input"))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -24,7 +23,7 @@ func TestRoundTrip(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			golden.Assert(t, tname, b.String())
+			golden.Assert(t, a, b.String())
 		})
 	}
 }
@@ -33,7 +32,7 @@ func BenchmarkPrinter(b *testing.B) {
 	for _, tname := range tests {
 		b.Run(tname, func(b *testing.B) {
 			b.ReportAllocs()
-			inp := golden.Load(b, tname)
+			inp := golden.Read(b, tname).Get("input")
 			pf, err := journal.NewLoader().LoadBytes(tname+".journal", inp)
 			if err != nil {
 				b.Fatal(err)
@@ -61,8 +60,8 @@ var testsWithConfig = map[string]*Config{
 func TestRoundTrip_WithConfig(t *testing.T) {
 	for tname, tt := range testsWithConfig {
 		t.Run(tname, func(t *testing.T) {
-			inp := golden.Load(t, tname)
-			pf, err := journal.NewLoader().LoadBytes(tname+".journal", inp)
+			a := golden.Read(t, tname)
+			pf, err := journal.NewLoader().LoadBytes(tname+".journal", a.Get("input"))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -71,13 +70,13 @@ func TestRoundTrip_WithConfig(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			golden.Assert(t, tname, b.String())
+			golden.Assert(t, a, b.String())
 		})
 	}
 }
 
 func BenchmarkPrinter_Config(b *testing.B) {
-	inp := golden.Load(b, "entries")
+	inp := golden.Read(b, "entries").Get("input")
 	pf, err := journal.NewLoader().LoadBytes("entries.journal", inp)
 	if err != nil {
 		b.Fatal(err)

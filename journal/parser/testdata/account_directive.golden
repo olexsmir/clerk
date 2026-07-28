@@ -1,5 +1,0 @@
-Journal
-  AccountDirective j:1:1-2:1
-    Account j:1:9-2:0
-      SubAccount: "expenses" j:1:9-1:17
-      SubAccount: "food" j:1:18-2:0

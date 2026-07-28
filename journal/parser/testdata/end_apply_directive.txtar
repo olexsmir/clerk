@@ -1,0 +1,6 @@
+-- input --
+end apply tag
+-- expect --
+Journal
+  EndDirective j:1:1-2:1
+    Expr: "apply tag"

@@ -1,0 +1,16 @@
+-- input --
+2024/01/01 groceries
+    @@@invalid
+    assets:checking
+-- expect --
+Journal
+  Transaction j:1:1-4:1
+    Date: 2024/01/01
+    Payee: "groceries" j:1:12-2:0
+    Posting j:3:1-4:1
+      Account j:3:5-4:0
+        SubAccount: "assets" j:3:5-3:11
+        SubAccount: "checking" j:3:12-4:0
+      Amount: <elided>
+  Errors
+    j:2:5-2:7: expected account name, got ATAT

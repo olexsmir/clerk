@@ -1,0 +1,6 @@
+-- input --
+2024/01/01
+-- expect --
+Journal
+  Transaction j:1:1-2:1
+    Date: 2024/01/01

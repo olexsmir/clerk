@@ -1,6 +1,0 @@
-Journal
-  IncludeDirective j:1:1-2:1
-    Path: "./path.journal"
-    Comment j:1:24-2:0
-      Marker: ";"
-      Text: "something importnat"

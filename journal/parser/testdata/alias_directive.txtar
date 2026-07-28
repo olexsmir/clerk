@@ -1,0 +1,7 @@
+-- input --
+alias checking = assets:bank:checking
+-- expect --
+Journal
+  AliasDirective j:1:1-2:1
+    From: "checking"
+    To: "assets:bank:checking"

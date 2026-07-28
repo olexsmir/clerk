@@ -1,0 +1,8 @@
+-- input --
+commodity UAH
+  format 1 000.00 UAH
+  note Божествена Гривня  ; this gets ignored
+-- expect --
+Journal
+  CommodityDirective j:1:1-4:1
+    Commodity: "UAH"

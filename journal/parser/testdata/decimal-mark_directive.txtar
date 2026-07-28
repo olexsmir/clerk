@@ -1,0 +1,6 @@
+-- input --
+decimal-mark ,
+-- expect --
+Journal
+  DecimalMarkDirective j:1:1-2:1
+    Mark: ","

@@ -1,5 +1,0 @@
-include include0.journal
-
-2024/01/01 ! test
-    expenses:food  $10
-    assets:checking

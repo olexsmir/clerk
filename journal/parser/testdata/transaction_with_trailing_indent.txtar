@@ -1,0 +1,38 @@
+-- input --
+
+2013/1/1 * pay taxes
+    expenses:personal:tax              $1250
+    assets:bank:checking               $-1250
+
+-- expect --
+Journal
+  BlankLine j:2:0-2:1
+  Transaction j:2:1-6:0
+    Date: 2013/01/01
+    State: "*"
+    Payee: "pay taxes" j:2:12-3:0
+    Posting j:3:1-4:1
+      Account j:3:5-3:26
+        SubAccount: "expenses" j:3:5-3:13
+        SubAccount: "personal" j:3:14-3:22
+        SubAccount: "tax" j:3:23-3:26
+      Amount j:3:40-3:40
+        Quantity: 1250
+        Commodity: "$"
+        CommodityPos: Before
+        HasSpace: false
+        Precision: 0
+        Decimal: "."
+    Posting j:4:1-6:0
+      Account j:4:5-4:25
+        SubAccount: "assets" j:4:5-4:11
+        SubAccount: "bank" j:4:12-4:16
+        SubAccount: "checking" j:4:17-4:25
+      Amount j:4:40-4:40
+        Quantity: -1250
+        Commodity: "$"
+        CommodityPos: Before
+        HasSpace: false
+        Precision: 0
+        Decimal: "."
+  BlankLine j:6:0-6:1

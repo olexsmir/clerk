@@ -1,0 +1,13 @@
+-- in.journal --
+commodity USD
+commodity EUR
+commodity GBP
+commodity USD
+commodity JPY
+commodity EUR
+
+-- expect --
+in.journal:1:1: duplicated-commodity: duplicated commodity declaration: USD
+in.journal:2:1: duplicated-commodity: duplicated commodity declaration: EUR
+in.journal:4:1: duplicated-commodity: duplicated commodity declaration: USD
+in.journal:6:1: duplicated-commodity: duplicated commodity declaration: EUR

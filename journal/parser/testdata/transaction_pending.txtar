@@ -1,0 +1,8 @@
+-- input --
+2024-01-01 ! groceries
+-- expect --
+Journal
+  Transaction j:1:1-2:1
+    Date: 2024-01-01
+    State: "!"
+    Payee: "groceries" j:1:14-2:0

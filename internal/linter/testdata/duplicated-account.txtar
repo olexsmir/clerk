@@ -1,0 +1,13 @@
+-- in.journal --
+account Expenses:Food
+account Expenses:Transport
+account Income:Salary
+account Expenses:Food
+account Assets:Cash
+account Expenses:Transport
+
+-- expect --
+in.journal:1:9: duplicated-account: duplicated account declaration: Expenses:Food
+in.journal:2:9: duplicated-account: duplicated account declaration: Expenses:Transport
+in.journal:4:9: duplicated-account: duplicated account declaration: Expenses:Food
+in.journal:6:9: duplicated-account: duplicated account declaration: Expenses:Transport

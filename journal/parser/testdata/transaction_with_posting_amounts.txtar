@@ -1,0 +1,31 @@
+-- input --
+2024.01.01 groceries
+    expenses:food  10.00 UAH
+    assets:checking  -10.00 UAH
+-- expect --
+Journal
+  Transaction j:1:1-4:1
+    Date: 2024.01.01
+    Payee: "groceries" j:1:12-2:0
+    Posting j:2:1-3:1
+      Account j:2:5-2:18
+        SubAccount: "expenses" j:2:5-2:13
+        SubAccount: "food" j:2:14-2:18
+      Amount j:2:20-2:20
+        Quantity: 10
+        Commodity: "UAH"
+        CommodityPos: After
+        HasSpace: true
+        Precision: 2
+        Decimal: "."
+    Posting j:3:1-4:1
+      Account j:3:5-3:20
+        SubAccount: "assets" j:3:5-3:11
+        SubAccount: "checking" j:3:12-3:20
+      Amount j:3:22-3:22
+        Quantity: -10
+        Commodity: "UAH"
+        CommodityPos: After
+        HasSpace: true
+        Precision: 2
+        Decimal: "."

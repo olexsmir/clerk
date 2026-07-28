@@ -1,0 +1,15 @@
+-- input --
+payee grocery store
+payee 'grocery store 3'
+payee "grocery store 2"
+payee grocery store 1
+-- expect --
+Journal
+  PayeeDirective j:1:1-2:1
+    Name: "grocery store"
+  PayeeDirective j:2:1-3:1
+    Name: "grocery store 3"
+  PayeeDirective j:3:1-4:1
+    Name: "grocery store 2"
+  PayeeDirective j:4:1-5:1
+    Name: "grocery store 1"

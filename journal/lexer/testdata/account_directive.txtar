@@ -1,0 +1,10 @@
+-- input --
+account expenses:food
+-- expect --
+ACCOUNT      "account"            1:1-1:8
+WHITESPACE   " "                  1:8-1:9
+TEXT         "expenses"           1:9-1:17
+COLON        ":"                  1:17-1:18
+TEXT         "food"               1:18-2:0
+NEWLINE      "\n"                 2:0-2:1
+EOF          ""                   2:1-2:1

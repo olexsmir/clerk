@@ -1,0 +1,70 @@
+-- input --
+= ^income
+    (liabilities:tax)  *.33
+
+= expenses:gifts
+    budget:gifts  *-1
+    assets:budget  *1
+
+= income:salary
+    budget:savings  (amount * 0.5)
+-- expect --
+Journal
+  AutomatedTransaction j:1:1-4:0
+    Expr: "^income"
+    Posting j:2:1-4:0
+      Type: unbalanced virtual
+      Account j:2:6-2:21
+        SubAccount: "liabilities" j:2:6-2:17
+        SubAccount: "tax" j:2:18-2:21
+      Amount j:2:25-2:25
+        Quantity: 0.33
+        Commodity: ""
+        CommodityPos: Before
+        HasSpace: false
+        IsExpr: true
+        Precision: 2
+        Decimal: "."
+  BlankLine j:4:0-4:1
+  AutomatedTransaction j:4:1-8:0
+    Expr: "expenses:gifts"
+    Posting j:5:1-6:1
+      Account j:5:5-5:17
+        SubAccount: "budget" j:5:5-5:11
+        SubAccount: "gifts" j:5:12-5:17
+      Amount j:5:20-5:20
+        Quantity: -1
+        Commodity: ""
+        CommodityPos: Before
+        HasSpace: false
+        IsExpr: true
+        Precision: 0
+        Decimal: "."
+    Posting j:6:1-8:0
+      Account j:6:5-6:18
+        SubAccount: "assets" j:6:5-6:11
+        SubAccount: "budget" j:6:12-6:18
+      Amount j:6:21-6:21
+        Quantity: 1
+        Commodity: ""
+        CommodityPos: Before
+        HasSpace: false
+        IsExpr: true
+        Precision: 0
+        Decimal: "."
+  BlankLine j:8:0-8:1
+  AutomatedTransaction j:8:1-10:1
+    Expr: "income:salary"
+    Posting j:9:1-10:1
+      Account j:9:5-9:19
+        SubAccount: "budget" j:9:5-9:11
+        SubAccount: "savings" j:9:12-9:19
+      Amount j:9:21-10:0
+        Quantity: 0
+        Commodity: ""
+        CommodityPos: Before
+        HasSpace: false
+        IsExpr: true
+        Expr: "amount * 0.5"
+        Precision: 0
+        Decimal: "."

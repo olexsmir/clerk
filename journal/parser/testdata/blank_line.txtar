@@ -1,0 +1,5 @@
+-- input --
+
+-- expect --
+Journal
+  BlankLine j:2:0-2:1

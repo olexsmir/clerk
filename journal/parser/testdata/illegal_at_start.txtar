@@ -1,0 +1,6 @@
+-- input --
+@@@ garbage
+-- expect --
+Journal
+  Errors
+    j:1:1-1:2: unexpected token AT

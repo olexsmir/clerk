@@ -1,0 +1,40 @@
+-- input --
+2024-01-01 groceries
+    @@@invalid
+    assets:checking
+
+2024/01/02 salary
+    income:salary  $1000
+    assets:checking
+-- expect --
+Journal
+  Transaction j:1:1-5:0
+    Date: 2024-01-01
+    Payee: "groceries" j:1:12-2:0
+    Posting j:3:1-5:0
+      Account j:3:5-4:0
+        SubAccount: "assets" j:3:5-3:11
+        SubAccount: "checking" j:3:12-4:0
+      Amount: <elided>
+  BlankLine j:5:0-5:1
+  Transaction j:5:1-8:1
+    Date: 2024/01/02
+    Payee: "salary" j:5:12-6:0
+    Posting j:6:1-7:1
+      Account j:6:5-6:18
+        SubAccount: "income" j:6:5-6:11
+        SubAccount: "salary" j:6:12-6:18
+      Amount j:6:20-6:20
+        Quantity: 1000
+        Commodity: "$"
+        CommodityPos: Before
+        HasSpace: false
+        Precision: 0
+        Decimal: "."
+    Posting j:7:1-8:1
+      Account j:7:5-8:0
+        SubAccount: "assets" j:7:5-7:11
+        SubAccount: "checking" j:7:12-8:0
+      Amount: <elided>
+  Errors
+    j:2:5-2:7: expected account name, got ATAT

@@ -1,0 +1,94 @@
+-- input --
+
+2024/01/01 groceries | 1 + 2
+2024/01/01 groceries | 1 * 2
+2024/01/01 groceries | 1 ! 2
+2024/01/01 groceries | 1 # 2
+2024/01/01 groceries | 1 % 2
+2024/01/01 groceries | 1 ^ 2
+2024/01/01 groceries | 1 & 2
+2024/01/01 groceries | 1 ( 2
+2024/01/01 groceries | 1 ) 2
+2024/01/01 groceries | 1 [ 2
+2024/01/01 groceries | 1 ] 2
+2024/01/01 groceries | 1 { 2
+2024/01/01 groceries | 1 } 2
+2026-06-07 * payee !one | something *important*
+    expenses:food  40.00
+    assets:cash
+-- expect --
+Journal
+  BlankLine j:2:0-2:1
+  Transaction j:2:1-3:1
+    Date: 2024/01/01
+    Payee: "groceries" j:2:12-2:21
+    Note: "1 + 2"
+  Transaction j:3:1-4:1
+    Date: 2024/01/01
+    Payee: "groceries" j:3:12-3:21
+    Note: "1 * 2"
+  Transaction j:4:1-5:1
+    Date: 2024/01/01
+    Payee: "groceries" j:4:12-4:21
+    Note: "1 ! 2"
+  Transaction j:5:1-6:1
+    Date: 2024/01/01
+    Payee: "groceries" j:5:12-5:21
+    Note: "1 # 2"
+  Transaction j:6:1-7:1
+    Date: 2024/01/01
+    Payee: "groceries" j:6:12-6:21
+    Note: "1 % 2"
+  Transaction j:7:1-8:1
+    Date: 2024/01/01
+    Payee: "groceries" j:7:12-7:21
+    Note: "1 ^ 2"
+  Transaction j:8:1-9:1
+    Date: 2024/01/01
+    Payee: "groceries" j:8:12-8:21
+    Note: "1 & 2"
+  Transaction j:9:1-10:1
+    Date: 2024/01/01
+    Payee: "groceries" j:9:12-9:21
+    Note: "1 ( 2"
+  Transaction j:10:1-11:1
+    Date: 2024/01/01
+    Payee: "groceries" j:10:12-10:21
+    Note: "1 ) 2"
+  Transaction j:11:1-12:1
+    Date: 2024/01/01
+    Payee: "groceries" j:11:12-11:21
+    Note: "1 [ 2"
+  Transaction j:12:1-13:1
+    Date: 2024/01/01
+    Payee: "groceries" j:12:12-12:21
+    Note: "1 ] 2"
+  Transaction j:13:1-14:1
+    Date: 2024/01/01
+    Payee: "groceries" j:13:12-13:21
+    Note: "1 { 2"
+  Transaction j:14:1-15:1
+    Date: 2024/01/01
+    Payee: "groceries" j:14:12-14:21
+    Note: "1 } 2"
+  Transaction j:15:1-18:1
+    Date: 2026-06-07
+    State: "*"
+    Payee: "payee !one" j:15:14-15:24
+    Note: "something *important*"
+    Posting j:16:1-17:1
+      Account j:16:5-16:18
+        SubAccount: "expenses" j:16:5-16:13
+        SubAccount: "food" j:16:14-16:18
+      Amount j:16:20-16:20
+        Quantity: 40
+        Commodity: ""
+        CommodityPos: Before
+        HasSpace: false
+        Precision: 2
+        Decimal: "."
+    Posting j:17:1-18:1
+      Account j:17:5-18:0
+        SubAccount: "assets" j:17:5-17:11
+        SubAccount: "cash" j:17:12-18:0
+      Amount: <elided>

@@ -1,0 +1,34 @@
+-- in.journal --
+2026-01-15 * "Transaction 1"
+  Expenses:Food      $10
+  Assets:Cash
+
+2026-01-10 * "Transaction 2 - out of order (before Txn 1)"
+  Expenses:Food      $20
+  Assets:Cash
+
+2026-01-12 * "Transaction 3 - would slip through old prev logic (12 < 15 but 12 > 10)"
+  Expenses:Food      $8
+  Assets:Cash
+
+2026-02-01 * "Transaction 4"
+  Expenses:Food      $15
+  Assets:Cash
+
+2026-01-20 * "Transaction 5 - out of order (before Txn 4)"
+  Expenses:Food      $5
+  Assets:Cash
+
+2026-03-01 * "Transaction 6"
+  Expenses:Food      $25
+  Assets:Cash
+
+2025-12-01 * "Transaction 7 - entirely before everything"
+  Expenses:Food      $30
+  Assets:Cash
+
+-- expect --
+in.journal:5:1: orderdate: transaction is out of chronological order (date 2026-01-10 before 2026-01-15)
+in.journal:9:1: orderdate: transaction is out of chronological order (date 2026-01-12 before 2026-01-15)
+in.journal:17:1: orderdate: transaction is out of chronological order (date 2026-01-20 before 2026-02-01)
+in.journal:25:1: orderdate: transaction is out of chronological order (date 2025-12-01 before 2026-03-01)

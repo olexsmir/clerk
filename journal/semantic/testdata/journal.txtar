@@ -1,0 +1,95 @@
+-- in.journal --
+account expenses:food
+account expenses:food
+account expenses:transport
+
+commodity $
+commodity $
+commodity EUR
+
+~ monthly
+    expenses:transport  $50
+    assets:checking
+
+= expr:big
+    expenses:food  $100
+    assets:credit
+
+2024/01/01 groceries
+    expenses:food  $10
+    assets:checking
+
+2024/01/02 lunch
+    expenses:food  $5
+    assets:cash
+
+2024/01/04 aws
+    expenses:food  1000000.00 USD
+    assets:cash
+
+-- expect --
+files (1):
+  0: in.journal
+
+commodities (3):
+  $
+    directives: 2
+      commodity $
+      commodity $
+    usages: 4
+      file 0: $ ("50")
+      file 0: $ ("100")
+      file 0: $ ("10")
+      file 0: $ ("5")
+  EUR
+    directives: 1
+      commodity EUR
+    usages: 0
+  USD
+    directives: 0
+    usages: 1
+      file 0: USD ("1000000")
+
+accounts (5):
+  assets:cash
+    directives: 0
+    usages: 2
+      file 0: assets:cash
+      file 0: assets:cash
+  assets:checking
+    directives: 0
+    usages: 2
+      file 0: assets:checking
+      file 0: assets:checking
+  assets:credit
+    directives: 0
+    usages: 1
+      file 0: assets:credit
+  expenses:food
+    directives: 2
+      account expenses:food
+      account expenses:food
+    usages: 4
+      file 0: expenses:food
+      file 0: expenses:food
+      file 0: expenses:food
+      file 0: expenses:food
+  expenses:transport
+    directives: 1
+      account expenses:transport
+    usages: 1
+      file 0: expenses:transport
+
+payees (3):
+  aws
+    directives: 0
+    usages: 1
+      file 0: aws
+  groceries
+    directives: 0
+    usages: 1
+      file 0: groceries
+  lunch
+    directives: 0
+    usages: 1
+      file 0: lunch

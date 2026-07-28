@@ -1,0 +1,9 @@
+-- in.journal --
+2026-06-10 *  asdf
+  qwer  1 UIO
+  asdf  1.00 ASD
+  zxcv  2 UIO
+
+-- expect --
+in.journal:2:9: omitted-precision: amount has insufficient precision
+in.journal:4:9: omitted-precision: amount has insufficient precision

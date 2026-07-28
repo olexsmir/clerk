@@ -1,0 +1,9 @@
+-- input --
+comment
+some text
+end comment
+-- expect --
+Journal
+  CommentBlockDirective j:1:1-4:1
+    Header: ""
+    Content: "some text\n"

@@ -2,50 +2,74 @@ package golden
 
 import (
 	"flag"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"olexsmir.xyz/clerk/internal/testutil/txtar"
 )
 
 var update = flag.Bool("golden.update", false, "update golden files")
 
-// Load reads testdata/<path>.input. Fails the test if file is not found.
-func Load(t testing.TB, path string) []byte {
-	t.Helper()
-	data, err := os.ReadFile(filepath.Join("testdata", path+".input"))
-	if err != nil {
-		t.Fatalf("loading %s: %v", path, err)
-	}
-	return data
+var normalizer = strings.NewReplacer("/", "__", " ", "_")
+
+func txtarPath(name string) string {
+	return filepath.Join("testdata", normalizer.Replace(name)+".txtar")
 }
 
-// Assert compares got against testdata/<name>.golden.
-func Assert(t testing.TB, name, got string) {
+// Archive wraps a txtar.Archive with its on-disk path for efficient updates.
+type Archive struct {
+	*txtar.Archive
+	path string
+}
+
+// Read parses testdata/<name>.txtar and returns the archive.
+// Fails the test if the file doesn't exist or the archive is empty.
+func Read(t testing.TB, name string) *Archive {
+	t.Helper()
+	path := txtarPath(name)
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("loading %s: %v", name+".txtar", err)
+	}
+	a := txtar.Parse(data)
+	if len(a.Files) == 0 {
+		t.Fatalf("txtar %s: no files", name)
+	}
+	return &Archive{Archive: a, path: path}
+}
+
+func (a *Archive) FS() (fs.FS, error) { return txtar.FS(a.Archive) }
+
+// Assert compares got against the "expect" file in a txtar archive.
+// With -golden.update, rewrites the expect section in-place, preserving other files.
+func Assert(t testing.TB, a *Archive, got string) {
 	t.Helper()
 
-	normalized := strings.NewReplacer("/", "__", " ", "_").Replace(name)
-	path := filepath.Join("testdata", normalized+".golden")
-
 	if *update {
-		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-			t.Fatalf("creating testdata dir: %v", err)
+		for i, f := range a.Files {
+			if f.Name == "expect" {
+				a.Files[i].Data = []byte(got)
+				goto write
+			}
 		}
-		if err := os.WriteFile(path, []byte(got), 0o644); err != nil {
-			t.Fatalf("writing golden file: %v", err)
+		a.Files = append(a.Files, txtar.File{Name: "expect", Data: []byte(got)})
+	write:
+		if err := os.WriteFile(a.path, txtar.Format(a.Archive), 0o644); err != nil {
+			t.Fatalf("writing updated txtar: %v", err)
 		}
 		return
 	}
 
-	golden, err := os.ReadFile(path)
-	if os.IsNotExist(err) {
-		t.Fatalf("no golden file %s, run with -golden.update:\n%s", path, got)
+	for _, f := range a.Files {
+		if f.Name == "expect" {
+			if string(f.Data) != got {
+				t.Fatalf("golden mismatch for %s\nwant:\n%s\ngot:\n%s", a.path, string(f.Data), got)
+			}
+			return
+		}
 	}
-	if err != nil {
-		t.Fatalf("reading golden file: %v", err)
-	}
-
-	if string(golden) != got {
-		t.Fatalf("golden mismatch for %s\nwant:\n%s\ngot:\n%s", path, string(golden), got)
-	}
+	t.Fatalf("txtar %s: no 'expect' file", a.path)
 }

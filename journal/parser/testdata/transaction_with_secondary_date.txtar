@@ -1,0 +1,8 @@
+-- input --
+2024/01/01=2024/01/02 groceries
+-- expect --
+Journal
+  Transaction j:1:1-2:1
+    Date: 2024/01/01
+    SecondDate: 2024/01/02
+    Payee: "groceries" j:1:23-2:0

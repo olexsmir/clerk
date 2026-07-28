@@ -1,4 +1,0 @@
-NEWLINE      "\n"                 2:0-3:0
-NEWLINE      "\n"                 3:0-4:0
-NEWLINE      "\n"                 4:0-4:1
-EOF          ""                   4:1-4:1

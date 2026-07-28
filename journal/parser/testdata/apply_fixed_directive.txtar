@@ -1,0 +1,6 @@
+-- input --
+apply fixed CAD $0.90
+-- expect --
+Journal
+  ApplyDirective j:1:1-2:1
+    Expr: "fixed CAD $0.90"

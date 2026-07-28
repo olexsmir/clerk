@@ -1,5 +1,0 @@
-account-depth.journal:2:9: account-depth: account "Expenses:Food:Restaurants:Pizza:Hawaiian" depth (5) exceeds max allowed depth (3)
-account-depth.journal:3:9: account-depth: account "Expenses:Tax:Income:More:Deep:Too" depth (6) exceeds max allowed depth (3)
-account-depth.journal:5:19: account-depth: account "Expenses:Food:Restaurants:Pizza:Hawaiian" depth (5) exceeds max allowed depth (3)
-account-depth.journal:12:5: account-depth: account "Income:Job:Salary:Monthly:Base" depth (5) exceeds max allowed depth (3)
-account-depth.journal:13:5: account-depth: account "Assets:Checking:Deep:Sub" depth (4) exceeds max allowed depth (3)

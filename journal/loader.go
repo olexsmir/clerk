@@ -2,7 +2,9 @@ package journal
 
 import (
 	"fmt"
+	"io/fs"
 	"os"
+	"path"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -21,15 +23,42 @@ type ParsedFile struct {
 	FileErrors []*ast.FileError
 }
 
+// CollectFiles returns root and all its transitive includes.
+func CollectFiles(root *ParsedFile) []*ParsedFile {
+	var files []*ParsedFile
+	visited := make(map[*ParsedFile]bool)
+	var walk func(*ParsedFile)
+	walk = func(pf *ParsedFile) {
+		if visited[pf] {
+			return
+		}
+		visited[pf] = true
+		files = append(files, pf)
+		for _, inc := range pf.Includes {
+			walk(inc)
+		}
+	}
+	walk(root)
+	return files
+}
+
 type Loader struct {
-	files map[string]*ParsedFile // key is absolute path
+	files map[string]*ParsedFile // key is absolute path (OS) or FS-relative path
+	fsys  fs.FS                  // set during LoadFS
 }
 
 func NewLoader() *Loader {
-	return &Loader{make(map[string]*ParsedFile)}
+	return &Loader{files: make(map[string]*ParsedFile)}
 }
 
 func (l *Loader) Load(fpath string) (*ParsedFile, error) {
+	return l.loadFile(fpath, nil)
+}
+
+// LoadFS loads a journal from an [fs.FS], resolving includes through the same filesystem.
+func (l *Loader) LoadFS(fsys fs.FS, fpath string) (*ParsedFile, error) {
+	l.fsys = fsys
+	defer func() { l.fsys = nil }()
 	return l.loadFile(fpath, nil)
 }
 
@@ -63,25 +92,6 @@ func (l *Loader) Roots() []*ParsedFile {
 	return roots
 }
 
-// CollectFiles returns root and all its transitive includes.
-func CollectFiles(root *ParsedFile) []*ParsedFile {
-	var files []*ParsedFile
-	visited := make(map[*ParsedFile]bool)
-	var walk func(*ParsedFile)
-	walk = func(pf *ParsedFile) {
-		if visited[pf] {
-			return
-		}
-		visited[pf] = true
-		files = append(files, pf)
-		for _, inc := range pf.Includes {
-			walk(inc)
-		}
-	}
-	walk(root)
-	return files
-}
-
 // Ordered returns all files in dependency order (included before includer)
 func (l *Loader) Ordered() []*ParsedFile {
 	visited := make(map[string]bool)
@@ -104,52 +114,63 @@ func (l *Loader) Ordered() []*ParsedFile {
 }
 
 func (l *Loader) loadFile(fpath string, stack []string) (*ParsedFile, error) {
+	if l.fsys != nil {
+		fpath = path.Clean(fpath)
+		if pf, ok := l.files[fpath]; ok {
+			return pf, nil
+		}
+		src, err := fs.ReadFile(l.fsys, fpath)
+		if err != nil {
+			return nil, err
+		}
+		return l.loadBytes(fpath, src, stack)
+	}
+
 	abs, err := filepath.Abs(fpath)
 	if err != nil {
 		return nil, err
 	}
-
-	// reuse already loaded
 	if pf, ok := l.files[abs]; ok {
 		return pf, nil
 	}
-
 	src, err := os.ReadFile(abs)
 	if err != nil {
 		return nil, err
 	}
-
 	return l.loadBytes(abs, src, stack)
 }
 
-func (l *Loader) loadBytes(path string, src []byte, stack []string) (*ParsedFile, error) {
-	abs, err := filepath.Abs(path)
-	if err != nil {
-		return nil, err
+func (l *Loader) loadBytes(pathStr string, src []byte, stack []string) (*ParsedFile, error) {
+	var fpath string
+	if l.fsys != nil {
+		fpath = path.Clean(pathStr)
+	} else {
+		abs, err := filepath.Abs(pathStr)
+		if err != nil {
+			return nil, err
+		}
+		fpath = abs
 	}
 
-	// cycle includes
-	if slices.Contains(stack, abs) {
-		return nil, fmt.Errorf("include cycle: %s", strings.Join(append(stack, abs), " → "))
+	if slices.Contains(stack, fpath) {
+		return nil, fmt.Errorf("include cycle: %s", strings.Join(append(stack, fpath), " → "))
 	}
-
-	// reuse already loaded
-	if pf, ok := l.files[abs]; ok {
+	if pf, ok := l.files[fpath]; ok {
 		return pf, nil
 	}
 
-	lex := lexer.New(abs, src)
+	lex := lexer.New(fpath, src)
 	par := parser.New(lex)
 	j := par.ParseJournal()
 
 	pf := &ParsedFile{
-		Path:     abs,
+		Path:     fpath,
 		Src:      src,
 		Ast:      j,
 		Includes: []*ParsedFile{},
 		Errors:   j.Errors,
 	}
-	l.files[abs] = pf
+	l.files[fpath] = pf
 
 	for _, entry := range j.Entries {
 		inc, ok := entry.(*ast.IncludeDirective)
@@ -157,9 +178,17 @@ func (l *Loader) loadBytes(path string, src []byte, stack []string) (*ParsedFile
 			continue
 		}
 
-		incPath := filepath.Join(filepath.Dir(abs), inc.Path)
+		var incPath string
+		var matches []string
+		var err error
+		if l.fsys != nil {
+			incPath = path.Join(path.Dir(fpath), inc.Path)
+			matches, err = fs.Glob(l.fsys, incPath)
+		} else {
+			incPath = filepath.Join(filepath.Dir(fpath), inc.Path)
+			matches, err = filepath.Glob(incPath)
+		}
 
-		matches, err := filepath.Glob(incPath)
 		if err != nil || len(matches) == 0 {
 			pf.FileErrors = append(pf.FileErrors, &ast.FileError{
 				Path:    incPath,
@@ -170,7 +199,7 @@ func (l *Loader) loadBytes(path string, src []byte, stack []string) (*ParsedFile
 		}
 
 		for _, match := range matches {
-			child, err := l.loadFile(match, append(stack, abs))
+			child, err := l.loadFile(match, append(stack, fpath))
 			if err != nil {
 				pf.FileErrors = append(pf.FileErrors, &ast.FileError{
 					Path:    match,

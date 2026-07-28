@@ -1,0 +1,21 @@
+-- in.journal --
+account Expenses:Food:Restaurants
+account Expenses:Food:Restaurants:Pizza:Hawaiian
+account Expenses:Tax:Income:More:Deep:Too
+
+alias Fast:Food = Expenses:Food:Restaurants:Pizza:Hawaiian
+
+2024-01-01 groceries
+    Expenses:Food  $10.00
+    Assets:Checking
+
+2024-01-02 salary
+    Income:Job:Salary:Monthly:Base  $1000
+    Assets:Checking:Deep:Sub
+
+-- expect --
+in.journal:2:9: account-depth: account "Expenses:Food:Restaurants:Pizza:Hawaiian" depth (5) exceeds max allowed depth (3)
+in.journal:3:9: account-depth: account "Expenses:Tax:Income:More:Deep:Too" depth (6) exceeds max allowed depth (3)
+in.journal:5:19: account-depth: account "Expenses:Food:Restaurants:Pizza:Hawaiian" depth (5) exceeds max allowed depth (3)
+in.journal:12:5: account-depth: account "Income:Job:Salary:Monthly:Base" depth (5) exceeds max allowed depth (3)
+in.journal:13:5: account-depth: account "Assets:Checking:Deep:Sub" depth (4) exceeds max allowed depth (3)

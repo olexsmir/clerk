@@ -1,0 +1,8 @@
+-- in.journal --
+2024-05-01 empty txn
+
+2024-05-01 "not empty txn"
+  my:account
+
+-- expect --
+in.journal:1:1: empty-postings: transaction has no postings

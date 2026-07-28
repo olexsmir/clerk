@@ -1,0 +1,25 @@
+-- input --
+2024/03/02 Обід
+  витрати:їжа  350 UAH
+  активи:готівка
+-- expect --
+Journal
+  Transaction j:1:1-4:1
+    Date: 2024/03/02
+    Payee: "Обід" j:1:12-2:0
+    Posting j:2:1-3:1
+      Account j:2:3-2:14
+        SubAccount: "витрати" j:2:3-2:10
+        SubAccount: "їжа" j:2:11-2:14
+      Amount j:2:16-2:16
+        Quantity: 350
+        Commodity: "UAH"
+        CommodityPos: After
+        HasSpace: true
+        Precision: 0
+        Decimal: "."
+    Posting j:3:1-4:1
+      Account j:3:3-4:0
+        SubAccount: "активи" j:3:3-3:9
+        SubAccount: "готівка" j:3:10-4:0
+      Amount: <elided>

@@ -1,0 +1,6 @@
+-- input --
+year 1488
+-- expect --
+Journal
+  YearDirective j:1:1-2:1
+    Year: 1488

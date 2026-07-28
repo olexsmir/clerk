@@ -1,7 +1,0 @@
-Journal
-  Transaction j:1:1-2:1
-    Date: 2024-01-01
-    Payee: "groceries" j:1:12-1:21
-    Comment j:1:22-2:0
-      Marker: ";"
-      Text: "note"

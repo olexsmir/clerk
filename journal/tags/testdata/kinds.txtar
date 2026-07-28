@@ -1,0 +1,29 @@
+-- in.journal --
+; all four tag kinds via directives
+
+account expenses:food
+commodity $
+commodity EUR
+payee Amazon
+tag receipt
+
+2025-03-01 * "Amazon"
+    expenses:food   $45.00
+    assets:bank
+
+-- expect --
+!_TAG_FILE_FORMAT	2	/extended format/
+!_TAG_FILE_SORTED	1	/1=sorted/
+!_TAG_PROGRAM_NAME	clerk	//
+!_TAG_PROGRAM_URL	https://olexsmir.xyz/clerk	//
+!_TAG_PROGRAM_VERSION	0.1.0	//
+!_TAG_KIND_DESCRIPTION!a	a,account	/account/
+!_TAG_KIND_DESCRIPTION!c	c,commodity	/commodity/
+!_TAG_KIND_DESCRIPTION!p	p,payee	/payee/
+!_TAG_KIND_DESCRIPTION!t	t,tag	/tag/
+$	in.journal	/^commodity $$/;"	kind:c	line:4	language:hledger
+Amazon	in.journal	/^2025-03-01 * "Amazon"$/;"	kind:p	line:9	language:hledger
+EUR	in.journal	/^commodity EUR$/;"	kind:c	line:5	language:hledger
+assets:bank	in.journal	/^    assets:bank$/;"	kind:a	line:11	language:hledger
+expenses:food	in.journal	/^account expenses:food$/;"	kind:a	line:3	language:hledger
+receipt	in.journal	/^tag receipt$/;"	kind:t	line:7	language:hledger

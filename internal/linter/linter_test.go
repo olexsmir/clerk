@@ -31,18 +31,23 @@ var tests = map[string][]Rule{
 func TestLinter(t *testing.T) {
 	for tname, trules := range tests {
 		t.Run(tname, func(t *testing.T) {
-			inp := golden.Load(t, tname)
-			pf, err := journal.NewLoader().LoadBytes(tname+".journal", inp)
+			a := golden.Read(t, tname)
+			fsys, err := a.FS()
 			if err != nil {
-				t.Fatalf("failed to load test journal: %v\n", err)
+				t.Fatal(err)
 			}
 
-			ctx := semantic.Build([]*journal.ParsedFile{pf})
+			l := journal.NewLoader()
+			if _, err := l.LoadFS(fsys, "in.journal"); err != nil {
+				t.Fatalf("failed to load test journal: %v", err)
+			}
+
+			ctx := semantic.Build(l.Ordered())
 			finds := NewLinter(trules).Run(ctx)
 
 			var b strings.Builder
 			Fprint(&b, PathBasename, finds)
-			golden.Assert(t, tname, b.String())
+			golden.Assert(t, a, b.String())
 		})
 	}
 }

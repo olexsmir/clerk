@@ -1,0 +1,36 @@
+-- in.journal --
+; basic journal — accounts + commodities from directives and postings
+
+account expenses:food
+account expenses:rent
+account assets:bank
+account assets:cash
+
+2025-01-15 * "Groceries"
+    expenses:food   $50.00
+    assets:bank
+
+2025-02-01 "Rent"
+    expenses:rent   €800.00
+    assets:bank     €-800.00
+
+P 2025-01-15 € $1.05
+
+-- expect --
+!_TAG_FILE_FORMAT	2	/extended format/
+!_TAG_FILE_SORTED	1	/1=sorted/
+!_TAG_PROGRAM_NAME	clerk	//
+!_TAG_PROGRAM_URL	https://olexsmir.xyz/clerk	//
+!_TAG_PROGRAM_VERSION	0.1.0	//
+!_TAG_KIND_DESCRIPTION!a	a,account	/account/
+!_TAG_KIND_DESCRIPTION!c	c,commodity	/commodity/
+!_TAG_KIND_DESCRIPTION!p	p,payee	/payee/
+!_TAG_KIND_DESCRIPTION!t	t,tag	/tag/
+$	in.journal	/^P 2025-01-15 € $1.05$/;"	kind:c	line:16	language:hledger
+Groceries	in.journal	/^2025-01-15 * "Groceries"$/;"	kind:p	line:8	language:hledger
+Rent	in.journal	/^2025-02-01 "Rent"$/;"	kind:p	line:12	language:hledger
+assets:bank	in.journal	/^account assets:bank$/;"	kind:a	line:5	language:hledger
+assets:cash	in.journal	/^account assets:cash$/;"	kind:a	line:6	language:hledger
+expenses:food	in.journal	/^account expenses:food$/;"	kind:a	line:3	language:hledger
+expenses:rent	in.journal	/^account expenses:rent$/;"	kind:a	line:4	language:hledger
+€	in.journal	/^P 2025-01-15 € $1.05$/;"	kind:c	line:16	language:hledger

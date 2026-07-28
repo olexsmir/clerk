@@ -1,0 +1,15 @@
+-- in.journal --
+2024-05-01 "groceries"
+  expenses:food  50.00 USD
+  assets:cash
+
+2024-05-02 *
+  expenses:food  50.00 USD
+  assets:cash
+
+2024-05-03 * "groceries"
+  expenses:food  50.00 USD
+  assets:cash
+
+-- expect --
+in.journal:5:1: missing-payee: transaction has no payee

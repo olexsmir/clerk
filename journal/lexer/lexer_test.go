@@ -8,91 +8,41 @@ import (
 )
 
 func TestLexer(t *testing.T) {
-	tests := []struct {
-		name  string
-		input string
-	}{
-		{"simple transaction", `2024/01/01 groceries
-    expenses:food  $10.00
-    assets:checking
-`},
-		{"transaction, accounts with uppercase latters", `
-2011/01/27 Book Store
-    Expenses:Books                       $20.00
-    Liabilities:MasterCard
-`},
-		{"cleared transaction", `2024/01/01 * groceries
-    expenses:food  $10.00
-    assets:checking
-`},
-		{"automated transaction", `= ^income
-    (liabilities:tax)  *.33
-
-= expenses:gifts
-    budget:gifts  (amount * -1)
-`},
-		{"transaction with code", `2024/01/01 (123) groceries
-    expenses:food  $10.00
-    assets:checking
-
-2024/01/02 (ABS) groceries
-`},
-		{"transaction with virtual accounts", `2024/01/01 * groceries
-	(virtual:account)  1 PESO
-	[some thing:else]   5 PESO
-`},
-		{"transaction with unicode commodity symbols", `2024/01/01 groceries
-    expenses:food  €10.00
-    expenses:food  £5.00
-    expenses:food  ₹700.00
-    expenses:food  40.00 гривні
-    assets:cash
-`},
-		{"special chars in description", `
-2024/01/01 * groceries + water| 1 + 2
-2024/01/01 groceries * water | 1 * 2
-2024/01/01 groceries ! water | 1 ! 2
-2024/01/01 groceries # water | 1 # 2
-2024/01/01 groceries % water | 1 % 2
-2024/01/01 groceries ^ water | 1 ^ 2
-2024/01/01 groceries & water | 1 & 2
-2024/01/01 groceries ( water | 1 ( 2
-2024/01/01 groceries ) water | 1 ) 2
-2024/01/01 groceries [ water | 1 [ 2
-2024/01/01 groceries ] water | 1 ] 2
-2024/01/01 groceries { water | 1 { 2
-2024/01/01 groceries } water | 1 } 2
-2026-06-07 * payee !one | something *important*
-    expenses:food  40.00
-    assets:cash
-`},
-		{"date with secondary", `2024/01/01=2024/01/02 groceries`},
-		{"better date", `2024-01-02`},
-		{"comment line", `; this is a comment`},
-		{"star comment", `* this is a comment`},
-		{"hash comment", `# this is a comment`},
-		{"account directive", `account expenses:food`},
-		{"commodity directive", `commodity 1,000.00 UAH`},
-		{"market price directive", "P 2024-01-01 USD 40.50 UAH\n"},
-		{"market price directive with time", "P 2024-01-01 12:00:00 USD 40.50 UAH\n"},
-		{"inline comment", `2024/01/01 groceries ; a note`},
-		{"empty", ``},
-		{"blank lines", "\n\n\n"},
-		{"comment block directive", "comment\ncontent\nend\n"},
-		{"comment block directive without end", "comment\ncontent\n"},
+	tests := []string{
+		"account directive",
+		"automated transaction",
+		"better date",
+		"blank lines",
+		"cleared transaction",
+		"comment block directive without end",
+		"comment block directive",
+		"comment line",
+		"commodity directive",
+		"date with secondary",
+		"empty",
+		"hash comment",
+		"inline comment",
+		"market price directive with time",
+		"market price directive",
+		"simple transaction",
+		"special chars in description",
+		"star comment",
+		"transaction with code",
+		"transaction with unicode commodity symbols",
+		"transaction with virtual accounts",
+		"transaction, accounts with uppercase latters",
 	}
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			l := New("j", []byte(tt.input))
-			golden.Assert(t, tt.name, l.Dump())
+		t.Run(tt, func(t *testing.T) {
+			a := golden.Read(t, tt)
+			golden.Assert(t, a, New("j", a.Get("input")).Dump())
 		})
 	}
 }
 
-// token category bounds, ensures fuzzer never sees out-of-range token types.
-const maxKnownTokenType = token.N
-
 func FuzzLexer(f *testing.F) {
+	const maxKnownTokenType = token.C // ensures fuzzer never sees out-of-range token types
+
 	f.Add([]byte("2024/01/01 groceries\n  expenses:food  $10.00\n  assets:checking\n"))
 	f.Add([]byte("2024/01/01 * groceries\n  expenses:food  $10.00\n  assets:checking\n"))
 	f.Add([]byte("2024/01/01 ! groceries\n  expenses:food  $10.00\n  assets:checking\n"))

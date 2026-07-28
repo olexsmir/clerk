@@ -1,4 +1,0 @@
-unbalanced-transaction.journal:14:1: unbalanced-transaction: transaction is unbalanced; USD balance is 5
-unbalanced-transaction.journal:18:1: unbalanced-transaction: transaction is unbalanced; EUR balance is 5
-unbalanced-transaction.journal:18:1: unbalanced-transaction: transaction is unbalanced; USD balance is 5
-unbalanced-transaction.journal:32:1: unbalanced-transaction: transaction is unbalanced; USD balance is 10

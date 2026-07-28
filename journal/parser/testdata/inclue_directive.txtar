@@ -1,0 +1,6 @@
+-- input --
+include ./path-to.journal
+-- expect --
+Journal
+  IncludeDirective j:1:1-2:1
+    Path: "./path-to.journal"
