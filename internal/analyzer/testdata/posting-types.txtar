@@ -1,0 +1,76 @@
+-- in.journal --
+2024-01-01 test
+    (virtual:unbalanced)  $10
+    [virtual:balanced]    $20
+    expenses:food         $30
+
+-- expect --
+files (1):
+  0: in.journal
+
+commodities (1):
+  $
+    directives: 0
+    used: 3
+    usages: 3
+      file 0: $ ("10")
+      file 0: $ ("20")
+      file 0: $ ("30")
+    last-used: 2024-01-01
+
+accounts (3):
+  expenses:food
+    directives: 0
+    used: 1
+    usages: 1
+      file 0: expenses:food
+    last-used: 2024-01-01
+  virtual:balanced
+    directives: 0
+    used: 1
+    usages: 1
+      file 0: virtual:balanced
+    last-used: 2024-01-01
+  virtual:unbalanced
+    directives: 0
+    used: 1
+    usages: 1
+      file 0: virtual:unbalanced
+    last-used: 2024-01-01
+
+payees (1):
+  test
+    directives: 0
+    used: 1
+    usages: 1
+      file 0: test
+
+prefixes (2):
+  expenses:
+    expenses:food
+  virtual:
+    virtual:balanced
+    virtual:unbalanced
+
+transactions: 1
+periodic transactions: 0
+automated transactions: 0
+
+directives (0):
+
+transaction keys (1):
+  2024-01-01|test|virtual:unbalanced,virtual:balanced,expenses:food,
+
+payee templates (1):
+  test
+    virtual:unbalanced  $10
+    virtual:balanced  $20
+    expenses:food  $30
+
+dates (1):
+  2024-01-01
+
+tag names (0):
+
+commodity decimal marks (1):
+  $: .

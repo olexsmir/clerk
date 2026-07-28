@@ -3,7 +3,7 @@ package linter
 import (
 	"fmt"
 
-	"olexsmir.xyz/clerk/journal/semantic"
+	"olexsmir.xyz/clerk/internal/analyzer"
 )
 
 // DuplicatedCommodity flags commodity declarations that appear more than once.
@@ -11,9 +11,9 @@ type DuplicatedCommodity struct{}
 
 func (DuplicatedCommodity) ID() RuleID         { return "duplicated-commodity" }
 func (DuplicatedCommodity) Severity() Severity { return SeverityWarning }
-func (d *DuplicatedCommodity) CheckJournal(ctx *semantic.Context) []Find {
+func (d *DuplicatedCommodity) CheckJournal(an *analyzer.Analysis) []Find {
 	var finds []Find
-	for sym, info := range ctx.Commodities {
+	for sym, info := range an.Commodities {
 		if len(info.Directives) <= 1 {
 			continue
 		}

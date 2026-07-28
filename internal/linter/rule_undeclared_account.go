@@ -3,7 +3,7 @@ package linter
 import (
 	"fmt"
 
-	"olexsmir.xyz/clerk/journal/semantic"
+	"olexsmir.xyz/clerk/internal/analyzer"
 )
 
 // UndeclaredAccount flags postings that reference an account not declared via `account` directive.
@@ -11,9 +11,9 @@ type UndeclaredAccount struct{}
 
 func (UndeclaredAccount) ID() RuleID         { return "undeclared-account" }
 func (UndeclaredAccount) Severity() Severity { return SeverityWarning }
-func (r *UndeclaredAccount) CheckJournal(ctx *semantic.Context) []Find {
+func (r *UndeclaredAccount) CheckJournal(an *analyzer.Analysis) []Find {
 	var finds []Find
-	for name, info := range ctx.Accounts {
+	for name, info := range an.Accounts {
 		if len(info.Directives) > 0 {
 			continue
 		}

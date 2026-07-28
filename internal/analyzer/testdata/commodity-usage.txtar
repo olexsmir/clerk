@@ -1,0 +1,111 @@
+-- in.journal --
+2024-01-01 groceries
+    expenses:food  $10
+    assets:cash
+
+2024-01-02 exchange
+    expenses:food  EUR 5
+    assets:cash
+
+2024-01-03 market
+    expenses:food  10 AAPL
+    assets:cash
+
+-- expect --
+files (1):
+  0: in.journal
+
+commodities (3):
+  $
+    directives: 0
+    used: 1
+    usages: 1
+      file 0: $ ("10")
+    last-used: 2024-01-01
+  AAPL
+    directives: 0
+    used: 1
+    usages: 1
+      file 0: AAPL ("10")
+    last-used: 2024-01-03
+  EUR
+    directives: 0
+    used: 1
+    usages: 1
+      file 0: EUR ("5")
+    last-used: 2024-01-02
+
+accounts (2):
+  assets:cash
+    directives: 0
+    used: 3
+    usages: 3
+      file 0: assets:cash
+      file 0: assets:cash
+      file 0: assets:cash
+    last-used: 2024-01-03
+  expenses:food
+    directives: 0
+    used: 3
+    usages: 3
+      file 0: expenses:food
+      file 0: expenses:food
+      file 0: expenses:food
+    last-used: 2024-01-03
+
+payees (3):
+  exchange
+    directives: 0
+    used: 1
+    usages: 1
+      file 0: exchange
+  groceries
+    directives: 0
+    used: 1
+    usages: 1
+      file 0: groceries
+  market
+    directives: 0
+    used: 1
+    usages: 1
+      file 0: market
+
+prefixes (2):
+  assets:
+    assets:cash
+  expenses:
+    expenses:food
+
+transactions: 3
+periodic transactions: 0
+automated transactions: 0
+
+directives (0):
+
+transaction keys (3):
+  2024-01-01|groceries|expenses:food,assets:cash,
+  2024-01-02|exchange|expenses:food,assets:cash,
+  2024-01-03|market|expenses:food,assets:cash,
+
+payee templates (3):
+  exchange
+    expenses:food  EUR5
+    assets:cash (inferred)
+  groceries
+    expenses:food  $10
+    assets:cash (inferred)
+  market
+    expenses:food  AAPL10
+    assets:cash (inferred)
+
+dates (3):
+  2024-01-01
+  2024-01-02
+  2024-01-03
+
+tag names (0):
+
+commodity decimal marks (3):
+  $: .
+  AAPL: .
+  EUR: .

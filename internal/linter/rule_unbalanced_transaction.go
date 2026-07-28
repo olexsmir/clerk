@@ -3,6 +3,7 @@ package linter
 import (
 	"fmt"
 
+	"olexsmir.xyz/clerk/internal/analyzer"
 	"olexsmir.xyz/clerk/internal/decimal"
 	"olexsmir.xyz/clerk/journal/ast"
 	"olexsmir.xyz/clerk/journal/token"
@@ -13,17 +14,18 @@ type UnbalancedTransaction struct{}
 
 func (UnbalancedTransaction) ID() RuleID         { return "unbalanced-transaction" }
 func (UnbalancedTransaction) Severity() Severity { return SeverityError }
-func (r *UnbalancedTransaction) CheckEntry(entry ast.Entry) []Find {
-	switch e := entry.(type) {
-	case *ast.Transaction:
-		return r.check(e.Postings, e.Span)
-	case *ast.PeriodicTransaction:
-		return r.check(e.Postings, e.Span)
-	case *ast.AutomatedTransaction:
-		return r.check(e.Postings, e.Span)
-	default:
-		return nil
+func (r *UnbalancedTransaction) CheckJournal(an *analyzer.Analysis) []Find {
+	var finds []Find
+	for _, txn := range an.Transactions {
+		finds = append(finds, r.check(txn.Postings, txn.Span)...)
 	}
+	for _, ptx := range an.PeriodicTransactions {
+		finds = append(finds, r.check(ptx.Postings, ptx.Span)...)
+	}
+	for _, atx := range an.AutomatedTransactions {
+		finds = append(finds, r.check(atx.Postings, atx.Span)...)
+	}
+	return finds
 }
 
 func (r *UnbalancedTransaction) check(postings []*ast.Posting, span token.Span) []Find {
@@ -50,14 +52,11 @@ func (r *UnbalancedTransaction) check(postings []*ast.Posting, span token.Span) 
 
 	if len(realPostings) == 0 ||
 		autoBalancingPostings == 1 ||
-		// multiple auto-balancing postings is alreayd handled by [MultipleOmittedAmounts]
 		autoBalancingPostings > 1 ||
-		// too complex too verify
 		hasExpr || hasCost {
 		return nil
 	}
 
-	// sum amounts per commodity
 	sums := make(map[string]decimal.Decimal)
 	for _, posting := range realPostings {
 		if posting.Amount == nil {

@@ -1,0 +1,76 @@
+-- in.journal --
+2024-01-01 * buy stock
+    assets:stocks  10 AAPL @ $150.00
+    assets:bank  $-1500.00
+    assets:stocks  = 100 AAPL
+
+-- expect --
+files (1):
+  0: in.journal
+
+commodities (2):
+  $
+    directives: 0
+    used: 2
+    usages: 2
+      file 0: $ ("150")
+      file 0: $ ("-1500")
+    last-used: 2024-01-01
+  AAPL
+    directives: 0
+    used: 2
+    usages: 2
+      file 0: AAPL ("10")
+      file 0: AAPL ("100")
+    last-used: 2024-01-01
+
+accounts (2):
+  assets:bank
+    directives: 0
+    used: 1
+    usages: 1
+      file 0: assets:bank
+    last-used: 2024-01-01
+  assets:stocks
+    directives: 0
+    used: 2
+    usages: 2
+      file 0: assets:stocks
+      file 0: assets:stocks
+    last-used: 2024-01-01
+
+payees (1):
+  buy stock
+    directives: 0
+    used: 1
+    usages: 1
+      file 0: buy stock
+
+prefixes (1):
+  assets:
+    assets:bank
+    assets:stocks
+
+transactions: 1
+periodic transactions: 0
+automated transactions: 0
+
+directives (0):
+
+transaction keys (1):
+  2024-01-01|buy stock|assets:stocks,assets:bank,assets:stocks,
+
+payee templates (1):
+  buy stock
+    assets:stocks  AAPL10
+    assets:bank  $-1500
+    assets:stocks (inferred)
+
+dates (1):
+  2024-01-01
+
+tag names (0):
+
+commodity decimal marks (2):
+  $: .
+  AAPL: .

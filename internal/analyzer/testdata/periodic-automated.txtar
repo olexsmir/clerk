@@ -1,0 +1,59 @@
+-- in.journal --
+~ monthly
+    expenses:food  $100
+    assets:cash
+
+= expr:big
+    expenses:food  $200
+    assets:cash
+
+-- expect --
+files (1):
+  0: in.journal
+
+commodities (1):
+  $
+    directives: 0
+    used: 2
+    usages: 2
+      file 0: $ ("100")
+      file 0: $ ("200")
+
+accounts (2):
+  assets:cash
+    directives: 0
+    used: 2
+    usages: 2
+      file 0: assets:cash
+      file 0: assets:cash
+  expenses:food
+    directives: 0
+    used: 2
+    usages: 2
+      file 0: expenses:food
+      file 0: expenses:food
+
+payees (0):
+
+prefixes (2):
+  assets:
+    assets:cash
+  expenses:
+    expenses:food
+
+transactions: 0
+periodic transactions: 1
+automated transactions: 1
+
+directives (0):
+
+transaction keys (0):
+
+payee templates (0):
+
+dates (0):
+
+tag names (0):
+
+commodity decimal marks (1):
+  $: .

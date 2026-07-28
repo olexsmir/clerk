@@ -1,33 +1,44 @@
 package linter
 
-import "olexsmir.xyz/clerk/journal/ast"
+import (
+	"olexsmir.xyz/clerk/internal/analyzer"
+	"olexsmir.xyz/clerk/journal/ast"
+)
 
 // MissingCommodity flags amounts with a missing commodity.
 type MissingCommodity struct{}
 
 func (MissingCommodity) ID() RuleID         { return "missing-commodity" }
 func (MissingCommodity) Severity() Severity { return SeverityWarning }
-func (m *MissingCommodity) CheckEntry(entry ast.Entry) []Find {
+func (m *MissingCommodity) CheckJournal(an *analyzer.Analysis) []Find {
 	var finds []Find
-	switch e := entry.(type) {
-	case *ast.Transaction:
-		m.checkPostings(&finds, e.Postings)
-	case *ast.PeriodicTransaction:
-		m.checkPostings(&finds, e.Postings)
-	case *ast.AutomatedTransaction:
-		m.checkPostings(&finds, e.Postings)
-	case *ast.ConversionDirective:
-		m.check(&finds, e.From)
-		m.check(&finds, e.To)
-	case *ast.CommodityDirective:
-		if e.Format.Commodity != "" {
-			m.check(&finds, e.Format)
-		}
-	case *ast.DefaultCommodityDirective:
-		m.check(&finds, e.Amount)
-	case *ast.MarketPriceDirective:
-		m.check(&finds, e.Amount)
+
+	for _, txn := range an.Transactions {
+		m.checkPostings(&finds, txn.Postings)
 	}
+	for _, ptx := range an.PeriodicTransactions {
+		m.checkPostings(&finds, ptx.Postings)
+	}
+	for _, atx := range an.AutomatedTransactions {
+		m.checkPostings(&finds, atx.Postings)
+	}
+
+	for _, d := range an.Directives {
+		switch e := d.(type) {
+		case *ast.ConversionDirective:
+			m.check(&finds, e.From)
+			m.check(&finds, e.To)
+		case *ast.CommodityDirective:
+			if e.Format.Commodity != "" {
+				m.check(&finds, e.Format)
+			}
+		case *ast.DefaultCommodityDirective:
+			m.check(&finds, e.Amount)
+		case *ast.MarketPriceDirective:
+			m.check(&finds, e.Amount)
+		}
+	}
+
 	return finds
 }
 

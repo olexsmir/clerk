@@ -3,7 +3,7 @@ package linter
 import (
 	"fmt"
 
-	"olexsmir.xyz/clerk/journal/semantic"
+	"olexsmir.xyz/clerk/internal/analyzer"
 )
 
 // UndeclaredCommodity flags amounts that reference a commodity not declared via `commodity` directive.
@@ -11,9 +11,9 @@ type UndeclaredCommodity struct{}
 
 func (UndeclaredCommodity) ID() RuleID         { return "undeclared-commodity" }
 func (UndeclaredCommodity) Severity() Severity { return SeverityWarning }
-func (r *UndeclaredCommodity) CheckJournal(ctx *semantic.Context) []Find {
+func (r *UndeclaredCommodity) CheckJournal(an *analyzer.Analysis) []Find {
 	var finds []Find
-	for name, info := range ctx.Commodities {
+	for name, info := range an.Commodities {
 		if len(info.Directives) > 0 {
 			continue
 		}

@@ -9,19 +9,19 @@ import (
 
 func (s *server) DidOpen(ctx context.Context, params *protocol.DidOpenTextDocumentParams) error {
 	s.openDoc(params.TextDocument.URI, params.TextDocument.Text, params.TextDocument.Version, params.TextDocument.LanguageID)
-	s.scheduleWorkspaceRebuild(ctx)
+	s.scheduleDiagnostics(ctx)
 	return nil
 }
 
 func (s *server) DidChange(ctx context.Context, params *protocol.DidChangeTextDocumentParams) error {
 	s.updateDoc(params.TextDocument.URI, params.TextDocument.Version, params.ContentChanges)
-	s.scheduleWorkspaceRebuild(ctx)
+	s.scheduleDiagnostics(ctx)
 	return nil
 }
 
 func (s *server) DidClose(ctx context.Context, params *protocol.DidCloseTextDocumentParams) error {
 	s.closeDoc(params.TextDocument.URI)
-	s.scheduleWorkspaceRebuild(ctx)
+	s.scheduleDiagnostics(ctx)
 	return nil
 }
 

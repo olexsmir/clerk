@@ -1,0 +1,68 @@
+-- in.journal --
+D $1,000.00
+
+2024-01-01 groceries
+    expenses:food  $10.50
+    assets:cash
+
+-- expect --
+files (1):
+  0: in.journal
+
+commodities (1):
+  $
+    directives: 0
+    used: 1
+    usages: 1
+      file 0: $ ("10.5")
+    last-used: 2024-01-01
+
+accounts (2):
+  assets:cash
+    directives: 0
+    used: 1
+    usages: 1
+      file 0: assets:cash
+    last-used: 2024-01-01
+  expenses:food
+    directives: 0
+    used: 1
+    usages: 1
+      file 0: expenses:food
+    last-used: 2024-01-01
+
+payees (1):
+  groceries
+    directives: 0
+    used: 1
+    usages: 1
+      file 0: groceries
+
+prefixes (2):
+  assets:
+    assets:cash
+  expenses:
+    expenses:food
+
+transactions: 1
+periodic transactions: 0
+automated transactions: 0
+
+directives (1):
+  D $1000
+
+transaction keys (1):
+  2024-01-01|groceries|expenses:food,assets:cash,
+
+payee templates (1):
+  groceries
+    expenses:food  $10.5
+    assets:cash (inferred)
+
+dates (1):
+  2024-01-01
+
+tag names (0):
+
+commodity decimal marks (1):
+  $: .

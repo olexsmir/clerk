@@ -1,0 +1,106 @@
+-- in.journal --
+2024-01-01 groceries
+    expenses:food:groceries  $10
+    expenses:transport:fuel  $5
+    assets:bank:checking  $15
+
+2024-01-02 transport
+    expenses:transport:fuel  $20
+    assets:cash  $-20
+
+-- expect --
+files (1):
+  0: in.journal
+
+commodities (1):
+  $
+    directives: 0
+    used: 5
+    usages: 5
+      file 0: $ ("10")
+      file 0: $ ("5")
+      file 0: $ ("15")
+      file 0: $ ("20")
+      file 0: $ ("-20")
+    last-used: 2024-01-02
+
+accounts (4):
+  assets:bank:checking
+    directives: 0
+    used: 1
+    usages: 1
+      file 0: assets:bank:checking
+    last-used: 2024-01-01
+  assets:cash
+    directives: 0
+    used: 1
+    usages: 1
+      file 0: assets:cash
+    last-used: 2024-01-02
+  expenses:food:groceries
+    directives: 0
+    used: 1
+    usages: 1
+      file 0: expenses:food:groceries
+    last-used: 2024-01-01
+  expenses:transport:fuel
+    directives: 0
+    used: 2
+    usages: 2
+      file 0: expenses:transport:fuel
+      file 0: expenses:transport:fuel
+    last-used: 2024-01-02
+
+payees (2):
+  groceries
+    directives: 0
+    used: 1
+    usages: 1
+      file 0: groceries
+  transport
+    directives: 0
+    used: 1
+    usages: 1
+      file 0: transport
+
+prefixes (5):
+  assets:
+    assets:bank:checking
+    assets:cash
+  assets:bank:
+    assets:bank:checking
+  expenses:
+    expenses:food:groceries
+    expenses:transport:fuel
+  expenses:food:
+    expenses:food:groceries
+  expenses:transport:
+    expenses:transport:fuel
+
+transactions: 2
+periodic transactions: 0
+automated transactions: 0
+
+directives (0):
+
+transaction keys (2):
+  2024-01-01|groceries|expenses:food:groceries,expenses:transport:fuel,assets:bank:checking,
+  2024-01-02|transport|expenses:transport:fuel,assets:cash,
+
+payee templates (2):
+  groceries
+    expenses:food:groceries  $10
+    expenses:transport:fuel  $5
+    assets:bank:checking  $15
+  transport
+    expenses:transport:fuel  $20
+    assets:cash  $-20
+
+dates (2):
+  2024-01-01
+  2024-01-02
+
+tag names (0):
+
+commodity decimal marks (1):
+  $: .

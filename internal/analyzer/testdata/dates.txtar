@@ -1,0 +1,115 @@
+-- in.journal --
+2024-01-03 third
+    expenses:food  $10
+    assets:cash
+
+2024-01-01 first
+    expenses:food  $5
+    assets:cash
+
+2024-01-01 also-first
+    expenses:food  $5
+    assets:cash
+
+2024-01-02 second
+    expenses:food  $20
+    assets:cash
+
+-- expect --
+files (1):
+  0: in.journal
+
+commodities (1):
+  $
+    directives: 0
+    used: 4
+    usages: 4
+      file 0: $ ("10")
+      file 0: $ ("5")
+      file 0: $ ("5")
+      file 0: $ ("20")
+    last-used: 2024-01-03
+
+accounts (2):
+  assets:cash
+    directives: 0
+    used: 4
+    usages: 4
+      file 0: assets:cash
+      file 0: assets:cash
+      file 0: assets:cash
+      file 0: assets:cash
+    last-used: 2024-01-03
+  expenses:food
+    directives: 0
+    used: 4
+    usages: 4
+      file 0: expenses:food
+      file 0: expenses:food
+      file 0: expenses:food
+      file 0: expenses:food
+    last-used: 2024-01-03
+
+payees (4):
+  also-first
+    directives: 0
+    used: 1
+    usages: 1
+      file 0: also-first
+  first
+    directives: 0
+    used: 1
+    usages: 1
+      file 0: first
+  second
+    directives: 0
+    used: 1
+    usages: 1
+      file 0: second
+  third
+    directives: 0
+    used: 1
+    usages: 1
+      file 0: third
+
+prefixes (2):
+  assets:
+    assets:cash
+  expenses:
+    expenses:food
+
+transactions: 4
+periodic transactions: 0
+automated transactions: 0
+
+directives (0):
+
+transaction keys (4):
+  2024-01-01|also-first|expenses:food,assets:cash,
+  2024-01-01|first|expenses:food,assets:cash,
+  2024-01-02|second|expenses:food,assets:cash,
+  2024-01-03|third|expenses:food,assets:cash,
+
+payee templates (4):
+  also-first
+    expenses:food  $5
+    assets:cash (inferred)
+  first
+    expenses:food  $5
+    assets:cash (inferred)
+  second
+    expenses:food  $20
+    assets:cash (inferred)
+  third
+    expenses:food  $10
+    assets:cash (inferred)
+
+dates (3):
+  2024-01-01
+  2024-01-02
+  2024-01-03
+
+tag names (0):
+
+commodity decimal marks (1):
+  $: .

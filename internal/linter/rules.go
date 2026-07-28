@@ -1,10 +1,6 @@
 package linter
 
-import (
-	"olexsmir.xyz/clerk/journal/ast"
-
-	"olexsmir.xyz/clerk/journal/semantic"
-)
+import "olexsmir.xyz/clerk/internal/analyzer"
 
 type RuleID string
 
@@ -12,18 +8,7 @@ type RuleID string
 type Rule interface {
 	ID() RuleID
 	Severity() Severity
-}
-
-// EntryChecker implements per-entry linting.
-type EntryChecker interface {
-	Rule
-	CheckEntry(entry ast.Entry) []Find
-}
-
-// JournalChecker implements whole-journal linting using the semantic context.
-type JournalChecker interface {
-	Rule
-	CheckJournal(ctx *semantic.Context) []Find
+	CheckJournal(an *analyzer.Analysis) []Find
 }
 
 // Rules is list of all available rules.
@@ -42,5 +27,5 @@ var Rules = []Rule{
 	&UndeclaredCommodity{},
 	&UndeclaredAccount{},
 	&UnbalancedTransaction{},
-	&UnusedAccount{},
+	// &UnusedAccount{},
 }

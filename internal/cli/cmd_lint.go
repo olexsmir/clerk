@@ -8,9 +8,9 @@ import (
 
 	"github.com/urfave/cli/v3"
 
+	"olexsmir.xyz/clerk/internal/analyzer"
 	"olexsmir.xyz/clerk/internal/linter"
 	"olexsmir.xyz/clerk/journal"
-	"olexsmir.xyz/clerk/journal/semantic"
 )
 
 func (c *Cli) lintAction(ctx context.Context, cmd *cli.Command) error {
@@ -44,7 +44,7 @@ func (c *Cli) lintAction(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	for _, root := range loader.Roots() {
-		reporter.Collect(lint.Run(semantic.Build(journal.CollectFiles(root))))
+		reporter.Collect(lint.Run(analyzer.Build(journal.CollectFiles(root))))
 	}
 
 	if err := reporter.Flush(format); err != nil {
@@ -64,7 +64,7 @@ func (c *Cli) lintStdin(lint *linter.Linter, reporter *linter.Reporter, format s
 	}
 
 	for _, root := range loader.Roots() {
-		reporter.Collect(lint.Run(semantic.Build(journal.CollectFiles(root))))
+		reporter.Collect(lint.Run(analyzer.Build(journal.CollectFiles(root))))
 	}
 
 	if err := reporter.Flush(format); err != nil {

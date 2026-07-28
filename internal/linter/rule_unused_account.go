@@ -3,7 +3,7 @@ package linter
 import (
 	"fmt"
 
-	"olexsmir.xyz/clerk/journal/semantic"
+	"olexsmir.xyz/clerk/internal/analyzer"
 )
 
 // UnusedAccount flags declared accounts that are not used.
@@ -11,9 +11,9 @@ type UnusedAccount struct{}
 
 func (UnusedAccount) ID() RuleID         { return "unused-account" }
 func (UnusedAccount) Severity() Severity { return SeverityWarning }
-func (a *UnusedAccount) CheckJournal(ctx *semantic.Context) []Find {
+func (a *UnusedAccount) CheckJournal(an *analyzer.Analysis) []Find {
 	var finds []Find
-	for name, info := range ctx.Accounts {
+	for name, info := range an.Accounts {
 		if len(info.Directives) == 0 {
 			continue
 		}

@@ -4,9 +4,9 @@ import (
 	"strings"
 	"testing"
 
+	"olexsmir.xyz/clerk/internal/analyzer"
 	"olexsmir.xyz/clerk/internal/testutil/golden"
 	"olexsmir.xyz/clerk/journal"
-	"olexsmir.xyz/clerk/journal/semantic"
 )
 
 var tests = map[string][]Rule{
@@ -42,7 +42,7 @@ func TestLinter(t *testing.T) {
 				t.Fatalf("failed to load test journal: %v", err)
 			}
 
-			ctx := semantic.Build(l.Ordered())
+			ctx := analyzer.Build(l.Ordered())
 			finds := NewLinter(trules).Run(ctx)
 
 			var b strings.Builder
@@ -61,7 +61,7 @@ func BenchmarkLinter(b *testing.B) {
 		b.Fatalf("failed to load benchmark journal: %v", err)
 	}
 
-	ctx := semantic.Build(ldr.Ordered())
+	ctx := analyzer.Build(ldr.Ordered())
 	l := NewLinter(Rules)
 
 	b.ResetTimer()

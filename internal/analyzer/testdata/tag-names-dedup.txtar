@@ -1,0 +1,34 @@
+-- in.journal --
+tag project-xyz
+tag project-xyz
+
+-- expect --
+files (1):
+  0: in.journal
+
+commodities (0):
+
+accounts (0):
+
+payees (0):
+
+prefixes (0):
+
+transactions: 0
+periodic transactions: 0
+automated transactions: 0
+
+directives (2):
+  tag project-xyz
+  tag project-xyz
+
+transaction keys (0):
+
+payee templates (0):
+
+dates (0):
+
+tag names (1):
+  project-xyz
+
+commodity decimal marks (0):

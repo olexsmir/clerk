@@ -1,0 +1,74 @@
+-- in.journal --
+include accounts.journal
+
+2024/01/01 ! test
+    expenses:food  $10
+    assets:checking
+
+-- accounts.journal --
+account expenses:food
+
+-- expect --
+files (2):
+  0: accounts.journal
+  1: in.journal
+
+commodities (1):
+  $
+    directives: 0
+    used: 1
+    usages: 1
+      file 1: $ ("10")
+    last-used: 2024-01-01
+
+accounts (2):
+  assets:checking
+    directives: 0
+    used: 1
+    usages: 1
+      file 1: assets:checking
+    last-used: 2024-01-01
+  expenses:food
+    directives: 1
+    used: 1
+      account expenses:food
+    usages: 1
+      file 1: expenses:food
+    last-used: 2024-01-01
+
+payees (1):
+  test
+    directives: 0
+    used: 1
+    usages: 1
+      file 1: test
+
+prefixes (2):
+  assets:
+    assets:checking
+  expenses:
+    expenses:food
+
+transactions: 1
+periodic transactions: 0
+automated transactions: 0
+
+directives (2):
+  account expenses:food
+  include accounts.journal
+
+transaction keys (1):
+  2024-01-01|test|expenses:food,assets:checking,
+
+payee templates (1):
+  test
+    expenses:food  $10
+    assets:checking (inferred)
+
+dates (1):
+  2024-01-01
+
+tag names (0):
+
+commodity decimal marks (1):
+  $: .

@@ -4,15 +4,14 @@ import (
 	"context"
 	"log/slog"
 	"sync"
-	"time"
 
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 
+	"olexsmir.xyz/clerk/internal/analyzer"
 	"olexsmir.xyz/clerk/internal/linter"
 	"olexsmir.xyz/clerk/journal"
 	"olexsmir.xyz/clerk/journal/printer"
-	"olexsmir.xyz/clerk/journal/semantic"
 )
 
 type server struct {
@@ -23,14 +22,16 @@ type server struct {
 
 	version, name string
 
-	linter    *linter.Linter
-	loader    *journal.Loader
-	printer   *printer.Config
-	debouncer *time.Timer
+	linter  *linter.Linter
+	loader  *journal.Loader
+	printer *printer.Config
 
-	mu          sync.Mutex
-	openDocs    map[uri.URI]docState
-	semanticCtx *semantic.Context
+	mu       sync.Mutex
+	openDocs map[uri.URI]docState
+	current  *analyzer.Analysis
+
+	diagMu     sync.Mutex
+	diagCancel context.CancelFunc
 }
 
 type docState struct {
@@ -56,12 +57,11 @@ func (s *server) Initialize(ctx context.Context, params *protocol.InitializePara
 }
 
 func (s *server) Initialized(ctx context.Context, params *protocol.InitializedParams) error {
-	s.scheduleWorkspaceRebuild(ctx)
+	s.scheduleDiagnostics(ctx)
 	return nil
 }
 
 func (s *server) Shutdown(ctx context.Context) error {
-	s.cancelWorkspaceRebuild()
 	return nil
 }
 

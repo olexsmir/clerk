@@ -1,0 +1,82 @@
+-- in.journal --
+2024-01-01 groceries
+    expenses:food:groceries  $10
+    expenses:transport:fuel  $5
+    assets:bank:checking  $15
+
+-- expect --
+files (1):
+  0: in.journal
+
+commodities (1):
+  $
+    directives: 0
+    used: 3
+    usages: 3
+      file 0: $ ("10")
+      file 0: $ ("5")
+      file 0: $ ("15")
+    last-used: 2024-01-01
+
+accounts (3):
+  assets:bank:checking
+    directives: 0
+    used: 1
+    usages: 1
+      file 0: assets:bank:checking
+    last-used: 2024-01-01
+  expenses:food:groceries
+    directives: 0
+    used: 1
+    usages: 1
+      file 0: expenses:food:groceries
+    last-used: 2024-01-01
+  expenses:transport:fuel
+    directives: 0
+    used: 1
+    usages: 1
+      file 0: expenses:transport:fuel
+    last-used: 2024-01-01
+
+payees (1):
+  groceries
+    directives: 0
+    used: 1
+    usages: 1
+      file 0: groceries
+
+prefixes (5):
+  assets:
+    assets:bank:checking
+  assets:bank:
+    assets:bank:checking
+  expenses:
+    expenses:food:groceries
+    expenses:transport:fuel
+  expenses:food:
+    expenses:food:groceries
+  expenses:transport:
+    expenses:transport:fuel
+
+transactions: 1
+periodic transactions: 0
+automated transactions: 0
+
+directives (0):
+
+transaction keys (1):
+  2024-01-01|groceries|expenses:food:groceries,expenses:transport:fuel,assets:bank:checking,
+
+payee templates (1):
+  groceries
+    expenses:food:groceries  $10
+    expenses:transport:fuel  $5
+    assets:bank:checking  $15
+
+dates (1):
+  2024-01-01
+
+tag names (0):
+
+commodity decimal marks (1):
+  $: .

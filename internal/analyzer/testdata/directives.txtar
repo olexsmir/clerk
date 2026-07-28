@@ -1,0 +1,76 @@
+-- in.journal --
+account expenses:food
+commodity $
+payee TestPayee
+tag mytag
+include other.journal
+alias expenses:food = expenses:food:old
+year 2024
+D $1,000.00
+P 2024-01-01 AAPL $150.00
+C $100.00 @@ EUR 90.00
+apply tag foo
+end tag
+comment
+some ignored text
+N ignored
+
+-- expect --
+files (1):
+  0: in.journal
+
+commodities (1):
+  $
+    directives: 1
+    used: 0
+      commodity $
+    usages: 0
+
+accounts (1):
+  expenses:food
+    directives: 1
+    used: 0
+      account expenses:food
+    usages: 0
+
+payees (1):
+  
+    directives: 1
+    used: 0
+      payee 
+    usages: 0
+
+prefixes (1):
+  expenses:
+    expenses:food
+
+transactions: 0
+periodic transactions: 0
+automated transactions: 0
+
+directives (13):
+  account expenses:food
+  commodity $
+  payee 
+  tag mytag
+  include other.journal
+  alias expenses:food = expenses:food:old
+  year 2024
+  D $1000
+  P AAPL 150
+  C $100 @@ 0
+  apply tag foo
+  end tag
+  comment
+
+transaction keys (0):
+
+payee templates (0):
+
+dates (0):
+
+tag names (1):
+  mytag
+
+commodity decimal marks (1):
+  $: .

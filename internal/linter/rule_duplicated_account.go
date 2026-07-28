@@ -3,7 +3,7 @@ package linter
 import (
 	"fmt"
 
-	"olexsmir.xyz/clerk/journal/semantic"
+	"olexsmir.xyz/clerk/internal/analyzer"
 )
 
 // DuplicatedAccount flags account declarations that appear more than once.
@@ -11,9 +11,9 @@ type DuplicatedAccount struct{}
 
 func (DuplicatedAccount) ID() RuleID         { return "duplicated-account" }
 func (DuplicatedAccount) Severity() Severity { return SeverityWarning }
-func (d *DuplicatedAccount) CheckJournal(ctx *semantic.Context) []Find {
+func (d *DuplicatedAccount) CheckJournal(an *analyzer.Analysis) []Find {
 	var finds []Find
-	for _, info := range ctx.Accounts {
+	for _, info := range an.Accounts {
 		if len(info.Directives) <= 1 {
 			continue
 		}

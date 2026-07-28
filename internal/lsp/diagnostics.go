@@ -8,51 +8,95 @@ import (
 	"go.lsp.dev/jsonrpc2"
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
+
+	"olexsmir.xyz/clerk/internal/analyzer"
 	"olexsmir.xyz/clerk/internal/linter"
 	"olexsmir.xyz/clerk/journal"
-	"olexsmir.xyz/clerk/journal/semantic"
 	"olexsmir.xyz/clerk/journal/token"
 )
 
-func (s *server) rebuildWorkspace(ctx context.Context) {
-	s.log.Debug("rebuilding workspace")
+const diagDebounce = 200 * time.Millisecond
+
+func (s *server) scheduleDiagnostics(ctx context.Context) {
+	s.diagMu.Lock()
+	defer s.diagMu.Unlock()
+
+	if s.diagCancel != nil {
+		s.diagCancel()
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	s.diagCancel = cancel
+
+	time.AfterFunc(diagDebounce, func() {
+		if ctx.Err() != nil {
+			return
+		}
+		s.publishDiagnostics(jsonrpc2.DetachContext(ctx))
+	})
+}
+
+func (s *server) publishDiagnostics(ctx context.Context) {
+	s.log.Debug("publishing diagnostics")
 
 	s.mu.Lock()
-	defer s.mu.Unlock()
+	openDocs := make(map[uri.URI]docState, len(s.openDocs))
+	for u, st := range s.openDocs {
+		openDocs[u] = st
+	}
+	ordered := s.loader.Ordered()
+	s.mu.Unlock()
 
-	if len(s.openDocs) == 0 {
+	if ctx.Err() != nil {
 		return
 	}
 
-	for uri, state := range s.openDocs {
+	if len(openDocs) == 0 {
+		return
+	}
+
+	for uri, state := range openDocs {
 		path := uri.Path()
 		if _, err := s.loader.Reload(path, []byte(state.text)); err != nil {
-			s.log.Warn("filed to reload open document", "uri", uri, "err", err)
+			s.log.Warn("failed to reload open document", "uri", uri, "err", err)
 		}
 	}
 
-	roots := s.loader.Roots()
-	if len(roots) == 0 {
+	if ctx.Err() != nil {
+		return
+	}
+
+	ordered = s.loader.Ordered()
+	if len(ordered) == 0 {
 		s.log.Debug("no files in workspace")
 		return
 	}
 
-	var allFiles []*journal.ParsedFile
-	var finds []linter.Find
-	for _, root := range roots {
-		files := journal.CollectFiles(root)
-		allFiles = append(allFiles, files...)
-		c := semantic.Build(files)
-		finds = append(finds, s.linter.Run(c)...)
-
+	if ctx.Err() != nil {
+		return
 	}
 
-	finds = dedupFinds(finds)
-	s.semanticCtx = semantic.Build(allFiles)
+	a := analyzer.Build(ordered)
+	finds := dedupFinds(s.linter.Run(a))
+
+	s.mu.Lock()
+	s.current = a
+	s.mu.Unlock()
+
+	if ctx.Err() != nil {
+		return
+	}
 
 	diagsByFile := s.groupFindsByFile(finds)
-	activeFiles := s.activeFileSet(s.openDocs, s.loader.Ordered())
+
+	s.mu.Lock()
+	activeFiles := s.activeFileSet(openDocs, ordered)
+	s.mu.Unlock()
+
 	for fpath := range activeFiles {
+		if ctx.Err() != nil {
+			return
+		}
 		if err := s.client.PublishDiagnostics(ctx, &protocol.PublishDiagnosticsParams{
 			URI:         uri.File(fpath),
 			Diagnostics: diagsByFile[fpath],
@@ -61,28 +105,7 @@ func (s *server) rebuildWorkspace(ctx context.Context) {
 		}
 	}
 
-	s.log.Debug("workspace rebuild complete",
-		"files", len(s.loader.Ordered()), "findings", len(finds))
-}
-
-func (s *server) scheduleWorkspaceRebuild(ctx context.Context) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if s.debouncer != nil {
-		s.debouncer.Stop()
-	}
-	s.debouncer = time.AfterFunc(200*time.Millisecond, func() {
-		s.rebuildWorkspace(jsonrpc2.DetachContext(ctx))
-	})
-}
-
-func (s *server) cancelWorkspaceRebuild() {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if s.debouncer != nil {
-		s.debouncer.Stop()
-		s.debouncer = nil
-	}
+	s.log.Debug("diagnostics published", "files", len(ordered), "findings", len(finds))
 }
 
 func (s *server) activeFileSet(docs map[uri.URI]docState, ordered []*journal.ParsedFile) map[string]bool {

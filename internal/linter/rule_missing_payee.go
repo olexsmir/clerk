@@ -1,24 +1,23 @@
 package linter
 
-import "olexsmir.xyz/clerk/journal/ast"
+import "olexsmir.xyz/clerk/internal/analyzer"
 
 // MissingPayee flags transactions with missing payee.
 type MissingPayee struct{}
 
 func (MissingPayee) ID() RuleID         { return "missing-payee" }
 func (MissingPayee) Severity() Severity { return SeverityWarning }
-func (m *MissingPayee) CheckEntry(entry ast.Entry) []Find {
-	txn, ok := entry.(*ast.Transaction)
-	if !ok {
-		return nil
+func (m *MissingPayee) CheckJournal(an *analyzer.Analysis) []Find {
+	var finds []Find
+	for _, txn := range an.Transactions {
+		if txn.Payee == nil {
+			finds = append(finds, Find{
+				Code:     m.ID(),
+				Severity: m.Severity(),
+				Message:  "transaction has no payee",
+				Span:     txn.Date.Span,
+			})
+		}
 	}
-	if txn.Payee == nil {
-		return []Find{{
-			Code:     m.ID(),
-			Severity: m.Severity(),
-			Message:  "transaction has no payee",
-			Span:     txn.Date.Span,
-		}}
-	}
-	return nil
+	return finds
 }

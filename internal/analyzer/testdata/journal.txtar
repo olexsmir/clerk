@@ -34,6 +34,7 @@ files (1):
 commodities (3):
   $
     directives: 2
+    used: 4
       commodity $
       commodity $
     usages: 4
@@ -41,32 +42,42 @@ commodities (3):
       file 0: $ ("100")
       file 0: $ ("10")
       file 0: $ ("5")
+    last-used: 2024-01-02
   EUR
     directives: 1
+    used: 0
       commodity EUR
     usages: 0
   USD
     directives: 0
+    used: 1
     usages: 1
       file 0: USD ("1000000")
+    last-used: 2024-01-04
 
 accounts (5):
   assets:cash
     directives: 0
+    used: 2
     usages: 2
       file 0: assets:cash
       file 0: assets:cash
+    last-used: 2024-01-04
   assets:checking
     directives: 0
+    used: 2
     usages: 2
       file 0: assets:checking
       file 0: assets:checking
+    last-used: 2024-01-01
   assets:credit
     directives: 0
+    used: 1
     usages: 1
       file 0: assets:credit
   expenses:food
     directives: 2
+    used: 4
       account expenses:food
       account expenses:food
     usages: 4
@@ -74,8 +85,10 @@ accounts (5):
       file 0: expenses:food
       file 0: expenses:food
       file 0: expenses:food
+    last-used: 2024-01-04
   expenses:transport
     directives: 1
+    used: 1
       account expenses:transport
     usages: 1
       file 0: expenses:transport
@@ -83,13 +96,64 @@ accounts (5):
 payees (3):
   aws
     directives: 0
+    used: 1
     usages: 1
       file 0: aws
   groceries
     directives: 0
+    used: 1
     usages: 1
       file 0: groceries
   lunch
     directives: 0
+    used: 1
     usages: 1
       file 0: lunch
+
+prefixes (2):
+  assets:
+    assets:cash
+    assets:checking
+    assets:credit
+  expenses:
+    expenses:food
+    expenses:transport
+
+transactions: 3
+periodic transactions: 1
+automated transactions: 1
+
+directives (6):
+  account expenses:food
+  account expenses:food
+  account expenses:transport
+  commodity $
+  commodity $
+  commodity EUR
+
+transaction keys (3):
+  2024-01-01|groceries|expenses:food,assets:checking,
+  2024-01-02|lunch|expenses:food,assets:cash,
+  2024-01-04|aws|expenses:food,assets:cash,
+
+payee templates (3):
+  aws
+    expenses:food  USD1000000
+    assets:cash (inferred)
+  groceries
+    expenses:food  $10
+    assets:checking (inferred)
+  lunch
+    expenses:food  $5
+    assets:cash (inferred)
+
+dates (3):
+  2024-01-01
+  2024-01-02
+  2024-01-04
+
+tag names (0):
+
+commodity decimal marks (2):
+  $: .
+  USD: .

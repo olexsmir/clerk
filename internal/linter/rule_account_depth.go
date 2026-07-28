@@ -3,6 +3,7 @@ package linter
 import (
 	"fmt"
 
+	"olexsmir.xyz/clerk/internal/analyzer"
 	"olexsmir.xyz/clerk/journal/ast"
 )
 
@@ -11,29 +12,37 @@ type AccountDepthLimit struct {
 	MaxDepth int
 }
 
-func (AccountDepthLimit) ID() RuleID          { return "account-depth" }
-func (AccountDepthLimit) Severity() Severity  { return SeverityWarning }
-func (a *AccountDepthLimit) CheckEntry(entry ast.Entry) []Find {
+func (AccountDepthLimit) ID() RuleID         { return "account-depth" }
+func (AccountDepthLimit) Severity() Severity { return SeverityWarning }
+func (a *AccountDepthLimit) CheckJournal(an *analyzer.Analysis) []Find {
 	var finds []Find
-	switch e := entry.(type) {
-	case *ast.Transaction:
-		for _, p := range e.Postings {
+
+	for _, txn := range an.Transactions {
+		for _, p := range txn.Postings {
 			a.check(&finds, p.Account)
 		}
-	case *ast.PeriodicTransaction:
-		for _, p := range e.Postings {
-			a.check(&finds, p.Account)
-		}
-	case *ast.AutomatedTransaction:
-		for _, p := range e.Postings {
-			a.check(&finds, p.Account)
-		}
-	case *ast.AccountDirective:
-		a.check(&finds, e.Account)
-	case *ast.AliasDirective:
-		a.check(&finds, e.From)
-		a.check(&finds, e.To)
 	}
+	for _, ptx := range an.PeriodicTransactions {
+		for _, p := range ptx.Postings {
+			a.check(&finds, p.Account)
+		}
+	}
+	for _, atx := range an.AutomatedTransactions {
+		for _, p := range atx.Postings {
+			a.check(&finds, p.Account)
+		}
+	}
+
+	for _, d := range an.Directives {
+		switch e := d.(type) {
+		case *ast.AccountDirective:
+			a.check(&finds, e.Account)
+		case *ast.AliasDirective:
+			a.check(&finds, e.From)
+			a.check(&finds, e.To)
+		}
+	}
+
 	return finds
 }
 

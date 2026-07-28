@@ -1,9 +1,8 @@
 package linter
 
 import (
+	"olexsmir.xyz/clerk/internal/analyzer"
 	"olexsmir.xyz/clerk/journal/token"
-
-	"olexsmir.xyz/clerk/journal/semantic"
 )
 
 // A Find represents a single lint finding.
@@ -24,25 +23,13 @@ func NewLinter(rules []Rule) *Linter {
 	return &Linter{rules: rules}
 }
 
-// Run runs all rules against the semantic context.
-func (l *Linter) Run(ctx *semantic.Context) []Find {
+// Run runs all rules against the analysis context.
+func (l *Linter) Run(a *analyzer.Analysis) []Find {
 	var finds []Find
 
-	// per-entry traversal
-	for _, pf := range ctx.Files {
-		for _, entry := range pf.Ast.Entries {
-			for _, rule := range l.rules {
-				if ec, ok := rule.(EntryChecker); ok {
-					finds = append(finds, ec.CheckEntry(entry)...)
-				}
-			}
-		}
-	}
-
-	// post-traversal
 	for _, rule := range l.rules {
-		if jc, ok := rule.(JournalChecker); ok {
-			finds = append(finds, jc.CheckJournal(ctx)...)
+		if jc, ok := rule.(Rule); ok {
+			finds = append(finds, jc.CheckJournal(a)...)
 		}
 	}
 
