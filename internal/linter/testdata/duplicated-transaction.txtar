@@ -1,0 +1,24 @@
+-- in.journal --
+2024-01-01 groceries
+  expenses:food  $10
+  assets:cash
+
+2024-01-01 groceries
+  expenses:food  $10
+  assets:cash
+
+2024-01-02 taxi
+  expenses:transport  $20
+  assets:cash
+
+2024-01-02 taxi
+  expenses:transport  $20
+  assets:cash
+
+2024-01-03 unique
+  expenses:misc  $5
+  assets:cash
+
+-- expect --
+in.journal:5:1: duplicated-transaction: duplicate of transaction at line 1
+in.journal:13:1: duplicated-transaction: duplicate of transaction at line 9

@@ -24,6 +24,7 @@ var Rules = []Rule{
 	&OrderDate{},
 	&DuplicatedAccount{},
 	&DuplicatedCommodity{},
+	&DuplicatedTransaction{},
 	&UndeclaredCommodity{},
 	&UndeclaredAccount{},
 	&UnbalancedTransaction{},
