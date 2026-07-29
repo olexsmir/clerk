@@ -77,6 +77,26 @@ type Status struct {
 	Span  token.Span
 }
 
+type Code struct {
+	Value string
+	Span  token.Span
+}
+
+type Note struct {
+	Value string
+	Span  token.Span
+}
+
+type Description struct {
+	Value string
+	Span  token.Span
+}
+
+type Expr struct {
+	Value string
+	Span  token.Span
+}
+
 type Payee struct {
 	Name string
 	Span token.Span

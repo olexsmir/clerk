@@ -11,10 +11,11 @@ type AccountDirective struct {
 func (AccountDirective) entryNode() {}
 
 type CommodityDirective struct {
-	Commodity string
-	Format    Amount   // optional format hint: "1,000.00 UAH"
-	Comment   *Comment // optional inline comment
-	Span      token.Span
+	Commodity     string
+	CommoditySpan token.Span // span of the commodity token
+	Format        Amount     // optional format hint: "1,000.00 UAH"
+	Comment       *Comment   // optional inline comment
+	Span          token.Span
 }
 
 func (CommodityDirective) entryNode() {}

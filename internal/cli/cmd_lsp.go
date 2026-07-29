@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/urfave/cli/v3"
+
 	"olexsmir.xyz/clerk/internal/lsp"
 )
 

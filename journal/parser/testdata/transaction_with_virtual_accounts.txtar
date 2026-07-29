@@ -13,9 +13,9 @@ Journal
       Account j:2:3-2:18
         SubAccount: "virtual" j:2:3-2:10
         SubAccount: "account" j:2:11-2:18
-      Amount j:2:21-2:21
+      Amount j:2:21-3:0
         Quantity: 1
-        Commodity: "PESO"
+        Commodity: "PESO" j:2:23-3:0
         CommodityPos: After
         HasSpace: true
         Precision: 0
@@ -25,9 +25,9 @@ Journal
       Account j:3:3-3:17
         SubAccount: "something" j:3:3-3:12
         SubAccount: "else" j:3:13-3:17
-      Amount j:3:21-3:21
+      Amount j:3:21-4:0
         Quantity: 5
-        Commodity: "PESO"
+        Commodity: "PESO" j:3:23-4:0
         CommodityPos: After
         HasSpace: true
         Precision: 0

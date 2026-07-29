@@ -12,9 +12,9 @@ Journal
       Account j:2:3-2:16
         SubAccount: "expenses" j:2:3-2:11
         SubAccount: "food" j:2:12-2:16
-      Amount j:2:18-2:18
+      Amount j:2:18-3:0
         Quantity: 1000
-        Commodity: "UAH"
+        Commodity: "UAH" j:2:27-3:0
         CommodityPos: After
         HasSpace: true
         Precision: 2
@@ -24,9 +24,9 @@ Journal
       Account j:3:3-3:20
         SubAccount: "expenses" j:3:3-3:11
         SubAccount: "supplies" j:3:12-3:20
-      Amount j:3:22-3:22
+      Amount j:3:22-4:0
         Quantity: 1000
-        Commodity: "USD"
+        Commodity: "USD" j:3:31-4:0
         CommodityPos: After
         HasSpace: true
         Precision: 2
@@ -36,9 +36,9 @@ Journal
       Account j:4:3-4:18
         SubAccount: "assets" j:4:3-4:9
         SubAccount: "checking" j:4:10-4:18
-      Amount j:4:20-4:20
+      Amount j:4:20-5:0
         Quantity: -2000
-        Commodity: "USD"
+        Commodity: "USD" j:4:30-5:0
         CommodityPos: After
         HasSpace: true
         Precision: 2

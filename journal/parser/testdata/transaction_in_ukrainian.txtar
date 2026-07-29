@@ -11,9 +11,9 @@ Journal
       Account j:2:3-2:14
         SubAccount: "витрати" j:2:3-2:10
         SubAccount: "їжа" j:2:11-2:14
-      Amount j:2:16-2:16
+      Amount j:2:16-3:0
         Quantity: 350
-        Commodity: "UAH"
+        Commodity: "UAH" j:2:20-3:0
         CommodityPos: After
         HasSpace: true
         Precision: 0

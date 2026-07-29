@@ -15,9 +15,9 @@ Journal
     Posting j:2:1-3:1
       Account j:2:5-2:45
         SubAccount: "af0628973ff35bd62ddb048fa41dd8d83c1c46fe" j:2:5-2:45
-      Amount j:2:52-2:52
+      Amount j:2:52-3:0
         Quantity: 474.31
-        Commodity: "$"
+        Commodity: "$" j:2:52-2:53
         CommodityPos: Before
         HasSpace: false
         Precision: 2
@@ -34,9 +34,9 @@ Journal
     Posting j:6:1-7:1
       Account j:6:5-6:45
         SubAccount: "0ecbb1b15e2cf3e515cc0f8533e5bb0fb2326728" j:6:5-6:45
-      Amount j:6:53-6:53
+      Amount j:6:53-7:0
         Quantity: 14.91
-        Commodity: "$"
+        Commodity: "$" j:6:53-6:54
         CommodityPos: Before
         HasSpace: false
         Precision: 2

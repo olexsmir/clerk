@@ -8,4 +8,4 @@ Journal
       SubAccount: "expenses" j:1:10-1:18
       SubAccount: "food" j:1:19-2:0
   CommodityDirective j:2:2-3:1
-    Commodity: "USD"
+    Commodity: "USD" j:2:12-3:0

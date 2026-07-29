@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"go.lsp.dev/protocol"
+
 	"olexsmir.xyz/clerk/journal/lexer"
 	"olexsmir.xyz/clerk/journal/parser"
 )

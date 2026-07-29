@@ -11,6 +11,7 @@ import (
 	"olexsmir.xyz/clerk/internal/analyzer"
 	"olexsmir.xyz/clerk/internal/linter"
 	"olexsmir.xyz/clerk/journal"
+	"olexsmir.xyz/clerk/journal/ast"
 	"olexsmir.xyz/clerk/journal/printer"
 )
 
@@ -38,6 +39,7 @@ type docState struct {
 	text       string
 	version    int32
 	languageID protocol.LanguageKind
+	journal    *ast.Journal // cached parse; nil on parse failure
 }
 
 func (s *server) Initialize(ctx context.Context, params *protocol.InitializeParams) (*protocol.InitializeResult, error) {
@@ -51,6 +53,11 @@ func (s *server) Initialize(ctx context.Context, params *protocol.InitializePara
 			TextDocumentSync: &protocol.TextDocumentSyncOptions{
 				OpenClose: new(true),
 				Change:    new(protocol.TextDocumentSyncKindFull),
+			},
+			SemanticTokensProvider: &protocol.SemanticTokensOptions{
+				Legend: getSemanticTokensLegend(),
+				Range:  protocol.Boolean(true),
+				Full:   protocol.Boolean(true),
 			},
 		},
 	}, nil

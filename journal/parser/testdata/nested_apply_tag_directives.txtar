@@ -19,9 +19,9 @@ Journal
       Account j:4:3-4:17
         SubAccount: "expenses" j:4:3-4:11
         SubAccount: "books" j:4:12-4:17
-      Amount j:4:19-4:19
+      Amount j:4:19-5:0
         Quantity: 20
-        Commodity: "$"
+        Commodity: "$" j:4:19-4:20
         CommodityPos: Before
         HasSpace: false
         Precision: 2

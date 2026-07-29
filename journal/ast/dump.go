@@ -134,7 +134,7 @@ func dumpTransaction(b *strings.Builder, t *Transaction, depth int) {
 	}
 	if t.Code != nil {
 		indent(b, depth+1)
-		fmt.Fprintf(b, "Code: %q\n", *t.Code)
+		fmt.Fprintf(b, "Code: %q %s\n", t.Code.Value, t.Code.Span)
 	}
 	if t.Payee != nil {
 		indent(b, depth+1)
@@ -142,7 +142,7 @@ func dumpTransaction(b *strings.Builder, t *Transaction, depth int) {
 	}
 	if t.Note != nil {
 		indent(b, depth+1)
-		fmt.Fprintf(b, "Note: %q\n", *t.Note)
+		fmt.Fprintf(b, "Note: %q %s\n", t.Note.Value, t.Note.Span)
 	}
 	dumpOptComment(b, t.Comment, depth+1)
 	if len(t.HeaderComments) > 0 {
@@ -161,7 +161,7 @@ func dumpAutomatedTransaction(b *strings.Builder, t *AutomatedTransaction, depth
 	indent(b, depth)
 	fmt.Fprintf(b, "AutomatedTransaction %s\n", t.Span)
 	indent(b, depth+1)
-	fmt.Fprintf(b, "Expr: %q\n", t.Expr)
+	fmt.Fprintf(b, "Expr: %q %s\n", t.Expr.Value, t.Expr.Span)
 	dumpOptComment(b, t.Comment, depth+1)
 	if len(t.HeaderComments) > 0 {
 		indent(b, depth+1)
@@ -194,11 +194,11 @@ func dumpPeriodicTransaction(b *strings.Builder, t *PeriodicTransaction, depth i
 	}
 	if t.Code != nil {
 		indent(b, depth+1)
-		fmt.Fprintf(b, "Code: %q\n", *t.Code)
+		fmt.Fprintf(b, "Code: %q %s\n", t.Code.Value, t.Code.Span)
 	}
 	if t.Description != nil {
 		indent(b, depth+1)
-		fmt.Fprintf(b, "Description: %q\n", *t.Description)
+		fmt.Fprintf(b, "Description: %q %s\n", t.Description.Value, t.Description.Span)
 	}
 	dumpOptComment(b, t.Comment, depth+1)
 	if len(t.HeaderComments) > 0 {
@@ -251,7 +251,11 @@ func dumpAmount(b *strings.Builder, a *Amount, depth int) {
 	indent(b, depth+1)
 	fmt.Fprintf(b, "Quantity: %s\n", a.Quantity.String())
 	indent(b, depth+1)
-	fmt.Fprintf(b, "Commodity: %q\n", a.Commodity)
+	fmt.Fprintf(b, "Commodity: %q", a.Commodity)
+	if a.Commodity != "" {
+		fmt.Fprintf(b, " %s", a.CommoditySpan)
+	}
+	fmt.Fprintf(b, "\n")
 	indent(b, depth+1)
 	fmt.Fprintf(b, "CommodityPos: %s\n", a.CommodityPos)
 	indent(b, depth+1)
@@ -317,7 +321,7 @@ func dumpCommodityDirective(b *strings.Builder, c *CommodityDirective, depth int
 	indent(b, depth)
 	fmt.Fprintf(b, "CommodityDirective %s\n", c.Span)
 	indent(b, depth+1)
-	fmt.Fprintf(b, "Commodity: %q\n", c.Commodity)
+	fmt.Fprintf(b, "Commodity: %q %s\n", c.Commodity, c.CommoditySpan)
 	if c.Format.QuantityFmt.Decimal != 0 {
 		dumpAmount(b, &c.Format, depth+1)
 	}

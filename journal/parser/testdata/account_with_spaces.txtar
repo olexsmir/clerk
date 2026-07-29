@@ -11,7 +11,7 @@ Journal
       Account j:2:2-2:23
         SubAccount: "expenses" j:2:2-2:10
         SubAccount: "account name" j:2:11-2:23
-      Amount j:2:25-2:25
+      Amount j:2:25-3:0
         Quantity: 20
         Commodity: ""
         CommodityPos: Before

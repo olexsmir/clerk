@@ -1,0 +1,222 @@
+-- in.journal --
+account expenses:food
+account expenses:food  ; note
+
+alias old = new
+alias old = new  ; alias note
+
+payee Some Store
+payee Some Store  ; payee note
+
+tag foo
+tag foo  ; tag note
+
+year 2024
+year 2024  ; year note
+
+Y 2024
+Y 2024  ; Y note
+
+apply account expenses
+end apply
+apply account expenses  ; apply note
+end apply  ; end note
+
+apply tag hashtag
+end apply
+apply tag hashtag  ; apply tag note
+end apply  ; end note
+
+apply fixed CAD $0.90
+end apply
+apply fixed CAD $0.90  ; apply fixed note
+end apply  ; end note
+
+N ignored
+N ignored  ; N note
+N $
+N $  ; N dollar note
+
+D $1,000.00
+D $1,000.00  ; D note
+
+P 2024-01-15 USD 1.05
+P 2024-01-15 USD 1.05  ; P note
+P 2024-01-01 12:00:00 USD 40.50
+P 2024-01-01 12:00:00 USD 40.50  ; P time note
+
+C 100 USD = 90 EUR
+C 100 USD = 90 EUR  ; C note
+
+decimal-mark .
+decimal-mark .  ; decimal note
+
+include foo.journal
+include foo.journal  ; include note
+
+commodity USD
+commodity USD  ; commodity note
+
+commodity INR
+  format INR 1,00,00,000.00
+commodity INR  ; commodity INR note
+  format INR 1,00,00,000.00
+
+commodity 1,000.00 UAH
+commodity 1,000.00 UAH  ; commodity amount note
+commodity UAH
+  format 1 000.00 UAH
+commodity UAH  ; commodity UAH note
+  format 1 000.00 UAH
+
+-- expect --
+0:0+7 keyword
+0:8+13 namespace
+1:0+7 keyword
+1:8+13 namespace
+1:23+6 comment
+3:0+5 keyword
+3:6+3 namespace
+3:10+1 operator
+3:12+3 namespace
+4:0+5 keyword
+4:6+3 namespace
+4:10+1 operator
+4:12+3 namespace
+4:17+12 comment
+6:0+5 keyword
+6:6+10 property
+7:0+5 keyword
+7:6+10 property
+7:18+12 comment
+9:0+3 keyword
+9:4+3 property
+10:0+3 keyword
+10:4+3 property
+10:9+10 comment
+12:0+4 keyword
+12:5+4 property
+13:0+4 keyword
+13:5+4 property
+13:11+11 comment
+15:0+1 keyword
+15:2+4 property
+16:0+1 keyword
+16:2+4 property
+16:8+8 comment
+18:0+5 keyword
+18:6+16 property
+19:0+3 keyword
+19:4+5 property
+20:0+5 keyword
+20:6+16 property
+20:24+12 comment
+21:0+3 keyword
+21:4+5 property
+21:11+10 comment
+23:0+5 keyword
+23:6+11 property
+24:0+3 keyword
+24:4+5 property
+25:0+5 keyword
+25:6+11 property
+25:19+16 comment
+26:0+3 keyword
+26:4+5 property
+26:11+10 comment
+28:0+5 keyword
+28:6+15 property
+29:0+3 keyword
+29:4+5 property
+30:0+5 keyword
+30:6+15 property
+30:23+18 comment
+31:0+3 keyword
+31:4+5 property
+31:11+10 comment
+33:0+1 keyword
+33:2+7 property
+34:0+1 keyword
+34:2+7 property
+34:11+8 comment
+35:0+1 keyword
+35:2+1 property
+36:0+1 keyword
+36:2+1 property
+36:5+15 comment
+38:0+1 keyword
+38:2+1 type
+38:3+8 number
+39:0+1 keyword
+39:2+1 type
+39:3+8 number
+39:13+8 comment
+41:0+1 keyword
+41:2+10 class
+41:13+3 type
+41:17+4 number
+42:0+1 keyword
+42:2+10 class
+42:13+3 type
+42:17+4 number
+42:23+8 comment
+43:0+1 keyword
+43:2+10 class
+43:13+8 class
+43:22+3 type
+43:26+5 number
+44:0+1 keyword
+44:2+10 class
+44:13+8 class
+44:22+3 type
+44:26+5 number
+44:33+13 comment
+46:0+1 keyword
+46:2+3 number
+46:6+3 type
+46:10+1 operator
+46:12+2 number
+46:15+3 type
+47:0+1 keyword
+47:2+3 number
+47:6+3 type
+47:10+1 operator
+47:12+2 number
+47:15+3 type
+47:20+8 comment
+49:0+12 keyword
+49:13+1 property
+50:0+12 keyword
+50:13+1 property
+50:16+14 comment
+52:0+7 keyword
+52:8+11 string
+53:0+7 keyword
+53:8+11 string
+53:21+14 comment
+55:0+9 keyword
+55:10+3 type
+56:0+9 keyword
+56:10+3 type
+56:15+16 comment
+58:0+9 keyword
+59:9+3 type
+59:13+14 number
+60:0+9 keyword
+60:15+20 comment
+61:9+3 type
+61:13+14 number
+63:0+9 keyword
+63:10+8 number
+63:19+3 type
+64:0+9 keyword
+64:10+8 number
+64:19+3 type
+64:24+23 comment
+65:0+9 keyword
+66:9+8 number
+66:18+3 type
+67:0+9 keyword
+67:15+20 comment
+68:9+8 number
+68:18+3 type

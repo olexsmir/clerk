@@ -23,17 +23,17 @@ Journal
       Account j:2:2-2:14
         SubAccount: "expenses" j:2:2-2:10
         SubAccount: "atm" j:2:11-2:14
-      Amount j:2:16-2:16
+      Amount j:2:16-2:25
         Quantity: 20
-        Commodity: "UAH"
+        Commodity: "UAH" j:2:22-2:25
         CommodityPos: After
         HasSpace: true
         Precision: 2
         Decimal: "."
       Cost(unit) j:2:26-3:0
-        Amount j:2:28-2:28
+        Amount j:2:28-3:0
           Quantity: 1
-          Commodity: "USD"
+          Commodity: "USD" j:2:30-3:0
           CommodityPos: After
           HasSpace: true
           Precision: 0
@@ -51,17 +51,17 @@ Journal
       Account j:6:2-6:14
         SubAccount: "expenses" j:6:2-6:10
         SubAccount: "atm" j:6:11-6:14
-      Amount j:6:16-6:16
+      Amount j:6:16-6:25
         Quantity: 20
-        Commodity: "UAH"
+        Commodity: "UAH" j:6:22-6:25
         CommodityPos: After
         HasSpace: true
         Precision: 2
         Decimal: "."
       Cost(total) j:6:26-7:0
-        Amount j:6:29-6:29
+        Amount j:6:29-7:0
           Quantity: 1
-          Commodity: "USD"
+          Commodity: "USD" j:6:31-7:0
           CommodityPos: After
           HasSpace: true
           Precision: 0
@@ -79,17 +79,17 @@ Journal
       Account j:10:2-10:14
         SubAccount: "expenses" j:10:2-10:10
         SubAccount: "atm" j:10:11-10:14
-      Amount j:10:16-10:16
+      Amount j:10:16-10:25
         Quantity: 20
-        Commodity: "UAH"
+        Commodity: "UAH" j:10:22-10:25
         CommodityPos: After
         HasSpace: true
         Precision: 2
         Decimal: "."
       Cost(unit) j:10:26-10:33
-        Amount j:10:28-10:28
+        Amount j:10:28-10:33
           Quantity: 1
-          Commodity: "USD"
+          Commodity: "USD" j:10:30-10:33
           CommodityPos: After
           HasSpace: true
           Precision: 0
@@ -97,17 +97,17 @@ Journal
       BalanceAssertion j:10:34-11:0
         IsStrict: false
         IsInclusive: false
-        Amount j:10:36-10:36
+        Amount j:10:36-10:45
           Quantity: 20
-          Commodity: "UAH"
+          Commodity: "UAH" j:10:42-10:45
           CommodityPos: After
           HasSpace: true
           Precision: 2
           Decimal: "."
         Cost(unit) j:10:46-11:0
-          Amount j:10:48-10:48
+          Amount j:10:48-11:0
             Quantity: 1
-            Commodity: "USD"
+            Commodity: "USD" j:10:50-11:0
             CommodityPos: After
             HasSpace: true
             Precision: 0
@@ -125,17 +125,17 @@ Journal
       Account j:14:5-14:16
         SubAccount: "assets" j:14:5-14:11
         SubAccount: "cash" j:14:12-14:16
-      Amount j:14:18-14:18
+      Amount j:14:18-14:25
         Quantity: -20
-        Commodity: "EUR"
+        Commodity: "EUR" j:14:22-14:25
         CommodityPos: After
         HasSpace: true
         Precision: 0
         Decimal: "."
       Cost(unit) j:14:26-15:0
-        Amount j:14:28-14:28
+        Amount j:14:28-15:0
           Quantity: 7.53
-          Commodity: "HRK"
+          Commodity: "HRK" j:14:33-15:0
           CommodityPos: After
           HasSpace: true
           Precision: 2
@@ -144,9 +144,9 @@ Journal
       Account j:15:5-15:16
         SubAccount: "assets" j:15:5-15:11
         SubAccount: "cash" j:15:12-15:16
-      Amount j:15:18-15:18
+      Amount j:15:18-16:0
         Quantity: 150.6
-        Commodity: "HRK"
+        Commodity: "HRK" j:15:25-16:0
         CommodityPos: After
         HasSpace: true
         Precision: 2

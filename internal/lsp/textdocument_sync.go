@@ -5,6 +5,10 @@ import (
 
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
+
+	"olexsmir.xyz/clerk/journal/ast"
+	"olexsmir.xyz/clerk/journal/lexer"
+	"olexsmir.xyz/clerk/journal/parser"
 )
 
 func (s *server) DidOpen(ctx context.Context, params *protocol.DidOpenTextDocumentParams) error {
@@ -32,11 +36,13 @@ func (s *server) DidSave(ctx context.Context, params *protocol.DidSaveTextDocume
 // Document management
 
 func (s *server) openDoc(u uri.URI, text string, version int32, langID protocol.LanguageKind) {
+	j := parseJournalStr(text)
 	s.mu.Lock()
 	s.openDocs[u] = docState{
 		text:       text,
 		version:    version,
 		languageID: langID,
+		journal:    j,
 	}
 	s.mu.Unlock()
 }
@@ -53,6 +59,7 @@ func (s *server) updateDoc(u uri.URI, version int32, changes []protocol.TextDocu
 		switch ev := ch.(type) {
 		case *protocol.TextDocumentContentChangeWholeDocument:
 			state.text = ev.Text
+			state.journal = parseJournalStr(ev.Text)
 		case *protocol.TextDocumentContentChangePartial:
 			_ = ev // TODO: incremental edit support
 		}
@@ -71,4 +78,18 @@ func (s *server) getDocText(u uri.URI) (string, bool) {
 	state, ok := s.openDocs[u]
 	s.mu.Unlock()
 	return state.text, ok
+}
+
+func (s *server) getDocState(u uri.URI) (docState, bool) {
+	s.mu.Lock()
+	state, ok := s.openDocs[u]
+	s.mu.Unlock()
+	return state, ok
+}
+
+// parseJournalStr parses a raw journal string into an AST.
+func parseJournalStr(content string) *ast.Journal {
+	l := lexer.New("", []byte(content))
+	p := parser.New(l)
+	return p.ParseJournal()
 }

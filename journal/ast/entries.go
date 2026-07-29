@@ -13,9 +13,9 @@ type Transaction struct {
 	Date           Date
 	SecondDate     *Date      // optional =2026-05-18 date
 	Status         Status     // optional */! status
-	Code           *string    // optional (123) code
+	Code           *Code      // optional (123) code
 	Payee          *Payee     // optional payee
-	Note           *string    // part after |
+	Note           *Note      // part after |
 	Comment        *Comment   // inline ; on header line
 	HeaderComments []*Comment // indented ; lines before first posting
 	Postings       []*Posting
@@ -34,11 +34,11 @@ type Period struct {
 func (Period) entryNode() {}
 
 type PeriodicTransaction struct {
-	Period         Period   // period-expr
-	Status         Status   // optional */! status
-	Code           *string  // optional (123) code
-	Description    *string  // optional description
-	Comment        *Comment // optional inline comment
+	Period         Period       // period-expr
+	Status         Status       // optional */! status
+	Code           *Code        // optional (123) code
+	Description    *Description // optional description
+	Comment        *Comment     // optional inline comment
 	HeaderComments []*Comment
 	Postings       []*Posting
 	Span           token.Span
@@ -47,7 +47,7 @@ type PeriodicTransaction struct {
 func (PeriodicTransaction) entryNode() {}
 
 type AutomatedTransaction struct {
-	Expr           string
+	Expr           Expr
 	Postings       []*Posting
 	Comment        *Comment   // inline ; on header line
 	HeaderComments []*Comment // indented ; lines before first posting
@@ -90,15 +90,16 @@ type Posting struct {
 }
 
 type Amount struct {
-	IsNegative   bool
-	Quantity     decimal.Decimal
-	QuantityFmt  QuantityFormat
-	Commodity    string
-	CommodityPos CommodityPos // Before | After
-	HasSpace     bool         // "$10" vs "$ 10"
-	IsExpr       bool         // e.g: *-1
-	Expr         string       // expression text e.g. "amount * -1". set only if IsExpr is true
-	Span         token.Span
+	IsNegative    bool
+	Quantity      decimal.Decimal
+	QuantityFmt   QuantityFormat
+	Commodity     string
+	CommodityPos  CommodityPos // Before | After
+	CommoditySpan token.Span   // span of the commodity within the amount
+	HasSpace      bool         // "$10" vs "$ 10"
+	IsExpr        bool         // e.g: *-1
+	Expr          string       // expression text e.g. "amount * -1". set only if IsExpr is true
+	Span          token.Span
 }
 
 type Cost struct {

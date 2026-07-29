@@ -3,10 +3,10 @@ commodity $1000.00
 -- expect --
 Journal
   CommodityDirective j:1:1-2:1
-    Commodity: "$"
-    Amount j:1:12-1:12
+    Commodity: "$" j:1:11-1:12
+    Amount j:1:12-2:0
       Quantity: 1000
-      Commodity: "$"
+      Commodity: "$" j:1:11-1:12
       CommodityPos: Before
       HasSpace: false
       Precision: 2

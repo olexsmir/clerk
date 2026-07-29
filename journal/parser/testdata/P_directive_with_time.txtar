@@ -6,9 +6,9 @@ Journal
     Date: 2024-01-01
     Time: 12:00:00
     Commodity: "USD"
-    Amount j:1:27-1:27
+    Amount j:1:27-2:0
       Quantity: 40.5
-      Commodity: "UAH"
+      Commodity: "UAH" j:1:33-2:0
       CommodityPos: After
       HasSpace: true
       Precision: 2

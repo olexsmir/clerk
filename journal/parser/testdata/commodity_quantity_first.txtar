@@ -3,10 +3,10 @@ commodity 1,000.00 UAH
 -- expect --
 Journal
   CommodityDirective j:1:1-2:1
-    Commodity: "UAH"
-    Amount j:1:11-1:11
+    Commodity: "UAH" j:1:20-2:0
+    Amount j:1:11-2:0
       Quantity: 1000
-      Commodity: "UAH"
+      Commodity: "UAH" j:1:20-2:0
       CommodityPos: After
       HasSpace: true
       Precision: 2

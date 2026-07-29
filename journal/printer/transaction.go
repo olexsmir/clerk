@@ -21,9 +21,9 @@ func (p *printer) writeTransaction(t *ast.Transaction) {
 	}
 
 	// code
-	if t.Code != nil && *t.Code != "" {
+	if t.Code != nil && t.Code.Value != "" {
 		p.buf.WriteString(" (")
-		p.buf.WriteString(*t.Code)
+		p.buf.WriteString(t.Code.Value)
 		p.buf.WriteByte(')')
 	}
 
@@ -34,9 +34,9 @@ func (p *printer) writeTransaction(t *ast.Transaction) {
 	}
 
 	// note
-	if t.Note != nil && *t.Note != "" {
+	if t.Note != nil && t.Note.Value != "" {
 		p.buf.WriteString(" | ")
-		p.buf.WriteString(*t.Note)
+		p.buf.WriteString(t.Note.Value)
 	}
 
 	p.writeComment(t.Comment)
@@ -69,16 +69,16 @@ func (p *printer) writePeriodicTransaction(t *ast.PeriodicTransaction) {
 	}
 
 	// code
-	if t.Code != nil && *t.Code != "" {
+	if t.Code != nil && t.Code.Value != "" {
 		p.buf.WriteString(" (")
-		p.buf.WriteString(*t.Code)
+		p.buf.WriteString(t.Code.Value)
 		p.buf.WriteByte(')')
 	}
 
 	// description
-	if t.Description != nil && *t.Description != "" {
+	if t.Description != nil && t.Description.Value != "" {
 		p.buf.WriteByte(' ')
-		p.buf.WriteString(*t.Description)
+		p.buf.WriteString(t.Description.Value)
 	}
 
 	// comment
@@ -100,9 +100,9 @@ func (p *printer) writeAutomatedTransaction(t *ast.AutomatedTransaction) {
 	p.buf.WriteByte('=')
 
 	// expression
-	if t.Expr != "" {
+	if t.Expr.Value != "" {
 		p.buf.WriteByte(' ')
-		p.buf.WriteString(t.Expr)
+		p.buf.WriteString(t.Expr.Value)
 	}
 
 	// comment

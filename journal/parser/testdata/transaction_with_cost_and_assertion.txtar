@@ -11,17 +11,17 @@ Journal
       Account j:2:2-2:14
         SubAccount: "expenses" j:2:2-2:10
         SubAccount: "atm" j:2:11-2:14
-      Amount j:2:16-2:16
+      Amount j:2:16-2:25
         Quantity: 20
-        Commodity: "UAH"
+        Commodity: "UAH" j:2:16-2:19
         CommodityPos: Before
         HasSpace: true
         Precision: 2
         Decimal: "."
       Cost(unit) j:2:26-2:33
-        Amount j:2:28-2:28
+        Amount j:2:28-2:33
           Quantity: 1
-          Commodity: "USD"
+          Commodity: "USD" j:2:30-2:33
           CommodityPos: After
           HasSpace: true
           Precision: 0
@@ -29,9 +29,9 @@ Journal
       BalanceAssertion j:2:34-3:0
         IsStrict: false
         IsInclusive: false
-        Amount j:2:36-2:36
+        Amount j:2:36-3:0
           Quantity: 0
-          Commodity: "UAH"
+          Commodity: "UAH" j:2:38-3:0
           CommodityPos: After
           HasSpace: true
           Precision: 0

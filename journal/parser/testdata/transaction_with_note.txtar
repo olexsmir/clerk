@@ -5,4 +5,4 @@ Journal
   Transaction j:1:1-2:1
     Date: 2024-01-01
     Payee: "groceries" j:1:12-1:21
-    Note: "eating out"
+    Note: "eating out" j:1:24-2:0

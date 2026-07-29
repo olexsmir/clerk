@@ -16,9 +16,9 @@ Journal
         SubAccount: "expenses" j:3:5-3:13
         SubAccount: "personal" j:3:14-3:22
         SubAccount: "tax" j:3:23-3:26
-      Amount j:3:40-3:40
+      Amount j:3:40-4:0
         Quantity: 1250
-        Commodity: "$"
+        Commodity: "$" j:3:40-3:41
         CommodityPos: Before
         HasSpace: false
         Precision: 0
@@ -28,9 +28,9 @@ Journal
         SubAccount: "assets" j:4:5-4:11
         SubAccount: "bank" j:4:12-4:16
         SubAccount: "checking" j:4:17-4:25
-      Amount j:4:40-4:40
+      Amount j:4:40-5:0
         Quantity: -1250
-        Commodity: "$"
+        Commodity: "$" j:4:40-4:41
         CommodityPos: Before
         HasSpace: false
         Precision: 0

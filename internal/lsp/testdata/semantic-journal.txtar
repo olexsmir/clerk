@@ -1,0 +1,391 @@
+-- in.journal --
+; a comment
+;
+# hash comment
+% percent comment
+comment
+block text
+end comment
+comment tag:hidden
+stuff
+end
+
+* 2024-01-15 comment
+2024-01-15 real
+
+2024/01/01=2024/01/02 groceries
+  ! assets:cash  $10
+  * (income:gift)  $-10
+
+2024.01.01 "quoted payee"
+	expenses:food  10.00 "EUR"
+	assets:checking
+
+2024-01-01 groceries
+  expenses:food  1E-6 BTC
+  expenses:supplies  EUR 1E3
+  expenses:rest  -2.5e-2 $
+  expenses:meals  1 000.00 UAH
+  expenses:gifts  1'000.00 USD
+  expenses:donuts  -2_000.00 USD
+  expenses:food  €10.00
+  expenses:food  £5.00
+  expenses:food  ₹700.00
+  expenses:account name  20.00
+  assets:cash
+
+2024-01-15 t
+    a  $10
+    b  $-10
+
+2024-01-15 * (CODE) Cafe | lunch ; weekly treat
+    ; header note
+    expenses:food:cafe    $12.50
+    expenses:food         $-2.50  ; discount
+    assets:cash
+    [virtual:budget]      $20
+    (virtual:unbalanced)  $5
+    assets:checking       50 = 100
+    assets:savings        10 == 100
+    assets:brokerage      5 := 100
+    ; continuation comment
+
+2024-01-16 ! todo  ; inline note
+    expenses:rent
+    assets:checking  $800
+
+2024-01-17 * done
+    a  $1 = $100
+    b  $2 == $100
+    c  $3 =* $100
+    d  $4 ==* $100
+    e  $5 := $100
+
+2024-01-18 test
+  a  10 @ 5
+  b  10 @@ 50
+  c  50 USD
+  d  10 @ 5 = 100
+  e  10 === 10
+  f  10 @@ 5 =* 100
+  g  10 = 100 @ 5
+
+2024-01-19 payee | note
+2024-01-20 (CODE) payee
+
+2020-02-12 * asdf
+  assets
+  expenses  ; comment text
+
+2020-02-14 * more
+
+2024-01-15 午餐
+; Привет мир
+2024-01-15 Такси
+
+~ monthly
+  a  $10
+
+~ monthly from 2023-04-15 to 2023-06-16
+  expenses:utilities  $400
+  assets:bank:checking
+
+~ monthly  Next year blah blah ; period note
+  expenses:food  $100
+  assets:checking
+
+= expr
+  a  $10
+
+= ^income
+  (liabilities:tax)  *.33
+
+= expenses:gifts
+  budget:gifts  *-1
+  assets:budget  *1
+
+= income:salary
+    budget:savings  (amount * 0.5)
+
+= ^gifts  ; automated note
+  ; automated header
+  expenses:gifts  $25.50
+  assets:cash
+
+2024-01-21 cost with commodity
+  a  10 @ 5 EUR
+  b  10 @@ 5 USD
+  c  $-5.00 @ 0.9 BTC
+
+-- expect --
+0:0+12 comment
+1:0+2 comment
+2:0+15 comment
+3:0+18 comment
+4:0+31 comment
+7:0+29 comment
+11:0+21 comment
+12:0+10 class
+12:11+4 property
+14:0+10 class
+14:11+10 class
+14:22+9 property
+15:2+2 operator
+15:4+11 namespace
+15:17+1 type
+15:18+2 number
+16:2+2 operator
+16:4+1 operator abstract
+16:5+11 namespace
+16:16+1 operator abstract
+16:19+1 type
+16:20+3 number negative
+18:0+10 class
+18:11+14 property
+19:1+13 namespace
+19:16+5 number
+19:22+5 type
+20:1+15 namespace
+22:0+10 class
+22:11+9 property
+23:2+13 namespace
+23:17+4 number
+23:22+3 type
+24:2+17 namespace
+24:21+3 type
+24:25+3 number
+25:2+13 namespace
+25:17+7 number negative
+25:25+1 type
+26:2+14 namespace
+26:18+8 number
+26:27+3 type
+27:2+14 namespace
+27:18+8 number
+27:27+3 type
+28:2+15 namespace
+28:19+9 number negative
+28:29+3 type
+29:2+13 namespace
+29:17+1 type
+29:18+5 number
+30:2+13 namespace
+30:17+1 type
+30:18+4 number
+31:2+13 namespace
+31:17+1 type
+31:18+6 number
+32:2+21 namespace
+32:25+5 number
+33:2+11 namespace
+35:0+10 class
+35:11+1 property
+36:4+1 namespace
+36:7+1 type
+36:8+2 number
+37:4+1 namespace
+37:7+1 type
+37:8+3 number negative
+39:0+10 class
+39:11+2 operator
+39:13+6 string
+39:20+4 property
+39:27+6 property
+39:33+14 comment
+40:4+14 comment
+41:4+18 namespace
+41:26+1 type
+41:27+5 number
+42:4+13 namespace
+42:26+1 type
+42:27+5 number negative
+42:34+10 comment
+43:4+11 namespace
+44:4+1 operator abstract
+44:5+14 namespace
+44:19+1 operator abstract
+44:26+1 type
+44:27+2 number
+45:4+1 operator abstract
+45:5+18 namespace
+45:23+1 operator abstract
+45:26+1 type
+45:27+1 number
+46:4+15 namespace
+46:26+2 number
+46:29+1 operator
+46:31+3 number
+47:4+14 namespace
+47:26+2 number
+47:29+2 operator
+47:32+3 number
+48:4+16 namespace
+48:26+1 number
+48:28+2 operator
+48:31+3 number
+49:4+23 comment
+51:0+10 class
+51:11+2 operator
+51:13+4 property
+51:19+13 comment
+52:4+13 namespace
+53:4+15 namespace
+53:21+1 type
+53:22+3 number
+55:0+10 class
+55:11+2 operator
+55:13+4 property
+56:4+1 namespace
+56:7+1 type
+56:8+1 number
+56:10+1 operator
+56:12+1 type
+56:13+3 number
+57:4+1 namespace
+57:7+1 type
+57:8+1 number
+57:10+2 operator
+57:13+1 type
+57:14+3 number
+58:4+1 namespace
+58:7+1 type
+58:8+1 number
+58:10+2 operator
+58:13+1 type
+58:14+3 number
+59:4+1 namespace
+59:7+1 type
+59:8+1 number
+59:10+3 operator
+59:14+1 type
+59:15+3 number
+60:4+1 namespace
+60:7+1 type
+60:8+1 number
+60:10+2 operator
+60:13+1 type
+60:14+3 number
+62:0+10 class
+62:11+4 property
+63:2+1 namespace
+63:5+2 number
+63:8+1 operator
+63:10+1 number
+64:2+1 namespace
+64:5+2 number
+64:8+2 operator
+64:11+2 number
+65:2+1 namespace
+65:5+2 number
+65:8+3 type
+66:2+1 namespace
+66:5+2 number
+66:8+1 operator
+66:10+1 number
+66:12+1 operator
+66:14+3 number
+67:2+1 namespace
+67:5+2 number
+67:8+3 operator
+67:12+2 number
+68:2+1 namespace
+68:5+2 number
+68:8+2 operator
+68:11+1 number
+68:13+2 operator
+68:16+3 number
+69:2+1 namespace
+69:5+2 number
+69:8+1 operator
+69:10+3 number
+69:14+1 operator
+69:16+1 number
+71:0+10 class
+71:11+5 property
+71:19+4 property
+72:0+10 class
+72:11+6 string
+72:18+5 property
+74:0+10 class
+74:11+2 operator
+74:13+4 property
+75:2+6 namespace
+76:2+8 namespace
+76:12+14 comment
+78:0+10 class
+78:11+2 operator
+78:13+4 property
+80:0+10 class
+80:11+2 property
+81:0+13 comment
+82:0+10 class
+82:11+5 property
+84:0+1 operator
+84:2+7 property
+85:2+1 namespace
+85:5+1 type
+85:6+2 number
+87:0+1 operator
+87:2+13 property
+87:15+10 class
+87:25+4 property
+87:29+10 class
+88:2+18 namespace
+88:22+1 type
+88:23+3 number
+89:2+20 namespace
+91:0+1 operator
+91:2+7 property
+91:11+19 property
+91:31+13 comment
+92:2+13 namespace
+92:17+1 type
+92:18+3 number
+93:2+15 namespace
+95:0+1 operator
+95:2+4 string
+96:2+1 namespace
+96:5+1 type
+96:6+2 number
+98:0+1 operator
+98:2+7 string
+99:2+1 operator abstract
+99:3+15 namespace
+99:18+1 operator abstract
+99:22+3 number
+101:0+1 operator
+101:2+14 string
+102:2+12 namespace
+102:17+2 number negative
+103:2+13 namespace
+103:18+1 number
+105:0+1 operator
+105:2+13 string
+106:4+14 namespace
+106:20+14 number
+108:0+1 operator
+108:2+8 string
+108:10+16 comment
+109:2+19 comment
+110:2+14 namespace
+110:18+1 type
+110:19+5 number
+111:2+11 namespace
+113:0+10 class
+113:11+19 property
+114:2+1 namespace
+114:5+2 number
+114:8+1 operator
+114:10+1 number
+114:12+3 type
+115:2+1 namespace
+115:5+2 number
+115:8+2 operator
+115:11+1 number
+115:13+3 type
+116:2+1 namespace
+116:5+1 type
+116:6+5 number negative
+116:12+1 operator
+116:14+3 number
+116:18+3 type

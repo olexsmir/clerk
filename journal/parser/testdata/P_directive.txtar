@@ -5,9 +5,9 @@ Journal
   MarketPriceDirective j:1:1-2:1
     Date: 2024/01/01
     Commodity: "USD"
-    Amount j:1:18-1:18
+    Amount j:1:18-2:0
       Quantity: 40.5
-      Commodity: "UAH"
+      Commodity: "UAH" j:1:24-2:0
       CommodityPos: After
       HasSpace: true
       Precision: 2

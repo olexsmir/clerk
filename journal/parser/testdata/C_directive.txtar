@@ -4,17 +4,17 @@ C 1.00s = 100c
 Journal
   ConversionDirective j:1:1-2:1
     From:
-      Amount j:1:3-1:3
+      Amount j:1:3-1:8
         Quantity: 1
-        Commodity: "s"
+        Commodity: "s" j:1:7-1:8
         CommodityPos: After
         HasSpace: false
         Precision: 2
         Decimal: "."
     To:
-      Amount j:1:11-1:11
+      Amount j:1:11-2:0
         Quantity: 100
-        Commodity: "c"
+        Commodity: "c" j:1:14-2:0
         CommodityPos: After
         HasSpace: false
         Precision: 0

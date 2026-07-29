@@ -24,9 +24,9 @@ Journal
       Account j:6:5-6:18
         SubAccount: "income" j:6:5-6:11
         SubAccount: "salary" j:6:12-6:18
-      Amount j:6:20-6:20
+      Amount j:6:20-7:0
         Quantity: 1000
-        Commodity: "$"
+        Commodity: "$" j:6:20-6:21
         CommodityPos: Before
         HasSpace: false
         Precision: 0

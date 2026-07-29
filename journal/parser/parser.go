@@ -140,14 +140,19 @@ func (p *Parser) parseTransaction() *ast.Transaction {
 
 	// optional code
 	if p.got(token.LPAREN) {
+		cs := p.cur.Span
 		p.advance()
 		var code strings.Builder
 		for p.cur.Type != token.RPAREN {
 			_, _ = code.WriteString(p.cur.Literal)
 			p.advance()
 		}
-		tx.Code = new(code.String())
+		rp := p.cur.Span
 		p.advance()
+		tx.Code = &ast.Code{
+			Value: code.String(),
+			Span:  token.Span{Start: cs.Start, End: rp.End},
+		}
 		p.skipWhitespace()
 	}
 
@@ -163,9 +168,10 @@ func (p *Parser) parseTransaction() *ast.Transaction {
 		if p.got(token.PIPE) {
 			p.advance()
 			if p.got(token.TEXT) {
+				sn := p.cur.Span
 				n := p.cur.Literal
 				p.advance()
-				tx.Note = &n
+				tx.Note = &ast.Note{Value: n, Span: p.span(sn)}
 			}
 		}
 	}
@@ -225,8 +231,8 @@ func (p *Parser) parsePeriodicTransaction() *ast.PeriodicTransaction {
 
 	pt.Period = p.parsePeriod()
 
-	if desc := p.parseOptPeriodicDescription(); desc != "" {
-		pt.Description = &desc
+	if desc, dspan := p.parseOptPeriodicDescription(); desc != "" {
+		pt.Description = &ast.Description{Value: desc, Span: dspan}
 	}
 
 	comment := p.parseOptInlineComment()
@@ -257,7 +263,10 @@ func (p *Parser) parseAutomatedTransaction() *ast.AutomatedTransaction {
 
 	at := &ast.AutomatedTransaction{}
 
-	at.Expr = p.parseDirectiveExpr()
+	// expression
+	sd := p.cur.Span
+	expr := p.parseDirectiveExpr()
+	at.Expr = ast.Expr{Value: expr, Span: p.span(sd)}
 	at.Comment = p.parseOptInlineComment()
 	p.expectNewline()
 
@@ -312,6 +321,8 @@ func (p *Parser) parsePeriod() ast.Period {
 			dateStr = after[:end]
 		}
 		if d := parseSimpleDate(dateStr); d.Year > 0 {
+			fromOff := strings.Index(str, dateStr)
+			d.Span = periodDateSpan(period, str, dateStr, fromOff)
 			period.From = &d
 			rest := after
 			if end >= 0 {
@@ -322,12 +333,25 @@ func (p *Parser) parsePeriod() ast.Period {
 					toAfter = toAfter[:toEnd]
 				}
 				if d := parseSimpleDate(toAfter); d.Year > 0 {
+					d.Span = periodDateSpan(period, str, toAfter, fromOff+len(dateStr))
 					period.To = &d
 				}
 			}
 		}
 	}
 	return period
+}
+
+// periodDateSpan returns the source span of dateStr, which occurs in the
+// period text at or after searchFrom. The period span and text cover the same
+// bytes, so offsets line up 1:1.
+func periodDateSpan(period ast.Period, text, dateStr string, searchFrom int) token.Span {
+	off := strings.Index(text[searchFrom:], dateStr)
+	abs := period.Span.Start.Offset + searchFrom + off
+	return token.Span{
+		Start: token.Pos{File: period.Span.Start.File, Offset: abs},
+		End:   token.Pos{File: period.Span.Start.File, Offset: abs + len(dateStr)},
+	}
 }
 
 func (p *Parser) parseComment() *ast.Comment {
@@ -381,26 +405,31 @@ func (p *Parser) parseCommodityDirective() *ast.CommodityDirective {
 	p.skipWhitespace()
 
 	var commodity string
+	var commoditySpan token.Span
 	var format *ast.Amount
 
 	switch p.cur.Type {
 	case token.COMMODITYMARK, token.TEXT, token.STRING:
+		cs := p.cur.Span
 		commodity = p.cur.Literal
 		if p.got(token.STRING) {
 			commodity = unquote(commodity)
 		}
 		p.advance()
+		commoditySpan = token.Span{Start: cs.Start, End: p.cur.Span.Start}
 		hadSpace := p.got(token.WHITESPACE)
 		p.skipWhitespace()
 		if p.got(token.INT) || p.got(token.DECIMAL) || p.got(token.TEXT) {
 			format = p.parseAmount()
 			format.Commodity = commodity
+			format.CommoditySpan = commoditySpan
 			format.CommodityPos = ast.CommodityBefore
 			format.HasSpace = hadSpace
 		}
 	case token.INT, token.DECIMAL:
 		format = p.parseAmount()
 		commodity = format.Commodity
+		commoditySpan = format.CommoditySpan
 	default:
 		p.errorf("expected commodity name or amount, got %s", p.cur.Type)
 	}
@@ -428,9 +457,10 @@ func (p *Parser) parseCommodityDirective() *ast.CommodityDirective {
 	}
 
 	cd := &ast.CommodityDirective{
-		Commodity: commodity,
-		Comment:   comment,
-		Span:      p.span(s),
+		Commodity:     commodity,
+		CommoditySpan: commoditySpan,
+		Comment:       comment,
+		Span:          p.span(s),
 	}
 	if format != nil {
 		cd.Format = *format
@@ -798,14 +828,21 @@ func (p *Parser) parseAmount() *ast.Amount {
 	s := p.cur.Span
 	amt := &ast.Amount{
 		QuantityFmt: ast.QuantityFormat{Decimal: '.'},
-		Span:        p.span(s),
 	}
+	defer func() {
+		// The span covers from the first token to the start of the next unconsumed token.
+		// Since parseQuantityInto (and possible commodity consumption) advanced past the last
+		// amount token, p.cur points to the next token after the amount — which is the correct end.
+		amt.Span = p.span(s)
+	}()
 
 	// commodity before quantity: $10.00, eur 10.00
 	if p.got(token.COMMODITYMARK) || p.got(token.TEXT) || p.got(token.STRING) {
+		cs := p.cur.Span
 		amt.Commodity = unquote(p.cur.Literal)
 		amt.CommodityPos = ast.CommodityBefore
 		p.advance()
+		amt.CommoditySpan = token.Span{Start: cs.Start, End: p.cur.Span.Start}
 		if p.got(token.WHITESPACE) {
 			amt.HasSpace = true
 			p.skipWhitespace()
@@ -830,9 +867,11 @@ func (p *Parser) parseAmount() *ast.Amount {
 
 		// commodity before quantity: -$120, -eur 120:
 		if p.got(token.COMMODITYMARK) || p.got(token.TEXT) || p.got(token.STRING) {
+			cs := p.cur.Span
 			amt.Commodity = unquote(p.cur.Literal)
 			amt.CommodityPos = ast.CommodityBefore
 			p.advance()
+			amt.CommoditySpan = token.Span{Start: cs.Start, End: p.cur.Span.Start}
 			if p.got(token.WHITESPACE) {
 				amt.HasSpace = true
 				p.skipWhitespace()
@@ -847,15 +886,19 @@ func (p *Parser) parseAmount() *ast.Amount {
 			case token.WHITESPACE:
 				p.skipWhitespace()
 				if p.got(token.COMMODITYMARK) || p.got(token.TEXT) || p.got(token.STRING) {
+					cs := p.cur.Span
 					amt.HasSpace = true
 					amt.Commodity = unquote(p.cur.Literal)
 					amt.CommodityPos = ast.CommodityAfter
 					p.advance()
+					amt.CommoditySpan = token.Span{Start: cs.Start, End: p.cur.Span.Start}
 				}
 			case token.COMMODITYMARK, token.TEXT, token.STRING:
+				cs := p.cur.Span
 				amt.Commodity = unquote(p.cur.Literal)
 				amt.CommodityPos = ast.CommodityAfter
 				p.advance()
+				amt.CommoditySpan = token.Span{Start: cs.Start, End: p.cur.Span.Start}
 			}
 		}
 	}
@@ -1168,18 +1211,20 @@ func (p *Parser) parseOptInlineComment() *ast.Comment {
 	}
 }
 
-func (p *Parser) parseOptPeriodicDescription() string {
+func (p *Parser) parseOptPeriodicDescription() (string, token.Span) {
 	if p.cur.Type != token.WHITESPACE || len(p.cur.Literal) < 2 {
-		return ""
+		return "", token.Span{}
 	}
 
 	p.skipWhitespace()
 
 	if p.cur.Type != token.TEXT {
-		return ""
+		return "", token.Span{}
 	}
 
-	return p.parseDescription()
+	s := p.cur.Span
+	desc := p.parseDescription()
+	return desc, p.span(s)
 }
 
 func (p *Parser) parseDescription() string {

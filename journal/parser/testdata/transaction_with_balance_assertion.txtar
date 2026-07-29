@@ -19,9 +19,9 @@ Journal
       Account j:2:2-2:15
         SubAccount: "expenses" j:2:2-2:10
         SubAccount: "food" j:2:11-2:15
-      Amount j:2:17-2:17
+      Amount j:2:17-2:23
         Quantity: 10
-        Commodity: "$"
+        Commodity: "$" j:2:17-2:18
         CommodityPos: Before
         HasSpace: false
         Precision: 2
@@ -29,9 +29,9 @@ Journal
       BalanceAssertion j:2:24-3:0
         IsStrict: false
         IsInclusive: false
-        Amount j:2:26-2:26
+        Amount j:2:26-3:0
           Quantity: 100
-          Commodity: "$"
+          Commodity: "$" j:2:26-2:27
           CommodityPos: Before
           HasSpace: false
           Precision: 2
@@ -49,9 +49,9 @@ Journal
       Account j:6:2-6:15
         SubAccount: "expenses" j:6:2-6:10
         SubAccount: "food" j:6:11-6:15
-      Amount j:6:17-6:17
+      Amount j:6:17-6:23
         Quantity: 10
-        Commodity: "$"
+        Commodity: "$" j:6:17-6:18
         CommodityPos: Before
         HasSpace: false
         Precision: 2
@@ -59,9 +59,9 @@ Journal
       BalanceAssertion j:6:24-7:0
         IsStrict: true
         IsInclusive: false
-        Amount j:6:27-6:27
+        Amount j:6:27-7:0
           Quantity: 100
-          Commodity: "$"
+          Commodity: "$" j:6:27-6:28
           CommodityPos: Before
           HasSpace: false
           Precision: 2
@@ -74,9 +74,9 @@ Journal
       BalanceAssertion j:7:19-8:0
         IsStrict: true
         IsInclusive: false
-        Amount j:7:22-7:22
+        Amount j:7:22-8:0
           Quantity: 0
-          Commodity: "$"
+          Commodity: "$" j:7:22-7:23
           CommodityPos: Before
           HasSpace: false
           Precision: 2
@@ -89,9 +89,9 @@ Journal
       Account j:10:2-10:15
         SubAccount: "expenses" j:10:2-10:10
         SubAccount: "food" j:10:11-10:15
-      Amount j:10:17-10:17
+      Amount j:10:17-11:0
         Quantity: 10
-        Commodity: "$"
+        Commodity: "$" j:10:17-10:18
         CommodityPos: Before
         HasSpace: false
         Precision: 2
@@ -104,9 +104,9 @@ Journal
       BalanceAssertion j:11:19-12:0
         IsStrict: false
         IsInclusive: false
-        Amount j:11:21-11:21
+        Amount j:11:21-12:0
           Quantity: 0
-          Commodity: "$"
+          Commodity: "$" j:11:21-11:22
           CommodityPos: Before
           HasSpace: false
           Precision: 2
