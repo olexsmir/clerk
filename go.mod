@@ -1,6 +1,6 @@
 module olexsmir.xyz/clerk
 
-go 1.26.2
+go 1.26.4
 
 tool golang.org/x/tools/cmd/stringer
 
