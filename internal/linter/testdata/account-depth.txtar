@@ -13,9 +13,26 @@ alias Fast:Food = Expenses:Food:Restaurants:Pizza:Hawaiian
     Income:Job:Salary:Monthly:Base  $1000
     Assets:Checking:Deep:Sub
 
+
+~ 2024-01-02
+    Income:Job:Salary:Monthly:Base  $1000
+    Assets:Checking:Deep:Sub
+
+~ monthly
+    Income:Job:Salary:Monthly:Base:Based  $1000
+    Assets:Checking
+
+= ^income
+    Some:Very:Deep:Nested:Account:Name  *.67
+    (liabilities:tax)  *.33
+
 -- expect --
 in.journal:2:9: account-depth: account "Expenses:Food:Restaurants:Pizza:Hawaiian" depth (5) exceeds max allowed depth (3)
 in.journal:3:9: account-depth: account "Expenses:Tax:Income:More:Deep:Too" depth (6) exceeds max allowed depth (3)
 in.journal:5:19: account-depth: account "Expenses:Food:Restaurants:Pizza:Hawaiian" depth (5) exceeds max allowed depth (3)
 in.journal:12:5: account-depth: account "Income:Job:Salary:Monthly:Base" depth (5) exceeds max allowed depth (3)
 in.journal:13:5: account-depth: account "Assets:Checking:Deep:Sub" depth (4) exceeds max allowed depth (3)
+in.journal:17:5: account-depth: account "Income:Job:Salary:Monthly:Base" depth (5) exceeds max allowed depth (3)
+in.journal:18:5: account-depth: account "Assets:Checking:Deep:Sub" depth (4) exceeds max allowed depth (3)
+in.journal:21:5: account-depth: account "Income:Job:Salary:Monthly:Base:Based" depth (6) exceeds max allowed depth (3)
+in.journal:25:5: account-depth: account "Some:Very:Deep:Nested:Account:Name" depth (6) exceeds max allowed depth (3)

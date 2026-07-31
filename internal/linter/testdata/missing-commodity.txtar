@@ -13,6 +13,11 @@
     expenses:rent2  1000 USD @ 1 UAH
     assets:cash
 
+
+2024-06-02 "with balance assertion"
+    assets:cash  -100 = 0.00 USD @@ 0.00 UAH
+    expenses:food  100 UAH
+
 P 2026-06-20 USD 2
 P 2026-06-20 USD 2 UAH
 
@@ -36,8 +41,9 @@ in.journal:2:21: missing-commodity: amount missing commodity
 in.journal:10:21: missing-commodity: amount missing commodity
 in.journal:11:20: missing-commodity: amount missing commodity
 in.journal:11:27: missing-commodity: amount missing commodity
-in.journal:15:18: missing-commodity: amount missing commodity
-in.journal:19:3: missing-commodity: amount missing commodity
-in.journal:21:3: missing-commodity: amount missing commodity
-in.journal:26:20: missing-commodity: amount missing commodity
-in.journal:30:20: missing-commodity: amount missing commodity
+in.journal:17:18: missing-commodity: amount missing commodity
+in.journal:20:18: missing-commodity: amount missing commodity
+in.journal:24:3: missing-commodity: amount missing commodity
+in.journal:26:3: missing-commodity: amount missing commodity
+in.journal:31:20: missing-commodity: amount missing commodity
+in.journal:35:20: missing-commodity: amount missing commodity
