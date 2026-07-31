@@ -63,23 +63,6 @@ func (c *Cli) Run(ctx context.Context, args []string) error {
 				Action: c.lspAction,
 			},
 			{
-				Name:   "tags",
-				Usage:  "generate a tags file for journal entries",
-				Action: c.tagsAction,
-				Flags: []cli.Flag{&cli.StringFlag{
-					Name:    "out",
-					Aliases: []string{"o"},
-					Usage:   "output file, set to - for stdout",
-					Value:   "tags",
-				}},
-				Arguments: []cli.Argument{&cli.StringArgs{
-					Name:      "journals",
-					UsageText: "(path to journal files/directories)",
-					Min:       0,
-					Max:       -1,
-				}},
-			},
-			{
 				Name:   "lint",
 				Usage:  "lint journal files for common mistakes",
 				Action: c.lintAction,
