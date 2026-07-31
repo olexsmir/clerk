@@ -11,7 +11,7 @@ type UndeclaredCommodity struct{}
 
 func (UndeclaredCommodity) ID() RuleID         { return "undeclared-commodity" }
 func (UndeclaredCommodity) Severity() Severity { return SeverityWarning }
-func (r *UndeclaredCommodity) CheckJournal(an *analyzer.Analysis) []Find {
+func (u *UndeclaredCommodity) CheckJournal(an *analyzer.Analysis) []Find {
 	var finds []Find
 	for name, info := range an.Commodities {
 		if len(info.Directives) > 0 {
@@ -19,8 +19,8 @@ func (r *UndeclaredCommodity) CheckJournal(an *analyzer.Analysis) []Find {
 		}
 		for _, usage := range info.Usages {
 			finds = append(finds, Find{
-				Code:     r.ID(),
-				Severity: r.Severity(),
+				Code:     u.ID(),
+				Severity: u.Severity(),
 				Span:     usage.Amount.Span,
 				Message:  fmt.Sprintf("undeclared commodity: %s", name),
 			})

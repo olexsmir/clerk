@@ -1,0 +1,21 @@
+-- in.journal --
+include child.journal
+include missing.journal
+include notes.txt
+
+year 2024
+
+-- child.journal --
+include sub/grand.journal
+
+-- sub/grand.journal --
+2024/06/15 lunch
+  expenses:food  $5
+  assets:cash
+
+-- notes.txt --
+; just a note
+
+-- expect --
+in.journal:2:1: invalid-include: include not found: missing.journal
+in.journal:3:1: invalid-include: include is not a journal file: notes.txt

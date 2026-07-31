@@ -7,13 +7,13 @@ type ParseError struct{}
 
 func (ParseError) ID() RuleID         { return "parse-error" }
 func (ParseError) Severity() Severity { return SeverityError }
-func (e *ParseError) CheckJournal(an *analyzer.Analysis) []Find {
+func (p *ParseError) CheckJournal(an *analyzer.Analysis) []Find {
 	var finds []Find
 	for _, pf := range an.Files {
 		for _, err := range pf.Errors {
 			finds = append(finds, Find{
-				Code:     e.ID(),
-				Severity: e.Severity(),
+				Code:     p.ID(),
+				Severity: p.Severity(),
 				Message:  err.Message,
 				Span:     err.Span,
 			})

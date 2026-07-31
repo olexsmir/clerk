@@ -91,8 +91,8 @@ func (l *Loader) ResolveFS(fsys fs.FS, fpath string) (*ResolvedJournal, error) {
 	}
 	defer os.RemoveAll(dir)
 
-	if err := os.CopyFS(dir, fsys); err != nil {
-		return nil, fmt.Errorf("copying fs to temp dir: %w", err)
+	if cerr := os.CopyFS(dir, fsys); cerr != nil {
+		return nil, fmt.Errorf("copying fs to temp dir: %w", cerr)
 	}
 
 	rj, err := l.Resolve(filepath.Join(dir, fpath))
@@ -256,16 +256,18 @@ func (l *Loader) resolveOccurrence(rj *ResolvedJournal, parent *ParsedFile, fpat
 }
 
 func resolveIncludePath(parentPath, incPattern string) (string, error) {
-	base := filepath.Dir(parentPath)
-	target := filepath.Join(base, incPattern)
-	// normalise to detect traversal
-	clean := filepath.Clean(target)
-	if !strings.HasPrefix(clean, filepath.Clean(base)+string(filepath.Separator)) &&
-		clean != filepath.Clean(base) &&
-		!filepath.IsAbs(incPattern) {
+	base := filepath.Clean(filepath.Dir(parentPath))
+	target := filepath.Clean(filepath.Join(base, incPattern))
+	if filepath.IsAbs(incPattern) {
+		return target, nil
+	}
+
+	// reject includes that escape the parent directory, e.g. "../../other.journal"
+	rel, err := filepath.Rel(base, target)
+	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
 		return "", fmt.Errorf("path traversal: %s", incPattern)
 	}
-	return clean, nil
+	return target, nil
 }
 
 func canonicalPath(path string) string {

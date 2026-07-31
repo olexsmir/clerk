@@ -163,6 +163,33 @@ func TestLoader_ClearCache(t *testing.T) {
 	}
 }
 
+func TestResolveIncludePath(t *testing.T) {
+	tests := []struct {
+		parent, pattern string
+		wantPath        string
+		wantErr         bool
+	}{
+		{"main.journal", "child.journal", "child.journal", false},
+		{"main.journal", "sub/child.journal", "sub/child.journal", false},
+		{"main.journal", "../other.journal", "", true},
+		{"sub/main.journal", "child.journal", "sub/child.journal", false},
+		{"sub/main.journal", "../other.journal", "", true},
+	}
+	for _, tt := range tests {
+		got, err := resolveIncludePath(tt.parent, tt.pattern)
+		if tt.wantErr {
+			if err == nil {
+				t.Errorf("resolveIncludePath(%q, %q): want error, got %q", tt.parent, tt.pattern, got)
+			}
+			continue
+		}
+		if err != nil || got != tt.wantPath {
+			t.Errorf("resolveIncludePath(%q, %q) = %q, %v; want %q", tt.parent, tt.pattern, got, err, tt.wantPath)
+		}
+	}
+}
+
+
 // helpers
 
 func resolveTxtar(t *testing.T, rootFile, archive string) *ResolvedJournal {

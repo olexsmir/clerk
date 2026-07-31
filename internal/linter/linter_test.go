@@ -11,6 +11,7 @@ import (
 
 var tests = map[string][]Rule{
 	"correct":                  Rules,
+	"invalid-include":          {&InvalidInclude{}},
 	"empty-postings":           {&EmptyPostings{}},
 	"parse-error":              {&ParseError{}},
 	"omitted-precision":        {&OmittedPrecision{}},

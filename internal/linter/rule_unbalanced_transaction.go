@@ -14,21 +14,21 @@ type UnbalancedTransaction struct{}
 
 func (UnbalancedTransaction) ID() RuleID         { return "unbalanced-transaction" }
 func (UnbalancedTransaction) Severity() Severity { return SeverityError }
-func (r *UnbalancedTransaction) CheckJournal(an *analyzer.Analysis) []Find {
+func (u *UnbalancedTransaction) CheckJournal(an *analyzer.Analysis) []Find {
 	var finds []Find
 	for _, txn := range an.Transactions {
-		finds = append(finds, r.check(txn.Postings, txn.Span)...)
+		finds = append(finds, u.check(txn.Postings, txn.Span)...)
 	}
 	for _, ptx := range an.PeriodicTransactions {
-		finds = append(finds, r.check(ptx.Postings, ptx.Span)...)
+		finds = append(finds, u.check(ptx.Postings, ptx.Span)...)
 	}
 	for _, atx := range an.AutomatedTransactions {
-		finds = append(finds, r.check(atx.Postings, atx.Span)...)
+		finds = append(finds, u.check(atx.Postings, atx.Span)...)
 	}
 	return finds
 }
 
-func (r *UnbalancedTransaction) check(postings []*ast.Posting, span token.Span) []Find {
+func (u *UnbalancedTransaction) check(postings []*ast.Posting, span token.Span) []Find {
 	var hasExpr, hasCost bool
 	var realPostings []*ast.Posting
 	autoBalancingPostings := 0
@@ -75,8 +75,8 @@ func (r *UnbalancedTransaction) check(postings []*ast.Posting, span token.Span) 
 				msg = fmt.Sprintf("transaction is unbalanced; net balance is %s", sum.String())
 			}
 			finds = append(finds, Find{
-				Code:     r.ID(),
-				Severity: r.Severity(),
+				Code:     u.ID(),
+				Severity: u.Severity(),
 				Span:     span,
 				Message:  msg,
 			})

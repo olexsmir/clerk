@@ -14,6 +14,7 @@ type Rule interface {
 // Rules is list of all available rules.
 var Rules = []Rule{
 	&ParseError{},
+	&InvalidInclude{},
 	&EmptyPostings{},
 	&OmittedPrecision{},
 	&MissingCommodity{},
