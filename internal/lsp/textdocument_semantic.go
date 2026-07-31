@@ -14,6 +14,10 @@ import (
 )
 
 func (s *server) SemanticTokensFull(ctx context.Context, params *protocol.SemanticTokensParams) (*protocol.SemanticTokens, error) {
+	if !s.semanticHighlightingEnabled() {
+		return &protocol.SemanticTokens{}, nil
+	}
+
 	tokens, ok := s.tokensForDoc(params.TextDocument.URI)
 	if !ok {
 		return &protocol.SemanticTokens{}, nil
@@ -22,6 +26,10 @@ func (s *server) SemanticTokensFull(ctx context.Context, params *protocol.Semant
 }
 
 func (s *server) SemanticTokensRange(ctx context.Context, params *protocol.SemanticTokensRangeParams) (*protocol.SemanticTokens, error) {
+	if !s.semanticHighlightingEnabled() {
+		return &protocol.SemanticTokens{}, nil
+	}
+
 	tokens, ok := s.tokensForDoc(params.TextDocument.URI)
 	if !ok {
 		return &protocol.SemanticTokens{}, nil

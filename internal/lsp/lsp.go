@@ -25,6 +25,7 @@ func NewServer(version string) Server {
 
 			openDocs: make(map[uri.URI]docState),
 
+			config:  DefaultConfig,
 			linter:  linter.NewLinter(linter.Rules),
 			loader:  journal.NewLoader(),
 			printer: printer.DefaultConfig,
