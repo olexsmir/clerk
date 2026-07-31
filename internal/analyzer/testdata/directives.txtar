@@ -34,10 +34,10 @@ accounts (1):
     usages: 0
 
 payees (1):
-  
+  TestPayee
     directives: 1
     used: 0
-      payee 
+      payee TestPayee
     usages: 0
 
 prefixes (1):
@@ -51,7 +51,7 @@ automated transactions: 0
 directives (12):
   account expenses:food
   commodity $
-  payee 
+  payee TestPayee
   tag mytag
   alias expenses:food = expenses:food:old
   year 2024

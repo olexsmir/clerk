@@ -22,7 +22,7 @@ tag receipt
 !_TAG_KIND_DESCRIPTION!p	p,payee	/payee/
 !_TAG_KIND_DESCRIPTION!t	t,tag	/tag/
 $	in.journal	/^commodity $$/;"	kind:c	line:4	language:hledger
-Amazon	in.journal	/^2025-03-01 * "Amazon"$/;"	kind:p	line:9	language:hledger
+Amazon	in.journal	/^payee Amazon$/;"	kind:p	line:6	language:hledger
 EUR	in.journal	/^commodity EUR$/;"	kind:c	line:5	language:hledger
 assets:bank	in.journal	/^    assets:bank$/;"	kind:a	line:11	language:hledger
 expenses:food	in.journal	/^account expenses:food$/;"	kind:a	line:3	language:hledger

@@ -21,6 +21,6 @@ payee Amazon
 !_TAG_KIND_DESCRIPTION!p	p,payee	/payee/
 !_TAG_KIND_DESCRIPTION!t	t,tag	/tag/
 $	decls.journal	/^commodity $$/;"	kind:c	line:1	language:hledger
-Amazon	in.journal	/^2024-01-15 "Amazon"$/;"	kind:p	line:3	language:hledger
+Amazon	decls.journal	/^payee Amazon$/;"	kind:p	line:3	language:hledger
 assets:bank	decls.journal	/^account assets:bank$/;"	kind:a	line:2	language:hledger
 expenses:food	in.journal	/^    expenses:food   $50.00$/;"	kind:a	line:4	language:hledger

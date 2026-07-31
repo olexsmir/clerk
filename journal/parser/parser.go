@@ -154,6 +154,13 @@ func (p *Parser) parseTransaction() *ast.Transaction {
 			Span:  token.Span{Start: cs.Start, End: rp.End},
 		}
 		p.skipWhitespace()
+	} else if p.got(token.TEXT) {
+		// the lexer emits "(CODE)" as a single TEXT token; split it here
+		if lit := p.cur.Literal; len(lit) >= 2 && lit[0] == '(' && lit[len(lit)-1] == ')' {
+			tx.Code = &ast.Code{Value: lit[1 : len(lit)-1], Span: p.cur.Span}
+			p.advance()
+			p.skipWhitespace()
+		}
 	}
 
 	// optional payee | note
@@ -215,7 +222,7 @@ func (p *Parser) parsePayee() *ast.Payee {
 
 	// keep spaces/tags between text tokens; stop before trailing whitespace
 	var name strings.Builder
-	for p.got(token.TEXT) || p.got(token.INT) || p.got(token.DECIMAL) || (p.got(token.WHITESPACE) && (p.willGet(token.TEXT) || p.willGet(token.INT) || p.willGet(token.DECIMAL))) {
+	for p.got(token.TEXT) || p.got(token.INT) || p.got(token.DECIMAL) || p.got(token.COMMODITYMARK) || (p.got(token.WHITESPACE) && (p.willGet(token.TEXT) || p.willGet(token.INT) || p.willGet(token.DECIMAL) || p.willGet(token.COMMODITYMARK))) {
 		_, _ = name.WriteString(p.cur.Literal)
 		p.advance()
 	}
@@ -512,7 +519,7 @@ func (p *Parser) parsePayeeDirective() *ast.PayeeDirective {
 	p.skipWhitespace()
 
 	name := ""
-	if p.got(token.TEXT) || p.got(token.STRING) {
+	if p.got(token.TEXT) || p.got(token.STRING) || p.got(token.COMMODITYMARK) {
 		name = p.parsePayee().Name
 	}
 
