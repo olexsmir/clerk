@@ -54,6 +54,7 @@ const (
 	EQ     // =
 	EQEQ   // ==
 	EQEQEQ // ===
+	EQSTAR // =* inclusive balance assertion
 	AT     // @
 	ATAT   // @@
 	PIPE   // |

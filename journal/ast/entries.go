@@ -109,11 +109,12 @@ type Cost struct {
 }
 
 type BalanceAssertion struct {
-	IsStrict    bool // ==  vs =
-	IsInclusive bool // ===
-	Amount      Amount
-	Cost        *Cost // price after @/@@
-	Span        token.Span
+	IsStrict     bool // ==  vs =
+	IsInclusive  bool // =* or === (inclusive of subaccounts)
+	IsAssignment bool // := balance assignment (not a check)
+	Amount       Amount
+	Cost         *Cost // price after @/@@
+	Span         token.Span
 }
 
 type CommodityPos int

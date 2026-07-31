@@ -1,0 +1,75 @@
+-- input --
+2024-01-15 t
+    a  $1 =* $100
+    b  $2 =*$100
+    c  $3 ==* $100
+
+-- expect --
+Journal
+  Transaction j:1:1-6:0
+    Date: 2024-01-15
+    Payee: "t" j:1:12-2:0
+    Posting j:2:1-3:1
+      Account j:2:5-2:6
+        SubAccount: "a" j:2:5-2:6
+      Amount j:2:8-2:10
+        Quantity: 1
+        Commodity: "$" j:2:8-2:9
+        CommodityPos: Before
+        HasSpace: false
+        Precision: 0
+        Decimal: "."
+      BalanceAssertion j:2:11-3:0
+        IsStrict: false
+        IsInclusive: true
+        IsAssignment: false
+        Amount j:2:14-3:0
+          Quantity: 100
+          Commodity: "$" j:2:14-2:15
+          CommodityPos: Before
+          HasSpace: false
+          Precision: 0
+          Decimal: "."
+    Posting j:3:1-4:1
+      Account j:3:5-3:6
+        SubAccount: "b" j:3:5-3:6
+      Amount j:3:8-3:10
+        Quantity: 2
+        Commodity: "$" j:3:8-3:9
+        CommodityPos: Before
+        HasSpace: false
+        Precision: 0
+        Decimal: "."
+      BalanceAssertion j:3:11-4:0
+        IsStrict: false
+        IsInclusive: true
+        IsAssignment: false
+        Amount j:3:13-4:0
+          Quantity: 100
+          Commodity: "$" j:3:13-3:14
+          CommodityPos: Before
+          HasSpace: false
+          Precision: 0
+          Decimal: "."
+    Posting j:4:1-6:0
+      Account j:4:5-4:6
+        SubAccount: "c" j:4:5-4:6
+      Amount j:4:8-4:10
+        Quantity: 3
+        Commodity: "$" j:4:8-4:9
+        CommodityPos: Before
+        HasSpace: false
+        Precision: 0
+        Decimal: "."
+      BalanceAssertion j:4:11-5:0
+        IsStrict: true
+        IsInclusive: true
+        IsAssignment: false
+        Amount j:4:15-5:0
+          Quantity: 100
+          Commodity: "$" j:4:15-4:16
+          CommodityPos: Before
+          HasSpace: false
+          Precision: 0
+          Decimal: "."
+  BlankLine j:6:0-6:1

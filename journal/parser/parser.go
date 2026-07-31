@@ -451,14 +451,15 @@ func (p *Parser) parseCommodityDirective() *ast.CommodityDirective {
 	for p.got(token.INDENT) {
 		p.advance()
 		p.skipWhitespace()
-		if p.got(token.COMMODITYMARK) && p.cur.Literal == "format" {
+		if p.got(token.TEXT) && p.cur.Literal == "format" {
 			p.advance()
 			p.skipWhitespace()
 			format = p.parseAmount()
-		} else {
-			for !p.got(token.NEWLINE) && !p.got(token.EOF) {
-				p.advance()
-			}
+			p.expectNewline()
+			continue
+		}
+		for !p.got(token.NEWLINE) && !p.got(token.EOF) {
+			p.advance()
 		}
 		p.expectNewline()
 	}
@@ -677,7 +678,7 @@ func (p *Parser) parseMarketPriceDirective() *ast.MarketPriceDirective {
 
 	tok, _ := p.expect(token.COMMODITYMARK)
 	mp.Commodity = tok.Literal
-	p.advance()
+	p.skipWhitespace()
 
 	mp.Amount = *p.parseAmount()
 
@@ -861,6 +862,7 @@ func (p *Parser) parseAmount() *ast.Amount {
 		case token.PLUS:
 			p.advance()
 		}
+		p.skipWhitespace()
 		p.parseQuantityInto(amt)
 	} else {
 		// optional sign
@@ -871,6 +873,7 @@ func (p *Parser) parseAmount() *ast.Amount {
 		case token.PLUS:
 			p.advance()
 		}
+		p.skipWhitespace()
 
 		// commodity before quantity: -$120, -eur 120:
 		if p.got(token.COMMODITYMARK) || p.got(token.TEXT) || p.got(token.STRING) {
@@ -1010,11 +1013,15 @@ func (p *Parser) parsePosting() *ast.Posting {
 		posting.Cost = p.parseCost()
 	}
 
-	// optional balance assertion
+	// optional balance assertion or assignment
 	if p.got(token.WHITESPACE) {
 		p.skipWhitespace()
 	}
-	if p.got(token.EQ) || p.got(token.EQEQ) || p.got(token.EQEQEQ) {
+	if p.got(token.COLON) && p.willGet(token.EQ) {
+		p.advance() // consume ':' of ':='
+		posting.Balance = p.parseBalanceAssertion()
+		posting.Balance.IsAssignment = true
+	} else if p.got(token.EQ) || p.got(token.EQEQ) || p.got(token.EQEQEQ) || p.got(token.EQSTAR) {
 		posting.Balance = p.parseBalanceAssertion()
 	}
 
@@ -1050,9 +1057,11 @@ func (p *Parser) parseBalanceAssertion() *ast.BalanceAssertion {
 	ba := &ast.BalanceAssertion{}
 	switch p.cur.Type {
 	case token.EQ: // basic assertion
-	case token.EQEQ:
+	case token.EQSTAR: // inclusive assertion
+		ba.IsInclusive = true
+	case token.EQEQ: // strict assertion
 		ba.IsStrict = true
-	case token.EQEQEQ:
+	case token.EQEQEQ: // strict inclusive assertion
 		ba.IsStrict = true
 		ba.IsInclusive = true
 	}

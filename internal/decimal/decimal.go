@@ -3,6 +3,7 @@ package decimal
 import (
 	"fmt"
 	"math/big"
+	"strconv"
 	"strings"
 )
 
@@ -21,61 +22,57 @@ func FromInt(v int64) Decimal {
 func FromString(s string) (Decimal, error) {
 	original := s
 	if s == "" {
-		return Decimal{}, fmt.Errorf("can't convert %s to decimal", original)
+		return Decimal{}, badDecimal(original)
 	}
 
-	sign := 1
+	neg := false
 	if s[0] == '+' || s[0] == '-' {
-		if s[0] == '-' {
-			sign = -1
-		}
+		neg = s[0] == '-'
 		s = s[1:]
 	}
 
-	if s == "" {
-		return Decimal{}, fmt.Errorf("can't convert %s to decimal", original)
-	}
-
-	firstDot := strings.IndexByte(s, '.')
-	lastDot := strings.LastIndexByte(s, '.')
-	if firstDot != lastDot {
-		return Decimal{}, fmt.Errorf("can't convert %s to decimal", original)
-	}
-
-	intPart := s
-	fracPart := ""
-	if firstDot >= 0 {
-		intPart = s[:firstDot]
-		fracPart = s[firstDot+1:]
-	}
-
-	if len(intPart)+len(fracPart) == 0 {
-		return Decimal{}, fmt.Errorf("can't convert %s to decimal", original)
-	}
-
-	for i := 0; i < len(intPart); i++ {
-		if intPart[i] < '0' || intPart[i] > '9' {
-			return Decimal{}, fmt.Errorf("can't convert %s to decimal", original)
+	exp := 0
+	if e := strings.IndexAny(s, "eE"); e >= 0 {
+		n, err := strconv.Atoi(s[e+1:])
+		if err != nil {
+			return Decimal{}, badDecimal(original)
 		}
-	}
-	for i := 0; i < len(fracPart); i++ {
-		if fracPart[i] < '0' || fracPart[i] > '9' {
-			return Decimal{}, fmt.Errorf("can't convert %s to decimal", original)
+		// bounded so pow10 can't be asked to materialize an astronomically
+		// large number (e.g. 1E1000000000000)
+		const maxExp = 10000
+		if n > maxExp || n < -maxExp {
+			return Decimal{}, badDecimal(original)
 		}
+		exp = n
+		s = s[:e]
 	}
 
-	coeffDigits := intPart + fracPart
-	coeff := new(big.Int)
-	if _, ok := coeff.SetString(coeffDigits, 10); !ok {
-		return Decimal{}, fmt.Errorf("can't convert %s to decimal", original)
-	}
-	if sign < 0 && coeff.Sign() != 0 {
-		coeff.Neg(coeff)
+	intPart, fracPart := s, ""
+	if before, after, ok := strings.Cut(s, "."); ok {
+		if strings.IndexByte(after, '.') >= 0 {
+			return Decimal{}, badDecimal(original)
+		}
+		intPart, fracPart = before, after
 	}
 
-	out := Decimal{coeff: coeff, scale: len(fracPart)}
-	return out.normalized(), nil
+	digits := intPart + fracPart
+	if neg {
+		digits = "-" + digits
+	}
+	coeff, ok := new(big.Int).SetString(digits, 10)
+	if !ok {
+		return Decimal{}, badDecimal(original)
+	}
+
+	scale := len(fracPart) - exp
+	if scale < 0 {
+		coeff.Mul(coeff, pow10(-scale))
+		scale = 0
+	}
+	return Decimal{coeff: coeff, scale: scale}.normalized(), nil
 }
+
+func badDecimal(s string) error { return fmt.Errorf("can't convert %s to decimal", s) }
 
 func (d Decimal) String() string {
 	if d.coeff == nil || d.coeff.Sign() == 0 {
@@ -258,20 +255,6 @@ func (d Decimal) IsZero() bool {
 	return d.coeff == nil || d.coeff.Sign() == 0
 }
 
-func align(a, b Decimal) (aCoeff *big.Int, bCoeff *big.Int, scale int) {
-	scale = max(b.scale, a.scale)
-
-	aCoeff = a.coeffOrZero()
-	bCoeff = b.coeffOrZero()
-	if delta := scale - a.scale; delta > 0 {
-		aCoeff.Mul(aCoeff, pow10(delta))
-	}
-	if delta := scale - b.scale; delta > 0 {
-		bCoeff.Mul(bCoeff, pow10(delta))
-	}
-	return aCoeff, bCoeff, scale
-}
-
 func (d Decimal) coeffOrZero() *big.Int {
 	if d.coeff == nil {
 		return new(big.Int)
@@ -304,6 +287,20 @@ func (d Decimal) normalized() Decimal {
 		abs.Neg(abs)
 	}
 	return Decimal{coeff: abs, scale: d.scale}
+}
+
+func align(a, b Decimal) (aCoeff *big.Int, bCoeff *big.Int, scale int) {
+	scale = max(b.scale, a.scale)
+
+	aCoeff = a.coeffOrZero()
+	bCoeff = b.coeffOrZero()
+	if delta := scale - a.scale; delta > 0 {
+		aCoeff.Mul(aCoeff, pow10(delta))
+	}
+	if delta := scale - b.scale; delta > 0 {
+		bCoeff.Mul(bCoeff, pow10(delta))
+	}
+	return aCoeff, bCoeff, scale
 }
 
 func pow10(n int) *big.Int {

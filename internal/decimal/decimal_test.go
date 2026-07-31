@@ -1,6 +1,9 @@
 package decimal
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestNewFromString(t *testing.T) {
 	tests := []struct{ in, want string }{
@@ -14,6 +17,9 @@ func TestNewFromString(t *testing.T) {
 		{"-0.00", "0"},
 		{"-20", "-20"},
 		{"-.75", "-0.75"},
+		{"1E3", "1000"},
+		{"1E-3", "0.001"},
+		{"1E10000", "1" + strings.Repeat("0", 10000)},
 	}
 	for _, tt := range tests {
 		got, err := FromString(tt.in)
@@ -32,6 +38,7 @@ func TestNewFromStringInvalid(t *testing.T) {
 		"1_000.00", "1,000.00",
 		"1..0",
 		"a1", "1a",
+		"1E10001", "1E-10001", "1E1000000000000",
 	}
 	for _, in := range tests {
 		if _, err := FromString(in); err == nil {

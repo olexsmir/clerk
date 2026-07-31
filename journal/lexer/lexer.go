@@ -54,6 +54,10 @@ type Lexer struct {
 	transactionPastStatus bool
 	postingExpectAccount  bool
 	readingNoteAfterPipe  bool
+
+	// subdirective is set when the current line is an account/commodity
+	// directive; the next indented line then lexes as directive content
+	subdirective bool
 }
 
 func New(file string, input []byte) *Lexer {
@@ -91,6 +95,9 @@ func (l *Lexer) Next() token.Token {
 }
 
 func (l *Lexer) lexDefault() token.Token {
+	if l.subdirective && l.ch != ' ' && l.ch != '\t' {
+		l.subdirective = false
+	}
 	switch {
 	case l.ch == 0:
 		return l.token(token.EOF, "")
@@ -102,7 +109,12 @@ func (l *Lexer) lexDefault() token.Token {
 		return l.lexNewline()
 	case l.ch == ' ' || l.ch == '\t':
 		tok := l.lexIndent()
-		l.mode = ModePosting
+		if l.subdirective {
+			l.mode = ModeDirective
+			l.subdirective = false
+		} else {
+			l.mode = ModePosting
+		}
 		l.postingExpectAccount = true
 		return tok
 	case l.ch == ';' || l.ch == '#' || l.ch == '%':
@@ -364,6 +376,10 @@ func (l *Lexer) lexDirective() token.Token {
 		return l.lexString()
 	case ':':
 		return l.lexSingle(token.COLON)
+	case ')':
+		return l.lexSingle(token.RPAREN)
+	case ']':
+		return l.lexSingle(token.RBRACKET)
 	default:
 		if l.isCommodityStart() {
 			return l.lexCommodityMark()
@@ -431,6 +447,10 @@ func (l *Lexer) lexEquals() token.Token {
 		default:
 			return token.Token{Type: token.EQEQ, Literal: "==", Span: l.span(s)}
 		}
+	}
+	if l.ch == '*' {
+		l.advance()
+		return token.Token{Type: token.EQSTAR, Literal: "=*", Span: l.span(s)}
 	}
 	return token.Token{Type: token.EQ, Literal: "=", Span: l.span(s)}
 }
@@ -509,13 +529,29 @@ func (l *Lexer) lexNumber() token.Token {
 			l.advance()
 		} else if l.ch == ' ' && (l.peek() >= '0' && l.peek() <= '9') {
 			l.advance()
+		} else if l.ch == 'e' || l.ch == 'E' {
+			// exponent: consume only when E[sign]digit, so `10E ` stays an integer
+			p := l.pos + 1
+			if p < len(l.input) && (l.input[p] == '+' || l.input[p] == '-') {
+				p++
+			}
+			if p >= len(l.input) || l.input[p] < '0' || l.input[p] > '9' {
+				break
+			}
+			l.advance() // e/E
+			if l.ch == '+' || l.ch == '-' {
+				l.advance()
+			}
+			for l.isDigit() {
+				l.advance()
+			}
 		} else {
 			break
 		}
 	}
 	lit := string(l.input[s.offset:l.pos])
 	kind := token.INT
-	if strings.ContainsAny(lit, "., ") {
+	if strings.ContainsAny(lit, "., eE") {
 		kind = token.DECIMAL
 	}
 	return token.Token{Type: kind, Literal: lit, Span: l.span(s)}
@@ -532,6 +568,7 @@ func (l *Lexer) lexKeyword() token.Token {
 		kind = token.TEXT
 	} else {
 		l.mode = ModeDirective
+		l.subdirective = lit == "account" || lit == "commodity"
 	}
 	return token.Token{Type: kind, Literal: lit, Span: l.span(s)}
 }

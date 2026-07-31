@@ -10,6 +10,7 @@
 2025/04/08 groceries3
 	expenses:food  $10.00
 	assets:checking  = $0.00
+
 -- expect --
 Journal
   Transaction j:1:1-5:0
@@ -29,6 +30,7 @@ Journal
       BalanceAssertion j:2:24-3:0
         IsStrict: false
         IsInclusive: false
+        IsAssignment: false
         Amount j:2:26-3:0
           Quantity: 100
           Commodity: "$" j:2:26-2:27
@@ -59,6 +61,7 @@ Journal
       BalanceAssertion j:6:24-7:0
         IsStrict: true
         IsInclusive: false
+        IsAssignment: false
         Amount j:6:27-7:0
           Quantity: 100
           Commodity: "$" j:6:27-6:28
@@ -74,6 +77,7 @@ Journal
       BalanceAssertion j:7:19-8:0
         IsStrict: true
         IsInclusive: false
+        IsAssignment: false
         Amount j:7:22-8:0
           Quantity: 0
           Commodity: "$" j:7:22-7:23
@@ -82,7 +86,7 @@ Journal
           Precision: 2
           Decimal: "."
   BlankLine j:9:0-9:1
-  Transaction j:9:1-12:1
+  Transaction j:9:1-13:0
     Date: 2025/04/08
     Payee: "groceries3" j:9:12-10:0
     Posting j:10:1-11:1
@@ -96,7 +100,7 @@ Journal
         HasSpace: false
         Precision: 2
         Decimal: "."
-    Posting j:11:1-12:1
+    Posting j:11:1-13:0
       Account j:11:2-11:17
         SubAccount: "assets" j:11:2-11:8
         SubAccount: "checking" j:11:9-11:17
@@ -104,6 +108,7 @@ Journal
       BalanceAssertion j:11:19-12:0
         IsStrict: false
         IsInclusive: false
+        IsAssignment: false
         Amount j:11:21-12:0
           Quantity: 0
           Commodity: "$" j:11:21-11:22
@@ -111,3 +116,4 @@ Journal
           HasSpace: false
           Precision: 2
           Decimal: "."
+  BlankLine j:13:0-13:1

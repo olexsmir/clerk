@@ -14,6 +14,7 @@
 2015-01-03 money exchange office
     assets:cash  -20 EUR @ 7.53 HRK
     assets:cash  150.60 HRK
+
 -- expect --
 Journal
   Transaction j:1:1-5:0
@@ -97,6 +98,7 @@ Journal
       BalanceAssertion j:10:34-11:0
         IsStrict: false
         IsInclusive: false
+        IsAssignment: false
         Amount j:10:36-10:45
           Quantity: 20
           Commodity: "UAH" j:10:42-10:45
@@ -118,7 +120,7 @@ Journal
         SubAccount: "bank" j:11:9-12:0
       Amount: <elided>
   BlankLine j:13:0-13:1
-  Transaction j:13:1-16:1
+  Transaction j:13:1-17:0
     Date: 2015-01-03
     Payee: "money exchange office" j:13:12-14:0
     Posting j:14:1-15:1
@@ -140,7 +142,7 @@ Journal
           HasSpace: true
           Precision: 2
           Decimal: "."
-    Posting j:15:1-16:1
+    Posting j:15:1-17:0
       Account j:15:5-15:16
         SubAccount: "assets" j:15:5-15:11
         SubAccount: "cash" j:15:12-15:16
@@ -151,3 +153,4 @@ Journal
         HasSpace: true
         Precision: 2
         Decimal: "."
+  BlankLine j:17:0-17:1

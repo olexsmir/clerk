@@ -1,0 +1,31 @@
+-- input --
+2024-01-15 t
+    a  $0 := $100
+
+-- expect --
+Journal
+  Transaction j:1:1-4:0
+    Date: 2024-01-15
+    Payee: "t" j:1:12-2:0
+    Posting j:2:1-4:0
+      Account j:2:5-2:6
+        SubAccount: "a" j:2:5-2:6
+      Amount j:2:8-2:10
+        Quantity: 0
+        Commodity: "$" j:2:8-2:9
+        CommodityPos: Before
+        HasSpace: false
+        Precision: 0
+        Decimal: "."
+      BalanceAssertion j:2:12-3:0
+        IsStrict: false
+        IsInclusive: false
+        IsAssignment: true
+        Amount j:2:14-3:0
+          Quantity: 100
+          Commodity: "$" j:2:14-2:15
+          CommodityPos: Before
+          HasSpace: false
+          Precision: 0
+          Decimal: "."
+  BlankLine j:4:0-4:1

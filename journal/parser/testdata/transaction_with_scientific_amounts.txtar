@@ -1,0 +1,42 @@
+-- input --
+2024-01-15 t
+    a  1E-6 BTC
+    b  EUR 1E3
+    c  -2.5e-2 $
+
+-- expect --
+Journal
+  Transaction j:1:1-6:0
+    Date: 2024-01-15
+    Payee: "t" j:1:12-2:0
+    Posting j:2:1-3:1
+      Account j:2:5-2:6
+        SubAccount: "a" j:2:5-2:6
+      Amount j:2:8-3:0
+        Quantity: 0.000001
+        Commodity: "BTC" j:2:13-3:0
+        CommodityPos: After
+        HasSpace: true
+        Precision: 0
+        Decimal: "."
+    Posting j:3:1-4:1
+      Account j:3:5-3:6
+        SubAccount: "b" j:3:5-3:6
+      Amount j:3:8-4:0
+        Quantity: 1000
+        Commodity: "EUR" j:3:8-3:11
+        CommodityPos: Before
+        HasSpace: true
+        Precision: 0
+        Decimal: "."
+    Posting j:4:1-6:0
+      Account j:4:5-4:6
+        SubAccount: "c" j:4:5-4:6
+      Amount j:4:8-5:0
+        Quantity: -0.025
+        Commodity: "$" j:4:16-5:0
+        CommodityPos: After
+        HasSpace: true
+        Precision: 4
+        Decimal: "."
+  BlankLine j:6:0-6:1

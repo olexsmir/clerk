@@ -2,7 +2,17 @@
 commodity UAH
   format 1 000.00 UAH
   note Божествена Гривня  ; this gets ignored
+
 -- expect --
 Journal
-  CommodityDirective j:1:1-4:1
+  CommodityDirective j:1:1-5:0
     Commodity: "UAH" j:1:11-2:0
+    Amount j:2:10-3:0
+      Quantity: 1000
+      Commodity: "UAH" j:2:19-3:0
+      CommodityPos: After
+      HasSpace: true
+      Precision: 2
+      Decimal: "."
+      Thousands: " "
+  BlankLine j:5:0-5:1
