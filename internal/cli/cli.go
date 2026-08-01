@@ -18,16 +18,16 @@ func New(version string) *Cli {
 
 func (c *Cli) Run(ctx context.Context, args []string) error {
 	cmd := &cli.Command{
-		Name:                   "clerk",
-		Usage:                  "missing pta tooling",
-		Version:                c.version,
-		EnableShellCompletion:  true,
-		UseShortOptionHandling: true,
+		Name:                  "clerk",
+		Usage:                 "missing pta tooling",
+		Version:               c.version,
+		EnableShellCompletion: true,
 		Commands: []*cli.Command{
 			{
-				Name:   "format",
-				Usage:  "reformat journal files",
-				Action: c.formatAction,
+				Name:                   "format",
+				Usage:                  "reformat journal files",
+				Action:                 c.formatAction,
+				UseShortOptionHandling: true,
 				Arguments: []cli.Argument{&cli.StringArgs{
 					Name:      "journals",
 					UsageText: "(path to journal files/directories (stdin if empty))",
