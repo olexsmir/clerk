@@ -27,15 +27,13 @@ type server struct {
 	loader  *journal.Loader
 	printer *printer.Config
 
-	mu       sync.Mutex
-	openDocs map[uri.URI]docState
-	current  *analyzer.Analysis
+	mu         sync.Mutex
+	openDocs   map[uri.URI]docState
+	current    *analyzer.Analysis
+	diagCancel context.CancelFunc
 
 	cfgMu  sync.RWMutex
 	config Config
-
-	diagMu     sync.Mutex
-	diagCancel context.CancelFunc
 }
 
 func (s *server) analysis() *analyzer.Analysis {
@@ -62,13 +60,6 @@ func (s *server) buildAnalysis() *analyzer.Analysis {
 		}
 	}
 	return a
-}
-
-type docState struct {
-	text       string
-	version    int32
-	languageID protocol.LanguageKind
-	semTokens  []semanticToken // cached semantic tokens
 }
 
 func (s *server) Initialize(ctx context.Context, params *protocol.InitializeParams) (*protocol.InitializeResult, error) {
@@ -116,6 +107,8 @@ func (s *server) Exit(ctx context.Context) error {
 
 func (s *server) applySettings(v protocol.LSPAny) {
 	s.cfgMu.Lock()
-	s.config.merge(v)
+	if err := s.config.merge(v); err != nil {
+		s.log.Error("failed to merge config", "err", err)
+	}
 	s.cfgMu.Unlock()
 }

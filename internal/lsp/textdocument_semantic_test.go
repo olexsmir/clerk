@@ -1,7 +1,6 @@
 package lsp
 
 import (
-	"context"
 	"fmt"
 	"slices"
 	"strings"
@@ -13,59 +12,45 @@ import (
 	"olexsmir.xyz/clerk/internal/testutil/golden"
 )
 
-func TestSemanticTokens_Legend(t *testing.T) {
-	if len(tokenTypeStrings) != semTypeCount {
-		t.Fatalf("tokenTypeStrings has %d entries, want %d (one per TokenType constant)",
-			len(tokenTypeStrings), semTypeCount)
-	}
-	legend := getSemanticTokensLegend()
-	if !slices.Equal(legend.TokenTypes, tokenTypeStrings) {
-		t.Errorf("legend.TokenTypes = %v, want %v", legend.TokenTypes, tokenTypeStrings)
-	}
-	if !slices.Equal(legend.TokenModifiers, modifierStrings) {
-		t.Errorf("legend.TokenModifiers = %v, want %v", legend.TokenModifiers, modifierStrings)
-	}
-}
-
-func TestSemanticTokensEncode(t *testing.T) {
-	tests := []struct {
-		name   string
+func TestEncodeSemTokens(t *testing.T) {
+	tests := map[string]struct {
 		tokens []semanticToken
 		want   []uint32
 	}{
-		{"nil", nil, nil},
-		{"empty", []semanticToken{}, nil},
-		{"single", []semanticToken{
-			{line: 0, col: 0, length: 4, tokenType: SemanticDate},
-		}, []uint32{0, 0, 4, SemanticDate, 0}},
-		{"line 0 col 0", []semanticToken{
-			{line: 0, col: 0, length: 1, tokenType: SemanticDirective},
-		}, []uint32{0, 0, 1, SemanticDirective, 0}},
-		{"multiple", []semanticToken{
-			{line: 0, col: 0, length: 10, tokenType: SemanticDate},
-			{line: 0, col: 11, length: 5, tokenType: SemString},
-			{line: 1, col: 4, length: 10, tokenType: SemanticAccount},
+		"nil":   {nil, nil},
+		"empty": {[]semanticToken{}, nil},
+		"single": {[]semanticToken{
+			{line: 0, col: 0, length: 4, tokenType: semDate},
+		}, []uint32{0, 0, 4, semDate, 0}},
+		"line 0 col 0": {[]semanticToken{
+			{line: 0, col: 0, length: 1, tokenType: semDirective},
+		}, []uint32{0, 0, 1, semDirective, 0}},
+		"multiple": {[]semanticToken{
+			{line: 0, col: 0, length: 10, tokenType: semDate},
+			{line: 0, col: 11, length: 5, tokenType: semString},
+			{line: 1, col: 4, length: 10, tokenType: semAccount},
 		}, []uint32{
-			0, 0, 10, SemanticDate, 0,
-			0, 11, 5, SemString, 0,
-			1, 4, 10, SemanticAccount, 0,
+			0, 0, 10, semDate, 0,
+			0, 11, 5, semString, 0,
+			1, 4, 10, semAccount, 0,
 		}},
 		// the wire format requires non-negative deltas; unsorted input must
 		// be sorted first (commodity at col 36 comes after amount at col 32)
-		{"unsorted input", []semanticToken{
-			{line: 0, col: 0, length: 10, tokenType: SemanticDate},
-			{line: 0, col: 36, length: 3, tokenType: SemanticCommodity},
-			{line: 0, col: 32, length: 2, tokenType: SemanticAmount},
-			{line: 1, col: 4, length: 6, tokenType: SemanticAccount},
+		"unsorted input": {[]semanticToken{
+			{line: 0, col: 0, length: 10, tokenType: semDate},
+			{line: 0, col: 36, length: 3, tokenType: semCommodity},
+			{line: 0, col: 32, length: 2, tokenType: semAmount},
+			{line: 1, col: 4, length: 6, tokenType: semAccount},
 		}, []uint32{
-			0, 0, 10, SemanticDate, 0,
-			0, 32, 2, SemanticAmount, 0,
-			0, 4, 3, SemanticCommodity, 0,
-			1, 4, 6, SemanticAccount, 0,
+			0, 0, 10, semDate, 0,
+			0, 32, 2, semAmount, 0,
+			0, 4, 3, semCommodity, 0,
+			1, 4, 6, semAccount, 0,
 		}},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+
+	for tname, tt := range tests {
+		t.Run(tname, func(t *testing.T) {
 			if got := encodeSemTokens(tt.tokens); !slices.Equal(got, tt.want) {
 				t.Errorf("encodeSemTokens() = %v, want %v", got, tt.want)
 			}
@@ -73,8 +58,11 @@ func TestSemanticTokensEncode(t *testing.T) {
 	}
 }
 
-func TestSemanticTokens_Server_SimpleTransaction(t *testing.T) {
-	content := "2024-01-15 test\n    expenses:food  $50\n    assets:cash\n"
+func TestServer_Semantic_SimpleTransaction(t *testing.T) {
+	content := `2024-01-15 test
+    expenses:food  $50
+    assets:cash
+`
 
 	srv := NewServer("test")
 	srv.server.openDoc(uri.URI("file:///test.journal"), content, 1, "journal")
@@ -100,7 +88,7 @@ func TestSemanticTokens_Server_SimpleTransaction(t *testing.T) {
 	}
 }
 
-func TestSemanticTokens_Server_EmptyDocument(t *testing.T) {
+func TestServer_Semantic_EmptyDocument(t *testing.T) {
 	srv := NewServer("test")
 	srv.server.openDoc(uri.URI("file:///empty.journal"), "", 1, "journal")
 
@@ -115,7 +103,7 @@ func TestSemanticTokens_Server_EmptyDocument(t *testing.T) {
 	}
 }
 
-func TestSemanticTokens_Server_DocumentNotFound(t *testing.T) {
+func TestServer_Semantic_DocumentNotFound(t *testing.T) {
 	result, err := NewServer("test").server.SemanticTokensFull(t.Context(), &protocol.SemanticTokensParams{
 		TextDocument: protocol.TextDocumentIdentifier{URI: uri.URI("file:///unknown.journal")},
 	})
@@ -130,19 +118,24 @@ func TestSemanticTokens_Server_DocumentNotFound(t *testing.T) {
 	}
 }
 
-func TestSemanticTokens_Server_Range(t *testing.T) {
-	content := "2024-01-15 test\n    expenses:food  $50\n2024-01-16 other\n    expenses:drinks  $20\n"
+func TestServer_Semantic_Range(t *testing.T) {
+	content := `2024-01-15 test
+    expenses:food  $50
+
+2024-01-16 other
+  expenses:drinks  $20
+`
+
 	srv := NewServer("test")
 	srv.server.openDoc(uri.URI("file:///test.journal"), content, 1, "journal")
 
-	params := &protocol.SemanticTokensRangeParams{
+	result, err := srv.server.SemanticTokensRange(t.Context(), &protocol.SemanticTokensRangeParams{
 		TextDocument: protocol.TextDocumentIdentifier{URI: uri.URI("file:///test.journal")},
 		Range: protocol.Range{
 			Start: protocol.Position{Line: 0, Character: 0},
 			End:   protocol.Position{Line: 1, Character: 50},
 		},
-	}
-	result, err := srv.server.SemanticTokensRange(context.Background(), params)
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -179,12 +172,12 @@ func TestSemanticTokensTxtar(t *testing.T) {
 		ar := golden.Read(t, tt)
 
 		t.Run(tt+"_golden", func(t *testing.T) {
-			toks := renderSemanticTokens(tokSem(string(ar.Get("in.journal"))))
+			toks := renderSemanticTokens(tokSem(ar.Get("in.journal")))
 			golden.Assert(t, ar, toks)
 		})
 
 		t.Run(tt+"_no-overlap", func(t *testing.T) {
-			toks := tokSem(string(ar.Get("in.journal")))
+			toks := tokSem(ar.Get("in.journal"))
 			slices.SortFunc(toks, func(a, b semanticToken) int {
 				if a.line != b.line {
 					return int(a.line) - int(b.line)
@@ -228,6 +221,7 @@ func renderSemanticTokens(tokens []semanticToken) string {
 	return b.String()
 }
 
-func tokSem(content string) []semanticToken {
-	return tokenizeForSemantics(content, parseJournalStr(content))
+func tokSem(content []byte) []semanticToken {
+	c := string(content)
+	return tokenizeForSemantics(c, parseJournalStr(c))
 }

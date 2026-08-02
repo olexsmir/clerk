@@ -16,17 +16,18 @@ var DefaultConfig = Config{
 	SemanticHighlighting: true,
 }
 
-func (c *Config) merge(v protocol.LSPAny) {
+func (c *Config) merge(v protocol.LSPAny) error {
 	var patch struct {
 		SemanticHighlighting *bool `json:"semantic_highlighting,case:ignore"`
 	}
 
 	if err := json.Unmarshal(v, &patch); err != nil {
-		return
+		return err
 	}
 	if patch.SemanticHighlighting != nil {
 		c.SemanticHighlighting = *patch.SemanticHighlighting
 	}
+	return nil
 }
 
 func (s *server) semanticHighlightingEnabled() bool {

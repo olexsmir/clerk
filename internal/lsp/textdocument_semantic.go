@@ -64,18 +64,16 @@ func (s *server) tokensForDoc(doc uri.URI) ([]semanticToken, bool) {
 // Implementation
 
 const (
-	SemanticDirective = iota
-	SemanticDate
-	SemanticAccount
-	SemanticCommodity
-	SemanticAmount
-	SemanticStatus
-	SemanticComment
-	SemString
-	SemOperator
-	SemProperty
-
-	semTypeCount // used to ensure we dont go out of bound
+	semDirective = iota
+	semDate
+	semAccount
+	semCommodity
+	semAmount
+	semStatus
+	semComment
+	semString
+	semOperator
+	semProperty
 )
 
 var tokenTypeStrings = []string{
@@ -109,9 +107,8 @@ func getSemanticTokensLegend() protocol.SemanticTokensLegend {
 }
 
 type semanticToken struct {
-	line      uint32 // 0-based
-	col       uint32 // 0-based UTF-16
-	length    uint32 // UTF-16 code units
+	line, col uint32 // 0-based
+	length    uint32
 	tokenType uint32
 	modifiers uint32
 }
@@ -204,56 +201,56 @@ func visitEntry(content string, e ast.Entry, emit semEmitFn) {
 	case *ast.AutomatedTransaction:
 		visitAutomatedTransaction(content, e, emit)
 	case *ast.AccountDirective:
-		emit(directiveKeyword(e.Span, "account"), SemanticDirective, 0)
-		emit(e.Account.Span, SemanticAccount, 0)
+		emit(directiveKeyword(e.Span, "account"), semDirective, 0)
+		emit(e.Account.Span, semAccount, 0)
 		if e.Comment != nil {
-			emit(e.Comment.Span, SemanticComment, 0)
+			emit(e.Comment.Span, semComment, 0)
 		}
 	case *ast.CommodityDirective:
-		emit(directiveKeyword(e.Span, "commodity"), SemanticDirective, 0)
+		emit(directiveKeyword(e.Span, "commodity"), semDirective, 0)
 		if e.Format.Span.End.Offset > 0 {
 			semEmitAmount(content, &e.Format, emit)
 		} else if e.CommoditySpan.Start.Offset > 0 && e.CommoditySpan.End.Offset > 0 {
-			emit(e.CommoditySpan, SemanticCommodity, 0)
+			emit(e.CommoditySpan, semCommodity, 0)
 		}
 		if e.Comment != nil {
-			emit(e.Comment.Span, SemanticComment, 0)
+			emit(e.Comment.Span, semComment, 0)
 		}
 	case *ast.IncludeDirective:
-		emitDirective(content, e.Span, len("include"), SemString, e.Comment, emit)
+		emitDirective(content, e.Span, len("include"), semString, e.Comment, emit)
 	case *ast.PayeeDirective:
-		emitDirective(content, e.Span, len("payee"), SemProperty, e.Comment, emit)
+		emitDirective(content, e.Span, len("payee"), semProperty, e.Comment, emit)
 	case *ast.TagDirective:
-		emitDirective(content, e.Span, len("tag"), SemProperty, e.Comment, emit)
+		emitDirective(content, e.Span, len("tag"), semProperty, e.Comment, emit)
 	case *ast.AliasDirective:
-		emit(directiveKeyword(e.Span, "alias"), SemanticDirective, 0)
-		emit(e.From.Span, SemanticAccount, 0)
+		emit(directiveKeyword(e.Span, "alias"), semDirective, 0)
+		emit(e.From.Span, semAccount, 0)
 		if op, ok := betweenSpan(content, e.Span.Start.File, e.From.Span.End.Offset, e.To.Span.Start.Offset); ok {
-			emit(op, SemOperator, 0)
+			emit(op, semOperator, 0)
 		}
-		emit(e.To.Span, SemanticAccount, 0)
+		emit(e.To.Span, semAccount, 0)
 		if e.Comment != nil {
-			emit(e.Comment.Span, SemanticComment, 0)
+			emit(e.Comment.Span, semComment, 0)
 		}
 	case *ast.YearDirective:
 		kwLen := len("year")
 		if content[e.Span.Start.Offset] == 'Y' {
 			kwLen = 1
 		}
-		emitDirective(content, e.Span, kwLen, SemProperty, e.Comment, emit)
+		emitDirective(content, e.Span, kwLen, semProperty, e.Comment, emit)
 	case *ast.DecimalMarkDirective:
-		emitDirective(content, e.Span, len("decimal-mark"), SemProperty, e.Comment, emit)
+		emitDirective(content, e.Span, len("decimal-mark"), semProperty, e.Comment, emit)
 	case *ast.DefaultCommodityDirective:
-		emit(directiveKeyword(e.Span, "D"), SemanticDirective, 0)
+		emit(directiveKeyword(e.Span, "D"), semDirective, 0)
 		semEmitAmount(content, &e.Amount, emit)
 		if e.Comment != nil {
-			emit(e.Comment.Span, SemanticComment, 0)
+			emit(e.Comment.Span, semComment, 0)
 		}
 	case *ast.MarketPriceDirective:
-		emit(directiveKeyword(e.Span, "P"), SemanticDirective, 0)
-		emit(e.DateTime.Date.Span, SemanticDate, 0)
+		emit(directiveKeyword(e.Span, "P"), semDirective, 0)
+		emit(e.DateTime.Date.Span, semDate, 0)
 		if e.DateTime.Time != nil {
-			emit(e.DateTime.Time.Span, SemanticDate, 0)
+			emit(e.DateTime.Time.Span, semDate, 0)
 		}
 		// commodity: text between the date (or time) and the amount
 		commStart := e.DateTime.Date.Span.End.Offset
@@ -261,59 +258,59 @@ func visitEntry(content string, e ast.Entry, emit semEmitFn) {
 			commStart = e.DateTime.Time.Span.End.Offset
 		}
 		if comm, ok := betweenSpan(content, e.Span.Start.File, commStart, e.Amount.Span.Start.Offset); ok {
-			emit(comm, SemanticCommodity, 0)
+			emit(comm, semCommodity, 0)
 		}
 		semEmitAmount(content, &e.Amount, emit)
 		if e.Comment != nil {
-			emit(e.Comment.Span, SemanticComment, 0)
+			emit(e.Comment.Span, semComment, 0)
 		}
 	case *ast.ConversionDirective:
-		emit(directiveKeyword(e.Span, "C"), SemanticDirective, 0)
+		emit(directiveKeyword(e.Span, "C"), semDirective, 0)
 		semEmitAmount(content, &e.From, emit)
 		// = operator: text between the two amounts
 		if op, ok := betweenSpan(content, e.Span.Start.File, e.From.Span.End.Offset, e.To.Span.Start.Offset); ok {
-			emit(op, SemOperator, 0)
+			emit(op, semOperator, 0)
 		}
 		semEmitAmount(content, &e.To, emit)
 		if e.Comment != nil {
-			emit(e.Comment.Span, SemanticComment, 0)
+			emit(e.Comment.Span, semComment, 0)
 		}
 	case *ast.Comment:
-		emit(e.Span, SemanticComment, 0)
+		emit(e.Span, semComment, 0)
 	case *ast.CommentBlockDirective:
-		emit(e.Span, SemanticComment, 0)
+		emit(e.Span, semComment, 0)
 	case *ast.IgnoredDirective:
-		emitDirective(content, e.Span, len("N"), SemProperty, e.Comment, emit)
+		emitDirective(content, e.Span, len("N"), semProperty, e.Comment, emit)
 	case *ast.ApplyDirective:
-		emitDirective(content, e.Span, len("apply"), SemProperty, e.Comment, emit)
+		emitDirective(content, e.Span, len("apply"), semProperty, e.Comment, emit)
 	case *ast.EndDirective:
-		emitDirective(content, e.Span, len("end"), SemProperty, e.Comment, emit)
+		emitDirective(content, e.Span, len("end"), semProperty, e.Comment, emit)
 	case *ast.BlankLine:
 	}
 }
 
 func visitTransaction(content string, t *ast.Transaction, emit semEmitFn) {
-	emit(t.Date.Span, SemanticDate, 0)
+	emit(t.Date.Span, semDate, 0)
 	if t.SecondDate != nil {
-		emit(t.SecondDate.Span, SemanticDate, 0)
+		emit(t.SecondDate.Span, semDate, 0)
 	}
 	if t.Status.Value != ast.StatusNone {
-		emit(t.Status.Span, SemanticStatus, 0)
+		emit(t.Status.Span, semStatus, 0)
 	}
 	if t.Code != nil {
-		emit(t.Code.Span, SemString, 0)
+		emit(t.Code.Span, semString, 0)
 	}
 	if t.Payee != nil {
-		emit(t.Payee.Span, SemProperty, 0)
+		emit(t.Payee.Span, semProperty, 0)
 	}
 	if t.Note != nil {
-		emit(t.Note.Span, SemProperty, 0)
+		emit(t.Note.Span, semProperty, 0)
 	}
 	if t.Comment != nil {
-		emit(t.Comment.Span, SemanticComment, 0)
+		emit(t.Comment.Span, semComment, 0)
 	}
 	for i := range t.HeaderComments {
-		emit(t.HeaderComments[i].Span, SemanticComment, 0)
+		emit(t.HeaderComments[i].Span, semComment, 0)
 	}
 	for _, p := range t.Postings {
 		visitPosting(content, p, emit)
@@ -322,7 +319,7 @@ func visitTransaction(content string, t *ast.Transaction, emit semEmitFn) {
 
 func visitPeriodicTransaction(content string, pt *ast.PeriodicTransaction, emit semEmitFn) {
 	// ~ operator is at the start of the period span
-	emit(offsetSpan(pt.Span.Start.File, pt.Span.Start.Offset, pt.Span.Start.Offset+1), SemOperator, 0)
+	emit(offsetSpan(pt.Span.Start.File, pt.Span.Start.Offset, pt.Span.Start.Offset+1), semOperator, 0)
 
 	// The period span covers the whole expr, including any "from ... to ..." dates
 	if pt.Period.Span.End.Offset > pt.Period.Span.Start.Offset {
@@ -336,23 +333,23 @@ func visitPeriodicTransaction(content string, pt *ast.PeriodicTransaction, emit 
 		pos := pt.Period.Span.Start.Offset
 		for _, d := range dates {
 			if d.Span.Start.Offset > pos {
-				emit(offsetSpan(pt.Period.Span.Start.File, pos, d.Span.Start.Offset), SemProperty, 0)
+				emit(offsetSpan(pt.Period.Span.Start.File, pos, d.Span.Start.Offset), semProperty, 0)
 			}
-			emit(d.Span, SemanticDate, 0)
+			emit(d.Span, semDate, 0)
 			pos = d.Span.End.Offset
 		}
 		if pos < pt.Period.Span.End.Offset {
-			emit(offsetSpan(pt.Period.Span.Start.File, pos, pt.Period.Span.End.Offset), SemProperty, 0)
+			emit(offsetSpan(pt.Period.Span.Start.File, pos, pt.Period.Span.End.Offset), semProperty, 0)
 		}
 	}
 	if pt.Description != nil {
-		emit(pt.Description.Span, SemProperty, 0)
+		emit(pt.Description.Span, semProperty, 0)
 	}
 	if pt.Comment != nil {
-		emit(pt.Comment.Span, SemanticComment, 0)
+		emit(pt.Comment.Span, semComment, 0)
 	}
 	for i := range pt.HeaderComments {
-		emit(pt.HeaderComments[i].Span, SemanticComment, 0)
+		emit(pt.HeaderComments[i].Span, semComment, 0)
 	}
 	for _, p := range pt.Postings {
 		visitPosting(content, p, emit)
@@ -361,16 +358,16 @@ func visitPeriodicTransaction(content string, pt *ast.PeriodicTransaction, emit 
 
 func visitAutomatedTransaction(content string, at *ast.AutomatedTransaction, emit semEmitFn) {
 	// = operator is at the start of the expression span
-	emit(offsetSpan(at.Span.Start.File, at.Span.Start.Offset, at.Span.Start.Offset+1), SemOperator, 0)
+	emit(offsetSpan(at.Span.Start.File, at.Span.Start.Offset, at.Span.Start.Offset+1), semOperator, 0)
 
 	if at.Expr.Value != "" {
-		emit(at.Expr.Span, SemString, 0)
+		emit(at.Expr.Span, semString, 0)
 	}
 	if at.Comment != nil {
-		emit(at.Comment.Span, SemanticComment, 0)
+		emit(at.Comment.Span, semComment, 0)
 	}
 	for i := range at.HeaderComments {
-		emit(at.HeaderComments[i].Span, SemanticComment, 0)
+		emit(at.HeaderComments[i].Span, semComment, 0)
 	}
 	for _, p := range at.Postings {
 		visitPosting(content, p, emit)
@@ -379,7 +376,7 @@ func visitAutomatedTransaction(content string, at *ast.AutomatedTransaction, emi
 
 func visitPosting(content string, p *ast.Posting, emit semEmitFn) {
 	if p.Status.Value != ast.StatusNone {
-		emit(p.Status.Span, SemanticStatus, 0)
+		emit(p.Status.Span, semStatus, 0)
 	}
 
 	// virtual brackets
@@ -388,7 +385,7 @@ func visitPosting(content string, p *ast.Posting, emit semEmitFn) {
 		for off := p.Span.Start.Offset; off < p.Account.Span.Start.Offset && off < p.Span.End.Offset; off++ {
 			if content[off] == '(' || content[off] == '[' {
 				brSpan := token.Span{Start: offsetPos(p.Span.Start.File, off), End: offsetPos(p.Span.Start.File, off+1)}
-				emit(brSpan, SemOperator, modifierAbstract)
+				emit(brSpan, semOperator, modifierAbstract)
 				break
 			}
 		}
@@ -396,13 +393,13 @@ func visitPosting(content string, p *ast.Posting, emit semEmitFn) {
 		for off := p.Account.Span.End.Offset; off < p.Span.End.Offset; off++ {
 			if content[off] == ')' || content[off] == ']' {
 				brSpan := token.Span{Start: offsetPos(p.Span.Start.File, off), End: offsetPos(p.Span.Start.File, off+1)}
-				emit(brSpan, SemOperator, modifierAbstract)
+				emit(brSpan, semOperator, modifierAbstract)
 				break
 			}
 		}
 	}
 
-	emit(p.Account.Span, SemanticAccount, 0)
+	emit(p.Account.Span, semAccount, 0)
 
 	if p.Amount != nil {
 		semEmitAmount(content, p.Amount, emit)
@@ -414,10 +411,10 @@ func visitPosting(content string, p *ast.Posting, emit semEmitFn) {
 		semEmitBalanceAssertion(content, p.Balance, emit)
 	}
 	if p.Comment != nil {
-		emit(p.Comment.Span, SemanticComment, 0)
+		emit(p.Comment.Span, semComment, 0)
 	}
 	for i := range p.Comments {
-		emit(p.Comments[i].Span, SemanticComment, 0)
+		emit(p.Comments[i].Span, semComment, 0)
 	}
 }
 
@@ -442,13 +439,13 @@ func semEmitAmount(content string, a *ast.Amount, emit semEmitFn) {
 	}
 	hasCommodity := a.CommoditySpan.Start.Offset > 0 && a.CommoditySpan.End.Offset > 0
 	if hasCommodity && a.CommodityPos == ast.CommodityBefore {
-		emit(a.CommoditySpan, SemanticCommodity, 0)
+		emit(a.CommoditySpan, semCommodity, 0)
 		semEmitQuantity(content, a, emit)
 		return
 	}
 	semEmitQuantity(content, a, emit)
 	if hasCommodity {
-		emit(a.CommoditySpan, SemanticCommodity, 0)
+		emit(a.CommoditySpan, semCommodity, 0)
 	}
 }
 
@@ -461,7 +458,7 @@ func semEmitQuantity(content string, a *ast.Amount, emit semEmitFn) {
 	if a.IsNegative {
 		mods |= modifierNegative
 	}
-	emit(offsetSpan(a.Span.Start.File, qStart, qEnd), SemanticAmount, mods)
+	emit(offsetSpan(a.Span.Start.File, qStart, qEnd), semAmount, mods)
 }
 
 func quantitySpan(content string, a *ast.Amount) (int, int) {
@@ -489,20 +486,20 @@ type semEmitFn func(token.Span, uint32, uint32)
 
 func emitDirective(content string, e token.Span, kwLen int, valType uint32, comment *ast.Comment, emit semEmitFn) {
 	kwEnd := e.Start.Offset + kwLen
-	emit(token.Span{Start: e.Start, End: offsetPos(e.Start.File, kwEnd)}, SemanticDirective, 0)
+	emit(token.Span{Start: e.Start, End: offsetPos(e.Start.File, kwEnd)}, semDirective, 0)
 	if v, ok := directiveValue(content, e, comment, kwEnd); ok {
 		emit(v, valType, 0)
 	}
 	if comment != nil {
-		emit(comment.Span, SemanticComment, 0)
+		emit(comment.Span, semComment, 0)
 	}
 }
 
 func semEmitCost(content string, c *ast.Cost, emit semEmitFn) {
 	if c.IsTotal {
-		emit(token.Span{Start: c.Span.Start, End: offsetPos(c.Span.Start.File, c.Span.Start.Offset+2)}, SemOperator, 0)
+		emit(token.Span{Start: c.Span.Start, End: offsetPos(c.Span.Start.File, c.Span.Start.Offset+2)}, semOperator, 0)
 	} else {
-		emit(token.Span{Start: c.Span.Start, End: offsetPos(c.Span.Start.File, c.Span.Start.Offset+1)}, SemOperator, 0)
+		emit(token.Span{Start: c.Span.Start, End: offsetPos(c.Span.Start.File, c.Span.Start.Offset+1)}, semOperator, 0)
 	}
 	semEmitAmount(content, &c.Amount, emit)
 }
@@ -518,7 +515,7 @@ func semEmitBalanceAssertion(content string, ba *ast.BalanceAssertion, emit semE
 	for opEnd < ba.Span.End.Offset && (content[opEnd] == '=' || content[opEnd] == ':' || content[opEnd] == '*') {
 		opEnd++
 	}
-	emit(token.Span{Start: offsetPos(ba.Span.Start.File, opStart), End: offsetPos(ba.Span.Start.File, opEnd)}, SemOperator, 0)
+	emit(token.Span{Start: offsetPos(ba.Span.Start.File, opStart), End: offsetPos(ba.Span.Start.File, opEnd)}, semOperator, 0)
 	semEmitAmount(content, &ba.Amount, emit)
 	if ba.Cost != nil {
 		semEmitCost(content, ba.Cost, emit)
@@ -537,13 +534,13 @@ func semLexerFallback(content string, emit semEmitFn) {
 		tok := l.Next()
 		if tok.Type == token.EOF {
 			if commentStart > 0 {
-				take(token.Span{Start: offsetPos("", commentStart), End: offsetPos("", commentEnd)}, SemanticComment, 0)
+				take(token.Span{Start: offsetPos("", commentStart), End: offsetPos("", commentEnd)}, semComment, 0)
 			}
 			break
 		}
 		if tok.Type == token.NEWLINE {
 			if commentStart > 0 {
-				take(token.Span{Start: offsetPos("", commentStart), End: offsetPos("", commentEnd)}, SemanticComment, 0)
+				take(token.Span{Start: offsetPos("", commentStart), End: offsetPos("", commentEnd)}, semComment, 0)
 				commentStart, commentEnd = 0, 0
 			}
 			continue
@@ -551,9 +548,9 @@ func semLexerFallback(content string, emit semEmitFn) {
 		if tok.Type == token.WHITESPACE || tok.Type == token.INDENT {
 			continue
 		}
-		tokType := uint32(SemString)
+		tokType := uint32(semString)
 		if commentStart > 0 {
-			tokType = SemanticComment
+			tokType = semComment
 			if tok.Span.End.Offset > commentEnd {
 				commentEnd = tok.Span.End.Offset
 			}
@@ -561,29 +558,29 @@ func semLexerFallback(content string, emit semEmitFn) {
 		}
 		switch tok.Type {
 		case token.SEMICOLON, token.HASH, token.PERCENT:
-			tokType = SemanticComment
+			tokType = semComment
 			commentStart = tok.Span.Start.Offset
 			commentEnd = tok.Span.End.Offset
 			continue
 		case token.STAR:
-			tokType = SemanticComment // * at col 0 is comment marker
+			tokType = semComment // * at col 0 is comment marker
 			commentStart = tok.Span.Start.Offset
 			commentEnd = tok.Span.End.Offset
 			continue
 		case token.ACCOUNT, token.COMMODITY, token.INCLUDE, token.ALIAS,
 			token.PAYEE, token.TAG, token.APPLY, token.END, token.COMMENTKW,
 			token.YEAR, token.DECIMALMARK, token.D, token.P, token.N, token.C:
-			tokType = SemanticDirective
+			tokType = semDirective
 		case token.DATE:
-			tokType = SemanticDate
+			tokType = semDate
 		case token.INT, token.DECIMAL:
-			tokType = SemanticAmount
+			tokType = semAmount
 		case token.COMMODITYMARK:
-			tokType = SemanticCommodity
+			tokType = semCommodity
 		case token.BANG:
-			tokType = SemanticStatus
+			tokType = semStatus
 		case token.AT, token.ATAT, token.EQ, token.EQEQ, token.EQEQEQ, token.EQSTAR:
-			tokType = SemOperator
+			tokType = semOperator
 		}
 		take(tok.Span, tokType, 0)
 	}

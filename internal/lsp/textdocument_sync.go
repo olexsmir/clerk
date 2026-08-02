@@ -35,6 +35,13 @@ func (s *server) DidSave(ctx context.Context, params *protocol.DidSaveTextDocume
 
 // Document management
 
+type docState struct {
+	text       string
+	version    int32
+	languageID protocol.LanguageKind
+	semTokens  []semanticToken // cached semantic tokens
+}
+
 func (s *server) openDoc(u uri.URI, text string, version int32, langID protocol.LanguageKind) {
 	s.mu.Lock()
 	s.openDocs[u] = docState{
@@ -65,19 +72,6 @@ func (s *server) updateDoc(u uri.URI, version int32, changes []protocol.TextDocu
 	s.openDocs[u] = state
 }
 
-func (s *server) closeDoc(u uri.URI) {
-	s.mu.Lock()
-	delete(s.openDocs, u)
-	s.mu.Unlock()
-}
-
-func (s *server) getDocText(u uri.URI) (string, bool) {
-	s.mu.Lock()
-	state, ok := s.openDocs[u]
-	s.mu.Unlock()
-	return state.text, ok
-}
-
 func (s *server) getDocState(u uri.URI) (docState, bool) {
 	s.mu.Lock()
 	state, ok := s.openDocs[u]
@@ -85,7 +79,12 @@ func (s *server) getDocState(u uri.URI) (docState, bool) {
 	return state, ok
 }
 
-// parseJournalStr parses a raw journal string into an AST.
+func (s *server) closeDoc(u uri.URI) {
+	s.mu.Lock()
+	delete(s.openDocs, u)
+	s.mu.Unlock()
+}
+
 func parseJournalStr(content string) *ast.Journal {
 	l := lexer.New("", []byte(content))
 	p := parser.New(l)

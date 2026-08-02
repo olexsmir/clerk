@@ -5,17 +5,11 @@ import (
 	"strings"
 )
 
-func IsJournalFile(name string) bool {
-	ext := strings.ToLower(filepath.Ext(name))
-	return extensionSet[ext]
-}
-
 var (
 	extensionSet        map[string]bool
 	SupportedExtensions = [...]string{
-		".journal", ".hledger",
+		".journal", ".jrnl", ".j", ".hledger",
 		".dat", ".ledger",
-		".jrnl",
 	}
 )
 
@@ -24,4 +18,9 @@ func init() {
 	for _, ext := range SupportedExtensions {
 		extensionSet[ext] = true
 	}
+}
+
+func IsJournalFile(name string) bool {
+	ext := strings.ToLower(filepath.Ext(name))
+	return extensionSet[ext]
 }

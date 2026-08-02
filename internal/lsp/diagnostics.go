@@ -16,8 +16,8 @@ import (
 const diagDebounce = 200 * time.Millisecond
 
 func (s *server) scheduleDiagnostics(ctx context.Context) {
-	s.diagMu.Lock()
-	defer s.diagMu.Unlock()
+	s.mu.Lock()
+	defer s.mu.Unlock()
 
 	if s.diagCancel != nil {
 		s.diagCancel()

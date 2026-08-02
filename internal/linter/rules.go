@@ -29,5 +29,5 @@ var Rules = []Rule{
 	&UndeclaredCommodity{},
 	&UndeclaredAccount{},
 	&UnbalancedTransaction{},
-	// &UnusedAccount{},
+	&UnusedAccount{},
 }

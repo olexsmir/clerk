@@ -12,11 +12,12 @@ import (
 )
 
 func (s *server) Formatting(ctx context.Context, params *protocol.DocumentFormattingParams) ([]protocol.TextEdit, error) {
-	text, ok := s.getDocText(params.TextDocument.URI)
+	state, ok := s.getDocState(params.TextDocument.URI)
 	if !ok {
 		return nil, nil
 	}
 
+	text := state.text
 	lex := lexer.New(params.TextDocument.URI.Path(), []byte(text))
 	jnrl := parser.New(lex).ParseJournal()
 	if len(jnrl.Errors) > 0 {
