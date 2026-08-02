@@ -80,8 +80,8 @@ end
 2020-02-14 * more
 
 2024-01-15 午餐
-; Привет мир
-2024-01-15 Такси
+; Привіт світ
+2024-01-15 Таксі
 
 ~ monthly
   a  $10
@@ -317,7 +317,7 @@ end
 78:13+4 property
 80:0+10 class
 80:11+2 property
-81:0+13 comment
+81:0+14 comment
 82:0+10 class
 82:11+5 property
 84:0+1 operator

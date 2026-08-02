@@ -1,7 +1,7 @@
 -- input --
 commodity UAH
   format 1 000.00 UAH
-  note Божествена Гривня  ; this gets ignored
+  note Божественна Гривня  ; this gets ignored
 
 -- expect --
 Journal
