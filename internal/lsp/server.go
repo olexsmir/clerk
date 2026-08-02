@@ -3,6 +3,7 @@ package lsp
 import (
 	"context"
 	"log/slog"
+	"maps"
 	"sync"
 
 	"go.lsp.dev/protocol"
@@ -11,7 +12,6 @@ import (
 	"olexsmir.xyz/clerk/internal/analyzer"
 	"olexsmir.xyz/clerk/internal/linter"
 	"olexsmir.xyz/clerk/journal"
-	"olexsmir.xyz/clerk/journal/ast"
 	"olexsmir.xyz/clerk/journal/printer"
 )
 
@@ -38,11 +38,37 @@ type server struct {
 	diagCancel context.CancelFunc
 }
 
+func (s *server) analysis() *analyzer.Analysis {
+	s.mu.Lock()
+	a := s.current
+	s.mu.Unlock()
+	if a != nil {
+		return a
+	}
+	return s.buildAnalysis()
+}
+
+func (s *server) buildAnalysis() *analyzer.Analysis {
+	s.mu.Lock()
+	docs := make(map[uri.URI]docState, len(s.openDocs))
+	maps.Copy(docs, s.openDocs)
+	s.mu.Unlock()
+
+	var a *analyzer.Analysis
+	for duri, state := range docs {
+		rj := s.loader.ResolveBytes(duri.Path(), []byte(state.text))
+		if a == nil {
+			a = analyzer.Build(rj)
+		}
+	}
+	return a
+}
+
 type docState struct {
 	text       string
 	version    int32
 	languageID protocol.LanguageKind
-	journal    *ast.Journal // cached parse; nil on parse failure
+	semTokens  []semanticToken // cached semantic tokens
 }
 
 func (s *server) Initialize(ctx context.Context, params *protocol.InitializeParams) (*protocol.InitializeResult, error) {
@@ -54,6 +80,9 @@ func (s *server) Initialize(ctx context.Context, params *protocol.InitializePara
 		},
 		Capabilities: protocol.ServerCapabilities{
 			DocumentFormattingProvider: &protocol.DocumentFormattingOptions{},
+			CompletionProvider: &protocol.CompletionOptions{
+				TriggerCharacters: []string{":", "@"},
+			},
 			TextDocumentSync: &protocol.TextDocumentSyncOptions{
 				OpenClose: new(true),
 				Change:    new(protocol.TextDocumentSyncKindFull),

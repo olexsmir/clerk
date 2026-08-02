@@ -161,8 +161,12 @@ func (l *Lexer) lexDefault() token.Token {
 }
 
 func (l *Lexer) lexComment() token.Token {
-	if l.ch == '\n' || l.ch == 0 {
+	if l.ch == '\n' || l.ch == '\r' || l.ch == 0 {
 		l.mode = ModeDefault
+		if l.ch == '\r' {
+			l.col = 0
+			l.advance()
+		}
 		return l.lexNewline()
 	}
 
@@ -170,13 +174,17 @@ func (l *Lexer) lexComment() token.Token {
 		l.lexWhitespace()
 	}
 
-	if l.ch == '\n' || l.ch == 0 {
+	if l.ch == '\n' || l.ch == '\r' || l.ch == 0 {
 		l.mode = ModeDefault
+		if l.ch == '\r' {
+			l.col = 0
+			l.advance()
+		}
 		return l.lexNewline()
 	}
 
 	s := l.save()
-	for l.ch != '\n' && l.ch != 0 {
+	for l.ch != '\n' && l.ch != '\r' && l.ch != 0 {
 		l.advance()
 	}
 	return token.Token{Type: token.TEXT, Literal: string(l.input[s.offset:l.pos]), Span: l.span(s)}
@@ -243,7 +251,7 @@ func (l *Lexer) lexNote() token.Token {
 		return l.Next()
 	}
 	s := l.save()
-	for l.ch != 0 && l.ch != '\n' && l.ch != ';' {
+	for l.ch != 0 && l.ch != '\n' && l.ch != '\r' && l.ch != ';' {
 		l.advance()
 	}
 	lit := string(l.input[s.offset:l.pos])
@@ -304,6 +312,12 @@ func (l *Lexer) lexPosting() token.Token {
 		l.postingExpectAccount = false
 		l.mode = ModeDefault
 		return l.lexNewline()
+	case l.ch == '\r':
+		l.postingExpectAccount = false
+		l.col = 0
+		l.advance()
+		l.mode = ModeDefault
+		return l.lexNewline()
 	case l.ch == ';':
 		l.postingExpectAccount = false
 		l.mode = ModeComment
@@ -360,6 +374,11 @@ func (l *Lexer) lexDirective() token.Token {
 	switch l.ch {
 	case '\n', 0:
 		l.mode = ModeDefault
+		return l.lexNewline()
+	case '\r':
+		l.mode = ModeDefault
+		l.col = 0
+		l.advance()
 		return l.lexNewline()
 	case ';':
 		l.mode = ModeComment
@@ -468,7 +487,7 @@ func (l *Lexer) lexAt() token.Token {
 func (l *Lexer) lexText() token.Token {
 	s := l.save()
 	l.advance()
-	for l.ch != '\n' && l.ch != ';' && l.ch != 0 && l.ch != ' ' && l.ch != '\t' {
+	for l.ch != '\n' && l.ch != '\r' && l.ch != ';' && l.ch != 0 && l.ch != ' ' && l.ch != '\t' {
 		l.advance()
 	}
 	lit := string(l.input[s.offset:l.pos])
@@ -479,7 +498,7 @@ func (l *Lexer) lexText() token.Token {
 // stops at any whitespace, supports multi-word names("Taxi Fare").
 func (l *Lexer) lexAccountNameDirective() token.Token {
 	s := l.save()
-	for l.ch != '\n' && l.ch != ';' && l.ch != 0 && l.ch != ')' && l.ch != ']' && l.ch != ':' && l.ch != ' ' && l.ch != '\t' {
+	for l.ch != '\n' && l.ch != '\r' && l.ch != ';' && l.ch != 0 && l.ch != ')' && l.ch != ']' && l.ch != ':' && l.ch != ' ' && l.ch != '\t' {
 		l.advance()
 	}
 	lit := string(l.input[s.offset:l.pos])
@@ -490,7 +509,7 @@ func (l *Lexer) lexAccountNameDirective() token.Token {
 // stops at two consecutive spaces.
 func (l *Lexer) lexAccountNamePosting() token.Token {
 	s := l.save()
-	for l.ch != '\n' && l.ch != ';' && l.ch != 0 && l.ch != ')' && l.ch != ']' && l.ch != ':' {
+	for l.ch != '\n' && l.ch != '\r' && l.ch != ';' && l.ch != 0 && l.ch != ')' && l.ch != ']' && l.ch != ':' {
 		if l.isTwoSpaces() {
 			break
 		}
@@ -506,7 +525,7 @@ func (l *Lexer) lexAccountNamePosting() token.Token {
 func (l *Lexer) lexParenExpr() token.Token {
 	s := l.save()
 	depth := 0
-	for l.ch != '\n' && l.ch != 0 {
+	for l.ch != '\n' && l.ch != '\r' && l.ch != 0 {
 		if l.ch == '(' {
 			depth++
 		} else if l.ch == ')' {

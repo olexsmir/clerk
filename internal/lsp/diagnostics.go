@@ -9,7 +9,6 @@ import (
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 
-	"olexsmir.xyz/clerk/internal/analyzer"
 	"olexsmir.xyz/clerk/internal/linter"
 	"olexsmir.xyz/clerk/journal/token"
 )
@@ -38,40 +37,19 @@ func (s *server) scheduleDiagnostics(ctx context.Context) {
 func (s *server) publishDiagnostics(ctx context.Context) {
 	s.log.Debug("publishing diagnostics")
 
-	s.mu.Lock()
-	openDocs := make(map[uri.URI]docState, len(s.openDocs))
-	for u, st := range s.openDocs {
-		openDocs[u] = st
-	}
-	s.mu.Unlock()
-
 	if ctx.Err() != nil {
 		return
 	}
 
-	if len(openDocs) == 0 {
-		return
-	}
-
-	activePaths := make(map[string]bool)
-
-	var a *analyzer.Analysis
-	for duri, state := range openDocs {
-		path := duri.Path()
-		rj := s.loader.ResolveBytes(path, []byte(state.text))
-		if a == nil {
-			a = analyzer.Build(rj)
-		} else {
-			// Merge: only one root in practice for now.
-		}
-		for _, pf := range rj.Occurrences {
-			activePaths[pf.Path] = true
-		}
-	}
-
+	a := s.buildAnalysis()
 	if a == nil {
 		s.log.Debug("no files in workspace")
 		return
+	}
+
+	activePaths := make(map[string]bool, len(a.Files))
+	for _, pf := range a.Files {
+		activePaths[pf.Path] = true
 	}
 
 	if ctx.Err() != nil {

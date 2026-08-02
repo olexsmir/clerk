@@ -36,13 +36,11 @@ func (s *server) DidSave(ctx context.Context, params *protocol.DidSaveTextDocume
 // Document management
 
 func (s *server) openDoc(u uri.URI, text string, version int32, langID protocol.LanguageKind) {
-	j := parseJournalStr(text)
 	s.mu.Lock()
 	s.openDocs[u] = docState{
 		text:       text,
 		version:    version,
 		languageID: langID,
-		journal:    j,
 	}
 	s.mu.Unlock()
 }
@@ -59,7 +57,7 @@ func (s *server) updateDoc(u uri.URI, version int32, changes []protocol.TextDocu
 		switch ev := ch.(type) {
 		case *protocol.TextDocumentContentChangeWholeDocument:
 			state.text = ev.Text
-			state.journal = parseJournalStr(ev.Text)
+			state.semTokens = nil
 		case *protocol.TextDocumentContentChangePartial:
 			_ = ev // TODO: incremental edit support
 		}

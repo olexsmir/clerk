@@ -21,7 +21,7 @@ func (o *OrderDate) CheckJournal(an *analyzer.Analysis) []Find {
 			if !ok {
 				continue
 			}
-			if anchor != nil && o.compareDate(txn.Date, *anchor) < 0 {
+			if anchor != nil && txn.Date.Compare(*anchor) < 0 {
 				finds = append(finds, Find{
 					Code:     o.ID(),
 					Severity: o.Severity(),
@@ -34,29 +34,6 @@ func (o *OrderDate) CheckJournal(an *analyzer.Analysis) []Find {
 		}
 	}
 	return finds
-}
-
-// compareDate returns -1 if a < b, 0 if equal, 1 if a > b.
-func (o OrderDate) compareDate(a, b ast.Date) int {
-	if a.Year != b.Year {
-		if a.Year < b.Year {
-			return -1
-		}
-		return 1
-	}
-	if a.Month != b.Month {
-		if a.Month < b.Month {
-			return -1
-		}
-		return 1
-	}
-	if a.Day != b.Day {
-		if a.Day < b.Day {
-			return -1
-		}
-		return 1
-	}
-	return 0
 }
 
 func (o OrderDate) dateString(d ast.Date) string {

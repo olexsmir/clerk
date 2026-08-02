@@ -1,6 +1,9 @@
 package lsputil
 
-import "testing"
+import (
+	"testing"
+	"unicode/utf8"
+)
 
 func TestUtf16Col_Basic(t *testing.T) {
 	col := Utf16Col("hello", 3)
@@ -80,5 +83,62 @@ func TestLineCol_CRLF(t *testing.T) {
 	line, col = LineCol("ab\r\ncd", 2)
 	if line != 0 || col != 2 {
 		t.Errorf("LineCol(2) = (%d,%d), want (0,2)", line, col)
+	}
+}
+
+func TestOffset_Basic(t *testing.T) {
+	if got := Offset("hello\nworld", 1, 5); got != 11 {
+		t.Errorf("Offset(1,5) = %d, want 11", got)
+	}
+}
+
+func TestOffset_RoundTrip(t *testing.T) {
+	content := "first\nПривет мир\r\nlast\n"
+	// only rune-boundary offsets round-trip (LineCol clamps mid-rune offsets)
+	var boundaries []int
+	for i := 0; i < len(content); {
+		_, size := utf8.DecodeRuneInString(content[i:])
+		if !(content[i] == '\n' && i > 0 && content[i-1] == '\r') {
+			boundaries = append(boundaries, i)
+		}
+		i += size
+	}
+	for _, off := range boundaries {
+		line, col := LineCol(content, off)
+		if got := Offset(content, line, col); got != off {
+			t.Errorf("round trip at %d: Offset(LineCol(%d)) = %d", off, off, got)
+		}
+	}
+}
+
+func TestOffset_Clamps(t *testing.T) {
+	content := "ab\ncd"
+	if got := Offset(content, 5, 0); got != len(content) {
+		t.Errorf("past EOF line: Offset = %d, want %d", got, len(content))
+	}
+	// column beyond line end clamps to line end
+	if got := Offset(content, 0, 99); got != 2 {
+		t.Errorf("past EOL col: Offset = %d, want 2", got)
+	}
+}
+
+func TestOffset_UTF16(t *testing.T) {
+	// Cyrillic chars are 1 UTF-16 unit each; emoji are 2
+	content := "Привет😀"
+	if got := Offset(content, 0, 6); got != 12 {
+		t.Errorf("Offset after Cyrillic = %d, want 12", got)
+	}
+	if got := Offset(content, 0, 7); got != 16 {
+		t.Errorf("Offset after emoji (2 UTF-16 units) = %d, want 16", got)
+	}
+}
+
+func TestPosition_RoundTrip(t *testing.T) {
+	content := "2024-01-15 Супермаркет\r\n    Витрати:Продукти  ¥50\n"
+	for _, off := range []int{0, 10, len("2024-01-15 Супермаркет"), len(content)} {
+		p := Position(content, off)
+		if got := Offset(content, int(p.Line), int(p.Character)); got != off {
+			t.Errorf("round trip of %d = %d (pos %d:%d), want identity", off, got, p.Line, p.Character)
+		}
 	}
 }

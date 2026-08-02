@@ -1,6 +1,10 @@
 package lsputil
 
-import "unicode/utf8"
+import (
+	"unicode/utf8"
+
+	"go.lsp.dev/protocol"
+)
 
 // Utf16Col returns the UTF-16 code unit column (0-based) for a byte offset
 // within the given line content (without newline).
@@ -44,6 +48,43 @@ func Utf16Len(content string, offset, end int) int {
 		i += size
 	}
 	return n
+}
+
+// Offset converts a 0-based line and UTF-16 code unit column to a byte offset
+// in content, clamped to the content bounds. The inverse of LineCol.
+func Offset(content string, line, col int) int {
+	if line < 0 {
+		line = 0
+	}
+	off := 0
+	for curLine := 0; curLine < line && off < len(content); {
+		switch content[off] {
+		case '\n':
+			off++
+			curLine++
+		case '\r':
+			off++
+			if off < len(content) && content[off] == '\n' {
+				off++
+			}
+			curLine++
+		default:
+			for off < len(content) && content[off] != '\n' && content[off] != '\r' {
+				off++
+			}
+		}
+	}
+	lineEnd := off
+	for lineEnd < len(content) && content[lineEnd] != '\n' && content[lineEnd] != '\r' {
+		lineEnd++
+	}
+	units := 0
+	for off < lineEnd && units < col {
+		r, size := utf8.DecodeRuneInString(content[off:])
+		off += size
+		units += utf16Len(r)
+	}
+	return off
 }
 
 // LineCol converts a byte offset in content to 0-based line number and
@@ -94,6 +135,13 @@ func LineCol(content string, offset int) (line int, col int) {
 	}
 	col = Utf16Col(content[lineStart:], len(content)-lineStart)
 	return lineNum, col
+}
+
+// Position converts a byte offset to an LSP position (0-based line, UTF-16
+// code unit column). The inverse of Offset at the protocol.Position level.
+func Position(content string, offset int) protocol.Position {
+	line, col := LineCol(content, offset)
+	return protocol.Position{Line: uint32(line), Character: uint32(col)}
 }
 
 // utf16Len returns the number of UTF-16 code units for a rune.

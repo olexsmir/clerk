@@ -32,6 +32,29 @@ type Date struct {
 	Span             token.Span
 }
 
+// Compare returns -1 if d is before other, 0 if equal, 1 if after.
+func (d Date) Compare(other Date) int {
+	if d.Year != other.Year {
+		if d.Year < other.Year {
+			return -1
+		}
+		return 1
+	}
+	if d.Month != other.Month {
+		if d.Month < other.Month {
+			return -1
+		}
+		return 1
+	}
+	if d.Day != other.Day {
+		if d.Day < other.Day {
+			return -1
+		}
+		return 1
+	}
+	return 0
+}
+
 type Time struct {
 	Hour, Minute, Second int
 	Span                 token.Span

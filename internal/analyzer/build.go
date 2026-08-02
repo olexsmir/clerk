@@ -217,7 +217,7 @@ func (a *Analysis) collectDates() {
 		}
 	}
 	sort.Slice(a.Dates, func(i, j int) bool {
-		return dateLess(a.Dates[i], a.Dates[j])
+		return a.Dates[i].Compare(a.Dates[j]) < 0
 	})
 	sort.Strings(a.DateStrings)
 }
@@ -241,16 +241,6 @@ func formatDate(d ast.Date) string {
 		return ""
 	}
 	return fmt.Sprintf("%04d-%02d-%02d", d.Year, d.Month, d.Day)
-}
-
-func dateLess(a, b ast.Date) bool {
-	if a.Year != b.Year {
-		return a.Year < b.Year
-	}
-	if a.Month != b.Month {
-		return a.Month < b.Month
-	}
-	return a.Day < b.Day
 }
 
 func (a *Analysis) addCommodityUsage(fileIndex int, am *ast.Amount, date *ast.Date) {

@@ -1,0 +1,14 @@
+-- in.journal --
+2024-01-15 Grocery
+    expenses:food  $50
+    expenses:taxi  $30
+    assets:cash
+
+2024-01-16 ^
+    expenses:f^ood  $5
+    assets:cash
+-- expect --
+5:11 payee ""
+  Grocery
+6:14 account "expenses:f"
+  expenses:food

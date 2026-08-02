@@ -540,7 +540,7 @@ func (p *Parser) parseTagDirective() *ast.TagDirective {
 	p.skipWhitespace()
 
 	name := ""
-	if p.got(token.TEXT) {
+	if p.got(token.TEXT) || p.got(token.COMMODITYMARK) {
 		name = p.cur.Literal
 		p.advance()
 	} else if p.got(token.STRING) {

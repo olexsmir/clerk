@@ -3,6 +3,7 @@ package lsp
 import (
 	"context"
 	"slices"
+	"unicode/utf8"
 
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
@@ -46,11 +47,18 @@ func (s *server) SemanticTokensRange(ctx context.Context, params *protocol.Seman
 }
 
 func (s *server) tokensForDoc(doc uri.URI) ([]semanticToken, bool) {
-	state, ok := s.getDocState(doc)
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	st, ok := s.openDocs[doc]
 	if !ok {
 		return nil, false
 	}
-	return tokenizeForSemantics(state.text, state.journal), true
+	if st.semTokens != nil {
+		return st.semTokens, true
+	}
+	st.semTokens = tokenizeForSemantics(st.text, parseJournalStr(st.text))
+	s.openDocs[doc] = st
+	return st.semTokens, true
 }
 
 // Implementation
@@ -109,38 +117,82 @@ type semanticToken struct {
 }
 
 func tokenizeForSemantics(content string, j *ast.Journal) []semanticToken {
-	if j == nil || len(j.Errors) > 0 {
-		return semLexerFallback(content)
-	}
-	return visitEntries(content, j)
-}
-
-// visitEntries walks the AST and emits semantic tokens.
-func visitEntries(content string, j *ast.Journal) []semanticToken {
-	var out []semanticToken
-	emit := func(s token.Span, tokType uint32, mods uint32) {
+	var raw []rawSpan
+	emit := func(s token.Span, tokType, mods uint32) {
 		if s.Start.Offset >= s.End.Offset {
 			return
 		}
-		out = append(out, semanticTokenAt(content, s, tokType, mods))
+		raw = append(raw, rawSpan{s, tokType, mods})
 	}
-	for _, e := range j.Entries {
-		visitEntry(content, e, emit)
+	if j == nil || len(j.Errors) > 0 {
+		semLexerFallback(content, emit)
+	} else {
+		for _, e := range j.Entries {
+			visitEntry(content, e, emit)
+		}
+	}
+	return rawToSemanticTokens(content, raw)
+}
+
+// rawSpan is a source span tagged with semantic token
+type rawSpan struct {
+	span      token.Span
+	tok, mods uint32
+}
+
+func rawToSemanticTokens(content string, raw []rawSpan) []semanticToken {
+	if len(raw) == 0 {
+		return nil
+	}
+	slices.SortFunc(raw, func(a, b rawSpan) int { return a.span.Start.Offset - b.span.Start.Offset })
+	out := make([]semanticToken, len(raw))
+	line, col, cursor := 0, 0, 0
+	advance := func(end int) {
+		for cursor < end {
+			r, size := utf8.DecodeRuneInString(content[cursor:])
+			if r == utf8.RuneError && size <= 1 {
+				break
+			}
+			if r == '\r' {
+				cursor += size
+				if cursor < len(content) && content[cursor] == '\n' {
+					cursor++
+				}
+				line++
+				col = 0
+				continue
+			}
+			if r == '\n' {
+				cursor += size
+				line++
+				col = 0
+				continue
+			}
+			cursor += size
+			col += utf16Units(r)
+		}
+	}
+	for i, t := range raw {
+		if cursor < t.span.Start.Offset {
+			advance(t.span.Start.Offset)
+		}
+		out[i] = semanticToken{
+			line:      uint32(line),
+			col:       uint32(col),
+			length:    uint32(lsputil.Utf16Len(content, t.span.Start.Offset, t.span.End.Offset)),
+			tokenType: t.tok,
+			modifiers: t.mods,
+		}
+		advance(t.span.End.Offset)
 	}
 	return out
 }
 
-// semanticTokenAt converts a source span into a semantic token.
-func semanticTokenAt(content string, s token.Span, tokType, mods uint32) semanticToken {
-	line, col := lsputil.LineCol(content, s.Start.Offset)
-	length := lsputil.Utf16Len(content, s.Start.Offset, s.End.Offset)
-	return semanticToken{
-		line:      uint32(line),
-		col:       uint32(col),
-		length:    uint32(length),
-		tokenType: tokType,
-		modifiers: mods,
+func utf16Units(r rune) int {
+	if r >= 0x10000 && r <= 0x10FFFF {
+		return 2
 	}
+	return 1
 }
 
 func visitEntry(content string, e ast.Entry, emit semEmitFn) {
@@ -474,13 +526,12 @@ func semEmitBalanceAssertion(content string, ba *ast.BalanceAssertion, emit semE
 }
 
 // semLexerFallback produces semantic tokens using only the lexer (for unparseable documents).
-func semLexerFallback(content string) []semanticToken {
+func semLexerFallback(content string, emit semEmitFn) {
 	l := lexer.New("", []byte(content))
-	var out []semanticToken
 
 	var commentStart, commentEnd int // 0 = not inside a comment line
 	take := func(span token.Span, tokType uint32, mods uint32) {
-		out = append(out, semanticTokenAt(content, span, tokType, mods))
+		emit(span, tokType, mods)
 	}
 	for {
 		tok := l.Next()
@@ -536,7 +587,6 @@ func semLexerFallback(content string) []semanticToken {
 		}
 		take(tok.Span, tokType, 0)
 	}
-	return out
 }
 
 func encodeSemTokens(tokens []semanticToken) []uint32 {
