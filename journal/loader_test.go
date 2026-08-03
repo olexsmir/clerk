@@ -189,7 +189,6 @@ func TestResolveIncludePath(t *testing.T) {
 	}
 }
 
-
 // helpers
 
 func resolveTxtar(t *testing.T, rootFile, archive string) *ResolvedJournal {
