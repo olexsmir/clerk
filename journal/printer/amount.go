@@ -11,8 +11,16 @@ func (p *printer) writeAmount(a *ast.Amount) {
 	}
 
 	if a.IsExpr {
-		p.buf.WriteString(a.Expr)
-		return
+		if a.Expr != "" {
+			// parenthesized expression, e.g. (amount * 0.5)
+			p.buf.WriteByte('(')
+			p.buf.WriteString(a.Expr)
+			p.buf.WriteByte(')')
+			return
+		} else {
+			// bare scaling expr, e.g. `*-1`, `*.33` — parser stored the value in Quantity
+			p.buf.WriteByte('*')
+		}
 	}
 
 	prec := max(a.QuantityFmt.Precision, 2)

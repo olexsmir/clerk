@@ -114,11 +114,7 @@ func (p *printer) writeCommentBlockDirective(cb *ast.CommentBlockDirective) {
 			p.buf.WriteByte('\n')
 		}
 	}
-	p.buf.WriteString("end")
-	if cb.Header != "" {
-		p.buf.WriteByte(' ')
-		p.buf.WriteString(cb.Header)
-	}
+	p.buf.WriteString("end\n")
 }
 
 func (p *printer) writeApplyDirective(a *ast.ApplyDirective) {

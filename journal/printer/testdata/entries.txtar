@@ -26,6 +26,10 @@
     Expenses:Food    $100.00
     Assets:Cash     $-100.00
 
+= expenses:gifts
+    budget:gifts  *-1
+    assets:budget  (amount * 0.5)
+
 2026/01/15 * (CODE) Test with code and note | Some note
     Expenses:Food    $100
     Assets:Cash     $-100
@@ -79,13 +83,17 @@
   Expenses:Food  30.00$
   Assets:Cash  -30.00$
 
-~ monthly *
+~ monthly
   Expenses:Food  100.00$
   Assets:Cash  -100.00$
 
 = account:Expenses
   Expenses:Food  100.00$
   Assets:Cash  -100.00$
+
+= expenses:gifts
+  budget:gifts  *-1.00
+  assets:budget  (amount * 0.5)
 
 2026-01-15 * (CODE) Test with code and note | Some note
   Expenses:Food  100.00$

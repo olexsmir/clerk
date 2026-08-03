@@ -90,9 +90,9 @@ func (s StatusType) String() string {
 }
 
 const (
-	StatusCleared StatusType = iota // * cleared
+	StatusNone    StatusType = iota // not set
+	StatusCleared                   // * cleared
 	StatusPending                   // ! pending
-	StatusNone                      // not set
 )
 
 type Status struct {
