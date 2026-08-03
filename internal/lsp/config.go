@@ -17,6 +17,10 @@ var DefaultConfig = Config{
 }
 
 func (c *Config) merge(v protocol.LSPAny) error {
+	if len(v) == 0 { // no settings provided
+		return nil
+	}
+
 	var patch struct {
 		SemanticHighlighting *bool `json:"semantic_highlighting,case:ignore"`
 	}
