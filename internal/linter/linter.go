@@ -26,13 +26,9 @@ func NewLinter(rules []Rule) *Linter {
 // Run runs all rules against the analysis context.
 func (l *Linter) Run(a *analyzer.Analysis) []Find {
 	var finds []Find
-
 	for _, rule := range l.rules {
-		if jc, ok := rule.(Rule); ok {
-			finds = append(finds, jc.CheckJournal(a)...)
-		}
+		finds = append(finds, rule.CheckJournal(a)...)
 	}
-
 	return finds
 }
 

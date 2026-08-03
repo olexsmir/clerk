@@ -23,7 +23,7 @@ const (
 func Fprint(w io.Writer, style PathStyle, finds []Find) {
 	sortFinds(finds)
 	for _, find := range finds {
-		fmt.Fprintf(w, "%s:%d:%d: %s: %s\n",
+		_, _ = fmt.Fprintf(w, "%s:%d:%d: %s: %s\n",
 			formatPath(style, find.Span.Start.File),
 			find.Span.Start.Line, find.Span.Start.Col,
 			find.Code, find.Message)

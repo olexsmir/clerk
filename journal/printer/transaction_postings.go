@@ -41,15 +41,15 @@ func (p *printer) writePostingsTabbed(postings []*ast.Posting, maxAcct int) {
 	for _, pt := range postings {
 		lp.buf.Reset()
 		lp.writePostingLine(pt, maxAcct)
-		fmt.Fprintln(tw, lp.buf.String())
+		_, _ = fmt.Fprintln(tw, lp.buf.String())
 		for _, c := range pt.Comments {
 			lp.buf.Reset()
 			lp.buf.WriteString(lp.indent)
 			lp.writeComment(&c)
-			fmt.Fprintln(tw, lp.buf.String())
+			_, _ = fmt.Fprintln(tw, lp.buf.String())
 		}
 	}
-	tw.Flush()
+	_ = tw.Flush()
 
 	out := strings.TrimRight(tmp.String(), "\n")
 	if out == "" {

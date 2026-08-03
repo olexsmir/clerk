@@ -24,7 +24,7 @@ func resolvePaths(paths []string) ([]string, error) {
 		}
 
 		if info.IsDir() {
-			filepath.Walk(p, func(fpath string, finfo os.FileInfo, err error) error {
+			_ = filepath.Walk(p, func(fpath string, finfo os.FileInfo, err error) error {
 				if err != nil || finfo.IsDir() || !journal.IsJournalFile(fpath) {
 					return nil
 				}
