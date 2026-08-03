@@ -63,10 +63,12 @@ func (p *printer) writeBalanceAssertion(ba *ast.BalanceAssertion) {
 		return
 	}
 	switch {
-	case ba.IsInclusive:
+	case ba.IsStrict && ba.IsInclusive:
 		p.buf.WriteString("=== ")
 	case ba.IsStrict:
 		p.buf.WriteString("== ")
+	case ba.IsInclusive:
+		p.buf.WriteString("=* ")
 	default:
 		p.buf.WriteString("= ")
 	}

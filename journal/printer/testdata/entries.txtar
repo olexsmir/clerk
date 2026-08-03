@@ -47,6 +47,8 @@
     Expenses:Food  $50.00 = $500.00
     Assets:Cash   $-50.00 == $500.00
     Assets:Total        === $0.00
+    Assets:Incl         =* $0.00
+    Assets:StrictIncl   ==* $0.00
 
 2026/03/01 Multi-posting
     Expenses:Food    $30.00
@@ -112,6 +114,8 @@
   Expenses:Food  50.00$ = 500.00$
   Assets:Cash  -50.00$ == 500.00$
   Assets:Total  === 0.00$
+  Assets:Incl  =* 0.00$
+  Assets:StrictIncl  === 0.00$
 
 2026-03-01 Multi-posting
   Expenses:Food  30.00$
