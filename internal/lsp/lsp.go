@@ -5,12 +5,14 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"path/filepath"
 
 	"go.lsp.dev/jsonrpc2"
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 
 	"olexsmir.xyz/clerk/internal/linter"
+	"olexsmir.xyz/clerk/internal/xdg"
 	"olexsmir.xyz/clerk/journal"
 	"olexsmir.xyz/clerk/journal/printer"
 )
@@ -18,6 +20,14 @@ import (
 type Server struct{ server *server }
 
 func NewServer(version string) Server {
+	var logger *slog.Logger
+	logFile, err := openLogFile()
+	if err == nil {
+		logger = slog.New(slog.NewTextHandler(logFile, nil))
+	} else {
+		logger = slog.New(slog.NewTextHandler(os.Stderr, nil))
+	}
+
 	return Server{
 		&server{
 			name:    "clerk",
@@ -30,9 +40,21 @@ func NewServer(version string) Server {
 			loader:  journal.NewLoader(),
 			printer: printer.DefaultConfig,
 
-			log: slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{})),
+			log: logger,
 		},
 	}
+}
+
+func openLogFile() (*os.File, error) {
+	dir, err := xdg.StateDir()
+	if err != nil {
+		return nil, err
+	}
+	dir = filepath.Join(dir, "clerk")
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		return nil, err
+	}
+	return os.OpenFile(filepath.Join(dir, "lsp.log"), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
 }
 
 func (s *Server) Run(ctx context.Context, stdin io.ReadCloser, stdout io.WriteCloser) error {
