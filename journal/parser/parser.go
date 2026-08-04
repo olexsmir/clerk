@@ -45,22 +45,13 @@ func (p *Parser) ParseJournal() *ast.Journal {
 	return f
 }
 
-func isDirectiveKeyword(t token.Type) bool {
-	switch t {
-	case token.COMMENTKW, token.ACCOUNT, token.COMMODITY, token.INCLUDE,
-		token.ALIAS, token.PAYEE, token.TAG, token.APPLY, token.END,
-		token.YEAR, token.DECIMALMARK, token.D, token.P, token.N, token.C:
-		return true
-	}
-	return false
-}
-
 func (p *Parser) parseEntry() ast.Entry {
 	if p.got(token.BANG) || p.got(token.AT) {
 		if isDirectiveKeyword(p.peek.Type) {
 			p.advance() // consume prefix
 		}
 	}
+
 	switch p.cur.Type {
 	case token.ILLEGAL:
 		p.errorf("illegal character %q", p.cur.Literal)
@@ -138,24 +129,8 @@ func (p *Parser) parseTransaction() *ast.Transaction {
 	// optional status
 	tx.Status = p.parseStatus()
 
-	// optional code
-	if p.got(token.LPAREN) {
-		cs := p.cur.Span
-		p.advance()
-		var code strings.Builder
-		for p.cur.Type != token.RPAREN {
-			_, _ = code.WriteString(p.cur.Literal)
-			p.advance()
-		}
-		rp := p.cur.Span
-		p.advance()
-		tx.Code = &ast.Code{
-			Value: code.String(),
-			Span:  token.Span{Start: cs.Start, End: rp.End},
-		}
-		p.skipWhitespace()
-	} else if p.got(token.TEXT) {
-		// the lexer emits "(CODE)" as a single TEXT token; split it here
+	// optional code - the lexer emits "(CODE)" as a single TEXT token; split it here
+	if p.got(token.TEXT) {
 		if lit := p.cur.Literal; len(lit) >= 2 && lit[0] == '(' && lit[len(lit)-1] == ')' {
 			tx.Code = &ast.Code{Value: lit[1 : len(lit)-1], Span: p.cur.Span}
 			p.advance()
@@ -168,9 +143,7 @@ func (p *Parser) parseTransaction() *ast.Transaction {
 		tx.Payee = p.parsePayee()
 
 		// check for | separator
-		if p.got(token.WHITESPACE) {
-			p.skipWhitespace()
-		}
+		p.skipWhitespace()
 
 		if p.got(token.PIPE) {
 			p.advance()
@@ -186,19 +159,7 @@ func (p *Parser) parseTransaction() *ast.Transaction {
 	tx.Comment = p.parseOptInlineComment()
 	p.expectNewline()
 
-	// header comments — indented ; lines before first posting
-	for p.got(token.INDENT) && p.willGet(token.SEMICOLON) {
-		p.advance() // consume indent
-		c := p.parseComment()
-		tx.HeaderComments = append(tx.HeaderComments, c)
-	}
-
-	// postings
-	for p.got(token.INDENT) {
-		if p := p.parsePosting(); p != nil {
-			tx.Postings = append(tx.Postings, p)
-		}
-	}
+	tx.HeaderComments, tx.Postings = p.parseHeaderCommentsAndPostings()
 
 	tx.Span = p.span(s)
 	return tx
@@ -222,11 +183,19 @@ func (p *Parser) parsePayee() *ast.Payee {
 
 	// keep spaces/tags between text tokens; stop before trailing whitespace
 	var name strings.Builder
-	for p.got(token.TEXT) || p.got(token.INT) || p.got(token.DECIMAL) || p.got(token.COMMODITYMARK) || (p.got(token.WHITESPACE) && (p.willGet(token.TEXT) || p.willGet(token.INT) || p.willGet(token.DECIMAL) || p.willGet(token.COMMODITYMARK))) {
+	for payeeWord(p.cur.Type) || (payeeWord(p.peek.Type) && p.got(token.WHITESPACE)) {
 		_, _ = name.WriteString(p.cur.Literal)
 		p.advance()
 	}
 	return &ast.Payee{Name: unquote(name.String()), Span: p.span(s)}
+}
+
+func payeeWord(t token.Type) bool {
+	switch t {
+	case token.TEXT, token.INT, token.DECIMAL, token.COMMODITYMARK:
+		return true
+	}
+	return false
 }
 
 func (p *Parser) parsePeriodicTransaction() *ast.PeriodicTransaction {
@@ -245,18 +214,7 @@ func (p *Parser) parsePeriodicTransaction() *ast.PeriodicTransaction {
 	comment := p.parseOptInlineComment()
 	p.expectNewline()
 
-	// header comment
-	for p.got(token.INDENT) && p.willGet(token.SEMICOLON) {
-		p.advance()
-		pt.HeaderComments = append(pt.HeaderComments, p.parseComment())
-	}
-
-	// postings
-	for p.got(token.INDENT) {
-		if posting := p.parsePosting(); posting != nil {
-			pt.Postings = append(pt.Postings, posting)
-		}
-	}
+	pt.HeaderComments, pt.Postings = p.parseHeaderCommentsAndPostings()
 
 	pt.Span = p.span(s)
 	pt.Comment = comment
@@ -277,21 +235,25 @@ func (p *Parser) parseAutomatedTransaction() *ast.AutomatedTransaction {
 	at.Comment = p.parseOptInlineComment()
 	p.expectNewline()
 
-	// header comments
-	for p.got(token.INDENT) && p.willGet(token.SEMICOLON) {
-		p.advance()
-		at.HeaderComments = append(at.HeaderComments, p.parseComment())
-	}
-
-	// postings
-	for p.got(token.INDENT) {
-		if p := p.parsePosting(); p != nil {
-			at.Postings = append(at.Postings, p)
-		}
-	}
+	at.HeaderComments, at.Postings = p.parseHeaderCommentsAndPostings()
 
 	at.Span = p.span(s)
 	return at
+}
+
+func (p *Parser) parseHeaderCommentsAndPostings() (comments []*ast.Comment, postings []*ast.Posting) {
+	for p.got(token.INDENT) && p.willGet(token.SEMICOLON) {
+		p.advance() // consume indent
+		comments = append(comments, p.parseComment())
+	}
+
+	for p.got(token.INDENT) {
+		if posting := p.parsePosting(); posting != nil {
+			postings = append(postings, posting)
+		}
+	}
+
+	return comments, postings
 }
 
 func (p *Parser) parsePeriod() ast.Period {
@@ -363,23 +325,10 @@ func periodDateSpan(period ast.Period, text, dateStr string, searchFrom int) tok
 
 func (p *Parser) parseComment() *ast.Comment {
 	s := p.cur.Span
-	marker := p.cur.Literal[0]
-	p.advance()
-	p.skipWhitespace()
-
-	var text string
-	if p.got(token.TEXT) {
-		text = p.cur.Literal
-		p.advance()
-	}
-
+	c := p.parseCommentRest(s)
 	p.expectNewline()
-
-	return &ast.Comment{
-		Marker: marker,
-		Text:   text,
-		Span:   p.span(s),
-	}
+	c.Span = p.span(s) // comment spans its line through the newline
+	return c
 }
 
 func (p *Parser) parseAccountDirective() *ast.AccountDirective {
@@ -418,10 +367,7 @@ func (p *Parser) parseCommodityDirective() *ast.CommodityDirective {
 	switch p.cur.Type {
 	case token.COMMODITYMARK, token.TEXT, token.STRING:
 		cs := p.cur.Span
-		commodity = p.cur.Literal
-		if p.got(token.STRING) {
-			commodity = unquote(commodity)
-		}
+		commodity = unquote(p.cur.Literal)
 		p.advance()
 		commoditySpan = token.Span{Start: cs.Start, End: p.cur.Span.Start}
 		hadSpace := p.got(token.WHITESPACE)
@@ -490,7 +436,6 @@ func (p *Parser) parseIncludeDirective() *ast.IncludeDirective {
 		p.errorf("expected file path, got %s", p.cur.Type)
 	}
 
-	p.skipWhitespace()
 	id.Comment = p.parseOptInlineComment()
 	p.expectNewline()
 	id.Span = p.span(s)
@@ -507,7 +452,6 @@ func (p *Parser) parseAliasDirective() *ast.AliasDirective {
 	p.expect(token.EQ)
 	p.skipWhitespace()
 	alias.To = p.parseAccount()
-	p.skipWhitespace()
 	alias.Comment = p.parseOptInlineComment()
 	p.expectNewline()
 	alias.Span = p.span(s)
@@ -540,10 +484,7 @@ func (p *Parser) parseTagDirective() *ast.TagDirective {
 	p.skipWhitespace()
 
 	name := ""
-	if p.got(token.TEXT) || p.got(token.COMMODITYMARK) {
-		name = p.cur.Literal
-		p.advance()
-	} else if p.got(token.STRING) {
+	if p.got(token.TEXT) || p.got(token.COMMODITYMARK) || p.got(token.STRING) {
 		name = unquote(p.cur.Literal)
 		p.advance()
 	}
@@ -572,7 +513,6 @@ func (p *Parser) parseYearDirective() *ast.YearDirective {
 		p.errorf("expected year, got %s", p.cur.Type)
 	}
 
-	p.skipWhitespace()
 	year.Comment = p.parseOptInlineComment()
 	p.expectNewline()
 	year.Span = p.span(s)
@@ -594,7 +534,6 @@ func (p *Parser) parseDecimalMarkDirective() *ast.DecimalMarkDirective {
 		p.advance()
 	}
 
-	p.skipWhitespace()
 	mark.Comment = p.parseOptInlineComment()
 	p.expectNewline()
 	mark.Span = p.span(s)
@@ -607,7 +546,6 @@ func (p *Parser) parseDefaultCommodityDirective() *ast.DefaultCommodityDirective
 	p.expect(token.D)
 	p.skipWhitespace()
 	com.Amount = *p.parseAmount()
-	p.skipWhitespace()
 	com.Comment = p.parseOptInlineComment()
 	p.expectNewline()
 	com.Span = p.span(s)
@@ -637,7 +575,6 @@ func (p *Parser) parseConversionDirective() *ast.ConversionDirective {
 		}
 	}
 
-	p.skipWhitespace()
 	cd.Comment = p.parseOptInlineComment()
 	p.expectNewline()
 	cd.Span = p.span(s)
@@ -654,7 +591,6 @@ func (p *Parser) parseIgnoredDirective() *ast.IgnoredDirective {
 		id.Text = p.cur.Literal
 		p.advance()
 	}
-	p.skipWhitespace()
 	id.Comment = p.parseOptInlineComment()
 
 	p.expectNewline()
@@ -682,7 +618,6 @@ func (p *Parser) parseMarketPriceDirective() *ast.MarketPriceDirective {
 
 	mp.Amount = *p.parseAmount()
 
-	p.skipWhitespace()
 	mp.Comment = p.parseOptInlineComment()
 
 	p.expectNewline()
@@ -809,15 +744,13 @@ func (p *Parser) parseStatus() ast.Status {
 	st := ast.Status{}
 	switch p.cur.Type {
 	case token.STAR:
-		p.advance()
-		p.skipWhitespace()
 		st.Value = ast.StatusCleared
 	case token.BANG:
+		st.Value = ast.StatusPending
+	}
+	if st.Value != ast.StatusNone {
 		p.advance()
 		p.skipWhitespace()
-		st.Value = ast.StatusPending
-	default:
-		st.Value = ast.StatusNone
 	}
 	st.Span = p.span(s)
 	return st
@@ -827,7 +760,7 @@ func (p *Parser) isAmountStart() bool {
 	switch p.cur.Type {
 	default:
 		return false
-	case token.COMMODITYMARK, token.STRING, token.INT, token.DECIMAL, token.MINUS, token.PLUS, token.PARENEXPR:
+	case token.COMMODITYMARK, token.STRING, token.INT, token.DECIMAL, token.MINUS, token.PLUS, token.PARENEXPR, token.STAR:
 		return true
 	}
 }
@@ -844,6 +777,9 @@ func (p *Parser) parseAmount() *ast.Amount {
 		amt.Span = p.span(s)
 	}()
 
+	p.parseAmountSign(amt)
+	p.skipWhitespace()
+
 	// commodity before quantity: $10.00, eur 10.00
 	if p.got(token.COMMODITYMARK) || p.got(token.TEXT) || p.got(token.STRING) {
 		cs := p.cur.Span
@@ -855,65 +791,48 @@ func (p *Parser) parseAmount() *ast.Amount {
 			amt.HasSpace = true
 			p.skipWhitespace()
 		}
+	}
+
+	// optional sign after commodity: $ -10
+	p.parseAmountSign(amt)
+	p.skipWhitespace()
+
+	p.parseQuantityInto(amt)
+
+	// commodity after quantity: 10.00 UAH, 10.00 "EUR" (only if not set)
+	if amt.Commodity == "" {
 		switch p.cur.Type {
-		case token.MINUS:
-			amt.IsNegative = true
-			p.advance()
-		case token.PLUS:
-			p.advance()
-		}
-		p.skipWhitespace()
-		p.parseQuantityInto(amt)
-	} else {
-		// optional sign
-		switch p.cur.Type {
-		case token.MINUS:
-			amt.IsNegative = true
-			p.advance()
-		case token.PLUS:
-			p.advance()
-		}
-		p.skipWhitespace()
-
-		// commodity before quantity: -$120, -eur 120:
-		if p.got(token.COMMODITYMARK) || p.got(token.TEXT) || p.got(token.STRING) {
-			cs := p.cur.Span
-			amt.Commodity = unquote(p.cur.Literal)
-			amt.CommodityPos = ast.CommodityBefore
-			p.advance()
-			amt.CommoditySpan = token.Span{Start: cs.Start, End: p.cur.Span.Start}
-			if p.got(token.WHITESPACE) {
-				amt.HasSpace = true
-				p.skipWhitespace()
-			}
-		}
-
-		p.parseQuantityInto(amt)
-
-		// commodity after quantity: 10.00 UAH, 10.00 "EUR" (only if not set)
-		if amt.Commodity == "" {
-			switch p.cur.Type {
-			case token.WHITESPACE:
-				p.skipWhitespace()
-				if p.got(token.COMMODITYMARK) || p.got(token.TEXT) || p.got(token.STRING) {
-					cs := p.cur.Span
-					amt.HasSpace = true
-					amt.Commodity = unquote(p.cur.Literal)
-					amt.CommodityPos = ast.CommodityAfter
-					p.advance()
-					amt.CommoditySpan = token.Span{Start: cs.Start, End: p.cur.Span.Start}
-				}
-			case token.COMMODITYMARK, token.TEXT, token.STRING:
+		case token.WHITESPACE:
+			p.skipWhitespace()
+			if p.got(token.COMMODITYMARK) || p.got(token.TEXT) || p.got(token.STRING) {
 				cs := p.cur.Span
+				amt.HasSpace = true
 				amt.Commodity = unquote(p.cur.Literal)
 				amt.CommodityPos = ast.CommodityAfter
 				p.advance()
 				amt.CommoditySpan = token.Span{Start: cs.Start, End: p.cur.Span.Start}
 			}
+		case token.COMMODITYMARK, token.TEXT, token.STRING:
+			cs := p.cur.Span
+			amt.Commodity = unquote(p.cur.Literal)
+			amt.CommodityPos = ast.CommodityAfter
+			p.advance()
+			amt.CommoditySpan = token.Span{Start: cs.Start, End: p.cur.Span.Start}
 		}
 	}
 
 	return amt
+}
+
+// parseAmountSign consumes an optional leading +/- into IsNegative.
+func (p *Parser) parseAmountSign(amt *ast.Amount) {
+	switch p.cur.Type {
+	case token.MINUS:
+		amt.IsNegative = true
+		p.advance()
+	case token.PLUS:
+		p.advance()
+	}
 }
 
 func (p *Parser) parseAmountWithOptExpr() *ast.Amount {
@@ -933,16 +852,7 @@ func (p *Parser) parseAmountWithOptExpr() *ast.Amount {
 			QuantityFmt: ast.QuantityFormat{Decimal: '.'},
 		}
 		if len(lit) >= 2 && lit[0] == '(' && lit[len(lit)-1] == ')' {
-			inner := lit[1 : len(lit)-1]
-			i := 0
-			for i < len(inner) && (inner[i] == ' ' || inner[i] == '\t') {
-				i++
-			}
-			j := len(inner)
-			for j > i && (inner[j-1] == ' ' || inner[j-1] == '\t') {
-				j--
-			}
-			amt.Expr = inner[i:j]
+			amt.Expr = strings.Trim(lit[1:len(lit)-1], " \t")
 		}
 		amt.Span = p.cur.Span
 		p.advance()
@@ -1000,23 +910,19 @@ func (p *Parser) parsePosting() *ast.Posting {
 	// optional amount - after two spaces
 	if p.got(token.WHITESPACE) {
 		p.skipWhitespace()
-		if p.isAmountStart() || p.got(token.STAR) {
+		if p.isAmountStart() {
 			posting.Amount = p.parseAmountWithOptExpr()
 		}
 	}
 
 	// optional cost '@' or '@@'
-	if p.got(token.WHITESPACE) {
-		p.skipWhitespace()
-	}
+	p.skipWhitespace()
 	if p.got(token.AT) || p.got(token.ATAT) {
 		posting.Cost = p.parseCost()
 	}
 
 	// optional balance assertion or assignment
-	if p.got(token.WHITESPACE) {
-		p.skipWhitespace()
-	}
+	p.skipWhitespace()
 	if p.got(token.COLON) && p.willGet(token.EQ) {
 		p.advance() // consume ':' of ':='
 		posting.Balance = p.parseBalanceAssertion()
@@ -1139,79 +1045,31 @@ func (p *Parser) parseDate() ast.Date {
 		return ast.Date{Span: p.span(s)}
 	}
 
-	sep := byte(0)
-	lit := tok.Literal
-	for i := 0; i < len(lit); i++ {
-		if lit[i] == '/' || lit[i] == '-' || lit[i] == '.' {
-			sep = lit[i]
-			break
-		}
-	}
-	if sep == 0 {
-		p.errorf("invalid date format: %q", lit)
+	year, month, day, sep, err := parseDateLiteral(tok.Literal)
+	if err != nil {
+		p.errorf("%v", err)
 		return ast.Date{Span: p.span(s)}
 	}
-
-	parts := strings.Split(lit, string(sep))
-
-	// M/D or MM/DD (year inferred)
-	if len(parts) == 2 {
-		month, err := strconv.Atoi(parts[0])
-		day, err2 := strconv.Atoi(parts[1])
-		if err != nil || err2 != nil {
-			p.errorf("invalid date literal: %q", lit)
-			return ast.Date{Span: p.span(s)}
-		}
-		if month < 1 || month > 12 {
-			p.errorf("invalid month %d in %q", month, lit)
-			return ast.Date{Span: p.span(s)}
-		}
-		if day < 1 || day > 31 {
-			p.errorf("invalid day %d in %q", day, lit)
-			return ast.Date{Span: p.span(s)}
-		}
-		return ast.Date{Year: p.defaultYear, Month: month, Day: day, Sep: sep, Span: p.span(s)}
+	if year == 0 {
+		year = p.defaultYear
 	}
 
-	if len(parts) != 3 {
-		p.errorf("invalid date format: %q", lit)
-		return ast.Date{Span: p.span(s)}
-	}
-
-	year, err := strconv.Atoi(parts[0])
-	month, err2 := strconv.Atoi(parts[1])
-	day, err3 := strconv.Atoi(parts[2])
-	if err != nil || err2 != nil || err3 != nil {
-		p.errorf("invalid date literal: %q", lit)
-		return ast.Date{Span: p.span(s)}
-	}
-	if month < 1 || month > 12 {
-		p.errorf("invalid month %d in %q", month, lit)
-		return ast.Date{Span: p.span(s)}
-	}
-	if day < 1 || day > 31 {
-		p.errorf("invalid day %d in %q", day, lit)
-		return ast.Date{Span: p.span(s)}
-	}
-
-	return ast.Date{
-		Year:  year,
-		Month: month,
-		Day:   day,
-		Sep:   sep,
-		Span:  p.span(s),
-	}
+	return ast.Date{Year: year, Month: month, Day: day, Sep: sep, Span: p.span(s)}
 }
 
 func (p *Parser) parseOptInlineComment() *ast.Comment {
 	p.skipWhitespace()
-	if p.cur.Type != token.SEMICOLON {
+	if !p.got(token.SEMICOLON) {
 		return nil
 	}
+	return p.parseCommentRest(p.cur.Span)
+}
 
-	s := p.cur.Span
+// parseCommentRest consumes a comment marker at p.cur, then optional text;
+// s anchors the span at the marker's start.
+func (p *Parser) parseCommentRest(s token.Span) *ast.Comment {
 	marker := p.cur.Literal[0]
-	p.advance() // consume marker
+	p.advance()
 	p.skipWhitespace()
 
 	text := ""
@@ -1330,6 +1188,16 @@ func (p *Parser) errorf(format string, args ...any) {
 	})
 }
 
+func isDirectiveKeyword(t token.Type) bool {
+	switch t {
+	case token.COMMENTKW, token.ACCOUNT, token.COMMODITY, token.INCLUDE,
+		token.ALIAS, token.PAYEE, token.TAG, token.APPLY, token.END,
+		token.YEAR, token.DECIMALMARK, token.D, token.P, token.N, token.C:
+		return true
+	}
+	return false
+}
+
 func (p *Parser) sync() {
 	for {
 		switch p.cur.Type {
@@ -1337,12 +1205,8 @@ func (p *Parser) sync() {
 			return
 		case token.NEWLINE:
 			p.advance()
-			switch p.cur.Type {
-			case token.DATE, token.ACCOUNT, token.COMMODITY,
-				token.INCLUDE, token.ALIAS, token.PAYEE,
-				token.TAG, token.YEAR, token.D, token.P,
-				token.APPLY, token.END, token.COMMENTKW,
-				token.DECIMALMARK, token.TILDE, token.N, token.EQ:
+			t := p.cur.Type
+			if isDirectiveKeyword(t) || t == token.DATE || t == token.TILDE || t == token.EQ {
 				return
 			}
 		default:
@@ -1417,22 +1281,55 @@ func detectFormat(lit string) ast.QuantityFormat {
 	return ast.QuantityFormat{Decimal: dec, Thousands: thou, Precision: prec}
 }
 
+// parseSimpleDate  parses full YYYY/MM/DD date literal embedded in free text.
 func parseSimpleDate(s string) ast.Date {
-	if len(s) < 8 {
+	year, month, day, sep, err := parseDateLiteral(s)
+	if err != nil {
 		return ast.Date{}
 	}
-	sep := byte('-')
-	if strings.Contains(s, "/") {
-		sep = byte('/')
-	} else if strings.Contains(s, ".") {
-		sep = byte('.')
-	}
-	parts := strings.Split(s, string(sep))
-	if len(parts) != 3 {
-		return ast.Date{}
-	}
-	year, _ := strconv.Atoi(parts[0])
-	month, _ := strconv.Atoi(parts[1])
-	day, _ := strconv.Atoi(parts[2])
 	return ast.Date{Year: year, Month: month, Day: day, Sep: sep}
+}
+
+// parseDateLiteral parses and validates a date literal.
+func parseDateLiteral(lit string) (year, month, day int, sep byte, err error) {
+	sep = dateSeparator(lit)
+	if sep == 0 {
+		return 0, 0, 0, 0, fmt.Errorf("invalid date format: %q", lit)
+	}
+
+	parts := strings.Split(lit, string(sep))
+	if len(parts) != 2 && len(parts) != 3 {
+		return 0, 0, 0, 0, fmt.Errorf("invalid date format: %q", lit)
+	}
+
+	nums := make([]int, len(parts))
+	for i, part := range parts {
+		if nums[i], err = strconv.Atoi(part); err != nil {
+			return 0, 0, 0, 0, fmt.Errorf("invalid date literal: %q", lit)
+		}
+	}
+
+	month = nums[len(parts)-2]
+	if month < 1 || month > 12 {
+		return 0, 0, 0, 0, fmt.Errorf("invalid month %d in %q", month, lit)
+	}
+
+	day = nums[len(parts)-1]
+	if day < 1 || day > 31 {
+		return 0, 0, 0, 0, fmt.Errorf("invalid day %d in %q", day, lit)
+	}
+
+	if len(parts) == 2 {
+		return 0, month, day, sep, nil
+	}
+	return nums[0], month, day, sep, nil
+}
+
+func dateSeparator(lit string) byte {
+	for i := 0; i < len(lit); i++ {
+		if lit[i] == '/' || lit[i] == '-' || lit[i] == '.' {
+			return lit[i]
+		}
+	}
+	return 0
 }
