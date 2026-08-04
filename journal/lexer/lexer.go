@@ -247,7 +247,7 @@ func (l *Lexer) lexNote() token.Token {
 	for l.ch == ' ' || l.ch == '\t' {
 		l.advance()
 	}
-	if l.ch == 0 || l.ch == '\n' || l.ch == ';' {
+	if l.ch == 0 || l.ch == '\n' || l.ch == '\r' || l.ch == ';' {
 		return l.Next()
 	}
 	s := l.save()
