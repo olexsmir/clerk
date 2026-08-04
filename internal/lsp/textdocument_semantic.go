@@ -64,7 +64,7 @@ func (s *server) tokensForDoc(doc uri.URI) ([]semanticToken, bool) {
 // Implementation
 
 const (
-	semDirective = iota
+	semDirective uint32 = iota
 	semDate
 	semAccount
 	semCommodity
@@ -121,12 +121,12 @@ func tokenizeForSemantics(content string, j *ast.Journal) []semanticToken {
 		}
 		raw = append(raw, rawSpan{s, tokType, mods})
 	}
-	if j == nil || len(j.Errors) > 0 {
-		semLexerFallback(content, emit)
-	} else {
-		for _, e := range j.Entries {
-			visitEntry(content, e, emit)
-		}
+	for _, e := range j.Entries {
+		visitEntry(content, e, emit)
+	}
+	if len(j.Errors) > 0 {
+		// parser recovers per line; lexer fills the unparsed regions, keeping ast tokens where the parser succeeded
+		semLexerFallback(content, raw, emit)
 	}
 	return rawToSemanticTokens(content, raw)
 }
@@ -522,14 +522,24 @@ func semEmitBalanceAssertion(content string, ba *ast.BalanceAssertion, emit semE
 	}
 }
 
-// semLexerFallback produces semantic tokens using only the lexer (for unparseable documents).
-func semLexerFallback(content string, emit semEmitFn) {
+func semLexerFallback(content string, base []rawSpan, emit semEmitFn) {
 	l := lexer.New("", []byte(content))
 
 	var commentStart, commentEnd int // 0 = not inside a comment line
+	lineStart := true                // the next significant token starts a line
+	skipLine := false                // the line starts with an unclassifiable token; emit nothing
+	i := 0                           // next base span to compare against
+
 	take := func(span token.Span, tokType uint32, mods uint32) {
+		for i < len(base) && base[i].span.End.Offset <= span.Start.Offset {
+			i++
+		}
+		if i < len(base) && base[i].span.Start.Offset < span.End.Offset {
+			return // overlaps an AST token; AST wins
+		}
 		emit(span, tokType, mods)
 	}
+
 	for {
 		tok := l.Next()
 		if tok.Type == token.EOF {
@@ -543,12 +553,22 @@ func semLexerFallback(content string, emit semEmitFn) {
 				take(token.Span{Start: offsetPos("", commentStart), End: offsetPos("", commentEnd)}, semComment, 0)
 				commentStart, commentEnd = 0, 0
 			}
+			lineStart, skipLine = true, false
 			continue
 		}
 		if tok.Type == token.WHITESPACE || tok.Type == token.INDENT {
 			continue
 		}
-		tokType := uint32(semString)
+		if lineStart {
+			lineStart = false
+			if !isLineStartToken(tok.Type) {
+				skipLine = true
+			}
+		}
+		if skipLine {
+			continue
+		}
+		tokType := semProperty
 		if commentStart > 0 {
 			tokType = semComment
 			if tok.Span.End.Offset > commentEnd {
@@ -556,21 +576,15 @@ func semLexerFallback(content string, emit semEmitFn) {
 			}
 			continue
 		}
+
 		switch tok.Type {
-		case token.SEMICOLON, token.HASH, token.PERCENT:
+		case token.SEMICOLON, token.HASH, token.PERCENT, token.STAR:
 			tokType = semComment
 			commentStart = tok.Span.Start.Offset
 			commentEnd = tok.Span.End.Offset
 			continue
-		case token.STAR:
-			tokType = semComment // * at col 0 is comment marker
-			commentStart = tok.Span.Start.Offset
-			commentEnd = tok.Span.End.Offset
-			continue
-		case token.ACCOUNT, token.COMMODITY, token.INCLUDE, token.ALIAS,
-			token.PAYEE, token.TAG, token.APPLY, token.END, token.COMMENTKW,
-			token.YEAR, token.DECIMALMARK, token.D, token.P, token.N, token.C:
-			tokType = semDirective
+		case token.STRING:
+			tokType = semString
 		case token.DATE:
 			tokType = semDate
 		case token.INT, token.DECIMAL:
@@ -581,9 +595,25 @@ func semLexerFallback(content string, emit semEmitFn) {
 			tokType = semStatus
 		case token.AT, token.ATAT, token.EQ, token.EQEQ, token.EQEQEQ, token.EQSTAR:
 			tokType = semOperator
+		case token.COMMENTKW, token.ACCOUNT, token.COMMODITY, token.INCLUDE,
+			token.ALIAS, token.PAYEE, token.TAG, token.APPLY, token.END,
+			token.YEAR, token.DECIMALMARK, token.D, token.P, token.N, token.C:
+			tokType = semDirective
 		}
 		take(tok.Span, tokType, 0)
 	}
+}
+
+func isLineStartToken(t token.Type) bool {
+	switch t {
+	case token.DATE, token.TILDE, token.EQ, token.BANG, token.AT,
+		token.SEMICOLON, token.HASH, token.PERCENT, token.STAR,
+		token.COMMENTKW, token.ACCOUNT, token.COMMODITY, token.INCLUDE,
+		token.ALIAS, token.PAYEE, token.TAG, token.APPLY, token.END,
+		token.YEAR, token.DECIMALMARK, token.D, token.P, token.N, token.C:
+		return true
+	}
+	return false
 }
 
 func encodeSemTokens(tokens []semanticToken) []uint32 {

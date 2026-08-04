@@ -166,6 +166,7 @@ func TestSemanticTokensTxtar(t *testing.T) {
 		"semantic-journal",
 		"semantic-directives",
 		"semantic-unparseable",
+		"semantic-with-errors",
 	}
 
 	for _, tt := range tests {
