@@ -35,7 +35,7 @@ func TestLexer(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt, func(t *testing.T) {
 			a := golden.Read(t, tt)
-			golden.Assert(t, a, New("j", a.Get("input")).Dump())
+			golden.Assert(t, a, New("j", a.Get("input")).dump())
 		})
 	}
 }

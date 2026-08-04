@@ -8,41 +8,41 @@ import (
 	"olexsmir.xyz/clerk/journal/token"
 )
 
-type Mode uint
+type mode uint
 
 const (
 	// start of a line, nothing consumed
-	ModeDefault Mode = iota
+	modeDefault mode = iota
 
 	// after ; # * % ; at start of line, or anywhere inline
 	// everything until \n is comment text
-	ModeComment
+	modeComment
 
 	// after lexing a date at column 0
 	// expects: optional status, optional code, description, comment
-	ModeTransaction
+	modeTransaction
 
 	// after lexing an indent at start of line
 	// expects: account name, then two spaces, then amount
-	ModePosting
+	modePosting
 
 	// after ~, period expression
 	// expects: period, optional description (after 2+ spaces), optional comment
-	ModePeriodic
+	modePeriodic
 
 	// after =, automates transaction
 	// expects: expression
-	ModeAutomated
+	modeAutomated
 
 	// after a directive keyword like account, commodity, include
 	// expects: rest of directive content
-	ModeDirective
+	modeDirective
 )
 
 type Lexer struct {
 	file  string
 	input []byte
-	mode  Mode
+	mode  mode
 
 	ch     rune // current rune (0 = EOF/sentinel)
 	chSize int  // byte size of current rune
@@ -78,19 +78,19 @@ func New(file string, input []byte) *Lexer {
 // Next returns next token in the input
 func (l *Lexer) Next() token.Token {
 	switch l.mode {
-	case ModeDefault:
+	case modeDefault:
 		return l.lexDefault()
-	case ModeComment:
+	case modeComment:
 		return l.lexComment()
-	case ModeTransaction:
+	case modeTransaction:
 		return l.lexTransaction()
-	case ModePosting:
+	case modePosting:
 		return l.lexPosting()
-	case ModePeriodic:
+	case modePeriodic:
 		return l.lexPeriodic()
-	case ModeAutomated:
+	case modeAutomated:
 		return l.lexAutomated()
-	case ModeDirective:
+	case modeDirective:
 		return l.lexDirective()
 	}
 	panic("unreachable")
@@ -115,24 +115,24 @@ func (l *Lexer) lexDefault() token.Token {
 	case l.ch == ' ' || l.ch == '\t':
 		tok := l.lexIndent()
 		if l.subdirective {
-			l.mode = ModeDirective
+			l.mode = modeDirective
 			l.subdirective = false
 		} else {
-			l.mode = ModePosting
+			l.mode = modePosting
 		}
 		l.postingExpectAccount = true
 		return tok
 	case l.ch == ';' || l.ch == '#' || l.ch == '%':
-		l.mode = ModeComment
+		l.mode = modeComment
 		return l.lexSingle(token.SEMICOLON) // todo: ??
 	case l.ch == '*': // * at col 0 == comment
-		l.mode = ModeComment
+		l.mode = modeComment
 		return l.lexSingle(token.STAR)
 	case l.ch == '~':
-		l.mode = ModePeriodic
+		l.mode = modePeriodic
 		return l.lexSingle(token.TILDE)
 	case l.ch == '=':
-		l.mode = ModeAutomated
+		l.mode = modeAutomated
 		return l.lexSingle(token.EQ)
 	case l.ch == '+':
 		return l.lexSingle(token.PLUS)
@@ -155,7 +155,7 @@ func (l *Lexer) lexDefault() token.Token {
 			return token.Token{Type: token.ILLEGAL, Literal: string(l.input[s.offset:l.pos]), Span: l.span(s)}
 		}
 		tok := l.lexDate()
-		l.mode = ModeTransaction
+		l.mode = modeTransaction
 		l.transactionPastStatus = false
 		return tok
 	default:
@@ -167,7 +167,7 @@ func (l *Lexer) lexDefault() token.Token {
 
 func (l *Lexer) lexComment() token.Token {
 	if l.ch == '\n' || l.ch == '\r' || l.ch == 0 {
-		l.mode = ModeDefault
+		l.mode = modeDefault
 		if l.ch == '\r' {
 			l.col = 0
 			l.advance()
@@ -180,7 +180,7 @@ func (l *Lexer) lexComment() token.Token {
 	}
 
 	if l.ch == '\n' || l.ch == '\r' || l.ch == 0 {
-		l.mode = ModeDefault
+		l.mode = modeDefault
 		if l.ch == '\r' {
 			l.col = 0
 			l.advance()
@@ -205,7 +205,7 @@ func (l *Lexer) lexTransaction() token.Token {
 	case 0:
 		return l.token(token.EOF, "")
 	case '\n':
-		l.mode = ModeDefault
+		l.mode = modeDefault
 		return l.lexNewline()
 	case '\r':
 		l.col = 0
@@ -214,7 +214,7 @@ func (l *Lexer) lexTransaction() token.Token {
 	case ' ', '\t':
 		return l.lexWhitespace()
 	case ';':
-		l.mode = ModeComment
+		l.mode = modeComment
 		return l.lexSingle(token.SEMICOLON)
 	case '*':
 		if !l.transactionPastStatus {
@@ -271,14 +271,14 @@ func (l *Lexer) lexPeriodic() token.Token {
 	case 0:
 		return l.token(token.EOF, "")
 	case '\n':
-		l.mode = ModeDefault
+		l.mode = modeDefault
 		return l.lexNewline()
 	case '\r':
 		l.col = 0
 		l.advance()
 		return l.lexNewline()
 	case ';':
-		l.mode = ModeComment
+		l.mode = modeComment
 		return l.lexSingle(token.SEMICOLON)
 	case ' ', '\t':
 		return l.lexWhitespace()
@@ -292,7 +292,7 @@ func (l *Lexer) lexAutomated() token.Token {
 	case 0:
 		return l.token(token.EOF, "")
 	case '\n':
-		l.mode = ModeDefault
+		l.mode = modeDefault
 		return l.lexNewline()
 	case '\r':
 		l.col = 0
@@ -301,7 +301,7 @@ func (l *Lexer) lexAutomated() token.Token {
 	case ' ', '\t':
 		return l.lexWhitespace()
 	case ';':
-		l.mode = ModeComment
+		l.mode = modeComment
 		return l.lexSingle(token.SEMICOLON)
 	default:
 		return l.lexText()
@@ -315,17 +315,17 @@ func (l *Lexer) lexPosting() token.Token {
 		return l.token(token.EOF, "")
 	case l.ch == '\n':
 		l.postingExpectAccount = false
-		l.mode = ModeDefault
+		l.mode = modeDefault
 		return l.lexNewline()
 	case l.ch == '\r':
 		l.postingExpectAccount = false
 		l.col = 0
 		l.advance()
-		l.mode = ModeDefault
+		l.mode = modeDefault
 		return l.lexNewline()
 	case l.ch == ';':
 		l.postingExpectAccount = false
-		l.mode = ModeComment
+		l.mode = modeComment
 		return l.lexSingle(token.SEMICOLON)
 	case l.ch == ' ' || l.ch == '\t':
 		return l.lexWhitespace()
@@ -378,15 +378,15 @@ func (l *Lexer) lexPosting() token.Token {
 func (l *Lexer) lexDirective() token.Token {
 	switch {
 	case l.ch == '\n', l.ch == 0:
-		l.mode = ModeDefault
+		l.mode = modeDefault
 		return l.lexNewline()
 	case l.ch == '\r':
-		l.mode = ModeDefault
+		l.mode = modeDefault
 		l.col = 0
 		l.advance()
 		return l.lexNewline()
 	case l.ch == ';':
-		l.mode = ModeComment
+		l.mode = modeComment
 		return l.lexSingle(token.SEMICOLON)
 	case l.ch == ' ', l.ch == '\t':
 		return l.lexWhitespace()
@@ -444,7 +444,7 @@ func (l *Lexer) lexSingle(kind token.Type) token.Token {
 func (l *Lexer) lexNewline() token.Token {
 	s := l.save()
 	l.advance()
-	l.mode = ModeDefault
+	l.mode = modeDefault
 	return token.Token{Type: token.NEWLINE, Literal: "\n", Span: l.span(s)}
 }
 
@@ -601,7 +601,7 @@ func (l *Lexer) lexKeyword() token.Token {
 	if kind == token.ILLEGAL { // todo: report an error ??
 		kind = token.TEXT
 	} else {
-		l.mode = ModeDirective
+		l.mode = modeDirective
 		l.subdirective = kind == token.ACCOUNT || kind == token.COMMODITY
 		l.includePath = kind == token.INCLUDE
 	}

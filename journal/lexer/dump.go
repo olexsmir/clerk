@@ -7,7 +7,7 @@ import (
 	"olexsmir.xyz/clerk/journal/token"
 )
 
-func (l *Lexer) Dump() string {
+func (l *Lexer) dump() string {
 	var b strings.Builder
 	for {
 		t := l.Next()
