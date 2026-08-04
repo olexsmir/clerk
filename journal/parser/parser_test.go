@@ -26,6 +26,7 @@ func TestParser_ParseFile(t *testing.T) {
 		"N directive",
 		"inclue directive",
 		"inclue directive with comment",
+		"inclue directive digit path",
 		"apply tag directive",
 		"apply fixed directive",
 		"end apply directive",

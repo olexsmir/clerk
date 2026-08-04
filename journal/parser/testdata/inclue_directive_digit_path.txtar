@@ -1,0 +1,6 @@
+-- input --
+include 2024.journal
+-- expect --
+Journal
+  IncludeDirective j:1:1-2:1
+    Path: "2024.journal"

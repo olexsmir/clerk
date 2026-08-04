@@ -55,6 +55,8 @@ type Lexer struct {
 	postingExpectAccount  bool
 	readingNoteAfterPipe  bool
 
+	includePath bool // true after [token.INCLUDE] is omitted
+
 	// subdirective is set when the current line is an account/commodity
 	// directive; the next indented line then lexes as directive content
 	subdirective bool
@@ -95,6 +97,9 @@ func (l *Lexer) Next() token.Token {
 }
 
 func (l *Lexer) lexDefault() token.Token {
+	if l.includePath {
+		l.includePath = false
+	}
 	if l.subdirective && l.ch != ' ' && l.ch != '\t' {
 		l.subdirective = false
 	}
@@ -371,48 +376,58 @@ func (l *Lexer) lexPosting() token.Token {
 }
 
 func (l *Lexer) lexDirective() token.Token {
-	switch l.ch {
-	case '\n', 0:
+	switch {
+	case l.ch == '\n', l.ch == 0:
 		l.mode = ModeDefault
 		return l.lexNewline()
-	case '\r':
+	case l.ch == '\r':
 		l.mode = ModeDefault
 		l.col = 0
 		l.advance()
 		return l.lexNewline()
-	case ';':
+	case l.ch == ';':
 		l.mode = ModeComment
 		return l.lexSingle(token.SEMICOLON)
-	case ' ', '\t':
+	case l.ch == ' ', l.ch == '\t':
 		return l.lexWhitespace()
-	case '=':
+	case l.ch == '=':
 		return l.lexSingle(token.EQ)
-	case '+':
+	case l.ch == '+':
 		return l.lexSingle(token.PLUS)
-	case '-':
+	case l.ch == '-':
 		return l.lexSingle(token.MINUS)
-	case '"', '\'':
+	case l.ch == '"', l.ch == '\'':
 		return l.lexString()
-	case ':':
+	case l.ch == ':':
 		return l.lexSingle(token.COLON)
-	case ')':
+	case l.ch == ')':
 		return l.lexSingle(token.RPAREN)
-	case ']':
+	case l.ch == ']':
 		return l.lexSingle(token.RBRACKET)
+	case l.includePath:
+		return l.lexPath()
+	case l.isCommodityStart():
+		return l.lexCommodityMark()
+	case l.isTime():
+		return l.lexTime()
+	case l.isDate():
+		return l.lexDate()
+	case l.isDigit():
+		return l.lexNumber()
 	default:
-		if l.isCommodityStart() {
-			return l.lexCommodityMark()
-		}
-		if l.isTime() {
-			return l.lexTime()
-		}
-		if l.isDate() {
-			return l.lexDate()
-		}
-		if l.isDigit() {
-			return l.lexNumber()
-		}
 		return l.lexAccountNameDirective()
+	}
+}
+
+func (l *Lexer) lexPath() token.Token {
+	s := l.save()
+	for l.ch != '\n' && l.ch != '\r' && l.ch != ';' && l.ch != 0 && l.ch != ' ' && l.ch != '\t' {
+		l.advance()
+	}
+	return token.Token{
+		Type:    token.TEXT,
+		Literal: string(l.input[s.offset:l.pos]),
+		Span:    l.span(s),
 	}
 }
 
@@ -587,7 +602,8 @@ func (l *Lexer) lexKeyword() token.Token {
 		kind = token.TEXT
 	} else {
 		l.mode = ModeDirective
-		l.subdirective = lit == "account" || lit == "commodity"
+		l.subdirective = kind == token.ACCOUNT || kind == token.COMMODITY
+		l.includePath = kind == token.INCLUDE
 	}
 	return token.Token{Type: kind, Literal: lit, Span: l.span(s)}
 }
