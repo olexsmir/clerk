@@ -11,6 +11,7 @@ tag project-xyz
 2024-02-03 Client work  ; billed:extra
     expenses:consulting  $50
     assets:receivable
+
 -- expect --
 files (1):
   0: in.journal

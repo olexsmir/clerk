@@ -1,0 +1,20 @@
+-- in.journal --
+2026-01-15 * "Refund"           ; date:2024-01-16
+  Assets:Cash        20.00 EUR
+  Expenses:Food                 ; date:2024-13-99
+
+2026-01-16 Groceries            ; date:2024-1-5, date2:2024-01-20
+  Expenses:Food   $10
+  Assets:Cash
+
+2026-01-17 Slash                ; date:2024/01/20
+  Expenses:Food   $10
+  Assets:Cash
+
+2026-01-18 Broken               ; date:
+  Expenses:Food   $10
+  Assets:Cash
+
+-- expect --
+in.journal:3:35: invalid-date-tag: invalid date: tag value "2024-13-99"
+in.journal:13:35: invalid-date-tag: invalid date: tag value ""

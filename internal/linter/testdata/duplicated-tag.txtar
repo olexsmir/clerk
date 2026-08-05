@@ -1,0 +1,12 @@
+-- in.journal --
+tag used
+tag single
+tag used
+tag used
+
+; used:
+
+-- expect --
+in.journal:1:1: duplicated-tag: duplicated tag declaration: used
+in.journal:3:1: duplicated-tag: duplicated tag declaration: used
+in.journal:4:1: duplicated-tag: duplicated tag declaration: used

@@ -1,0 +1,17 @@
+-- in.journal --
+account expenses  ; type:E
+
+tag test1
+tag test2
+tag billable
+
+; test1:value
+; test2:
+; test3:
+
+2026-01-16 * "Refund"           ; billable:
+  Assets:Cash        20.00 EUR
+  Expenses:Food                 ; date:2024-01-16
+
+-- expect --
+in.journal:9:3: undeclared-tag: undeclared tag: test3

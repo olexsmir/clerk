@@ -1047,7 +1047,7 @@ func (p *Parser) parseDate() ast.Date {
 		return ast.Date{Span: p.span(s)}
 	}
 
-	year, month, day, sep, err := parseDateLiteral(tok.Literal)
+	year, month, day, sep, err := ParseDateLiteral(tok.Literal)
 	if err != nil {
 		p.errorf("%v", err)
 		return ast.Date{Span: p.span(s)}
@@ -1288,15 +1288,16 @@ func detectFormat(lit string) ast.QuantityFormat {
 
 // parseSimpleDate  parses full YYYY/MM/DD date literal embedded in free text.
 func parseSimpleDate(s string) ast.Date {
-	year, month, day, sep, err := parseDateLiteral(s)
+	year, month, day, sep, err := ParseDateLiteral(s)
 	if err != nil {
 		return ast.Date{}
 	}
 	return ast.Date{Year: year, Month: month, Day: day, Sep: sep}
 }
 
-// parseDateLiteral parses and validates a date literal.
-func parseDateLiteral(lit string) (year, month, day int, sep byte, err error) {
+// ParseDateLiteral parses and validates a date literal.
+// It accepts full YYYY/MM/DD and partial MM/DD forms, with '-', '/' or '.' as separators.
+func ParseDateLiteral(lit string) (year, month, day int, sep byte, err error) {
 	sep = dateSeparator(lit)
 	if sep == 0 {
 		return 0, 0, 0, 0, fmt.Errorf("invalid date format: %q", lit)

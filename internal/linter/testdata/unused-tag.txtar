@@ -1,0 +1,18 @@
+-- in.journal --
+tag used-txn
+tag used-posting
+tag used-comment
+tag unused
+tag twice
+tag twice
+
+2026-01-15 Shopping ; used-txn:
+  Expenses:Food   $10 ; used-posting:
+  Assets:Cash
+
+; used-comment:
+
+-- expect --
+in.journal:4:1: unused-tag: unused tag: unused
+in.journal:5:1: unused-tag: unused tag: twice
+in.journal:6:1: unused-tag: unused tag: twice

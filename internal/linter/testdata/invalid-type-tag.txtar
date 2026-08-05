@@ -1,0 +1,26 @@
+-- in.journal --
+account assets:cash    ; type:C
+account expenses:food  ; type:X
+account equity         ; type:V
+account revenue:gains  ; type:G
+account unknown:place  ; type:U
+
+account long:name      ; type:Asset
+account lower:case     ; type:x
+account unrealized     ; type:unrealized-gain
+
+account bad:type       ; type:Z
+account empty:type     ; type:
+account typo:code      ; type:Expenc
+
+account caps:key       ; TYPE:asset
+2026-01-15 Shopping    ; type:whatever
+  Expenses:Food   $10
+  Assets:Cash
+
+; type:standalone
+
+-- expect --
+in.journal:11:26: invalid-type-tag: invalid type: tag value "Z"
+in.journal:12:26: invalid-type-tag: invalid type: tag value ""
+in.journal:13:26: invalid-type-tag: invalid type: tag value "Expenc"
