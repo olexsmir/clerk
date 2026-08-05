@@ -238,10 +238,44 @@ func fprint(w io.Writer, a *Analysis) {
 		fmt.Fprintf(w, "  %d-%02d-%02d\n", d.Year, d.Month, d.Day)
 	}
 
+	// tags
+	tnames := make([]string, 0, len(a.Tags))
+	for name := range a.Tags {
+		tnames = append(tnames, name)
+	}
+	sort.Strings(tnames)
+
+	fmt.Fprintf(w, "\ntags (%d):\n", len(a.Tags))
+	for _, name := range tnames {
+		info := a.Tags[name]
+		fmt.Fprintf(w, "  %s\n", name)
+		fmt.Fprintf(w, "    directives: %d\n", len(info.Directives))
+		fmt.Fprintf(w, "    used: %d\n", info.UsedCount)
+		for _, d := range info.Directives {
+			fmt.Fprintf(w, "      tag %s\n", d.Name)
+		}
+		fmt.Fprintf(w, "    usages: %d\n", len(info.Usage))
+		for _, u := range info.Usage {
+			fmt.Fprintf(w, "      file %d: %s=%q\n", u.FileIndex, u.Tag.Key, u.Tag.Value)
+		}
+		if len(info.Values) > 0 {
+			fmt.Fprintf(w, "    values: %s\n", strings.Join(info.Values, " "))
+		}
+		if info.LastUsed.Year != 0 {
+			fmt.Fprintf(w, "    last-used: %d-%02d-%02d\n", info.LastUsed.Year, info.LastUsed.Month, info.LastUsed.Day)
+		}
+	}
+
 	// tag names
 	fmt.Fprintf(w, "\ntag names (%d):\n", len(a.TagNames))
 	for _, t := range a.TagNames {
 		fmt.Fprintf(w, "  %s\n", t)
+	}
+
+	// tag values
+	fmt.Fprintf(w, "\ntag values (%d):\n", len(a.TagValues))
+	for _, v := range a.TagValues {
+		fmt.Fprintf(w, "  %s\n", v)
 	}
 
 	// commodity decimal marks

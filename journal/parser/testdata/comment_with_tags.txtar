@@ -1,0 +1,53 @@
+-- input --
+; client:acme, project:alpha
+; reviewed:
+; url:https://example.com, date:2024-01-16
+# client:acme
+
+; receipt from shop, paid with card
+; see docs: x
+; :foo bar:baz
+; foo :bar
+
+-- expect --
+Journal
+  Comment j:1:1-2:1
+    Marker: ";"
+    Tags
+      "client"="acme"  j:1:3-1:14
+      "project"="alpha"  j:1:16-1:29
+    Text: "client:acme, project:alpha"
+  Comment j:2:1-3:1
+    Marker: ";"
+    Tags
+      "reviewed"=""  j:2:3-2:12
+    Text: "reviewed:"
+  Comment j:3:1-4:1
+    Marker: ";"
+    Tags
+      "url"="https://example.com"  j:3:3-3:26
+      "date"="2024-01-16"  j:3:28-3:43
+    Text: "url:https://example.com, date:2024-01-16"
+  Comment j:4:1-6:0
+    Marker: "#"
+    Tags
+      "client"="acme"  j:4:3-4:14
+    Text: "client:acme"
+  BlankLine j:6:0-6:1
+  Comment j:6:1-7:1
+    Marker: ";"
+    Text: "receipt from shop, paid with card"
+  Comment j:7:1-8:1
+    Marker: ";"
+    Tags
+      "docs"="x"  j:7:7-7:14
+    Text: "see docs: x"
+  Comment j:8:1-9:1
+    Marker: ";"
+    Tags
+      "bar"="baz"  j:8:8-8:15
+    Text: ":foo bar:baz"
+  Comment j:9:1-11:0
+    Marker: ";"
+    Text: "foo :bar"
+  BlankLine j:11:0-11:1

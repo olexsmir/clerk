@@ -66,8 +66,14 @@ type DateTime struct {
 	Span token.Span
 }
 
+type Tag struct {
+	Key, Value string
+	Span       token.Span
+}
+
 type Comment struct {
 	Marker byte // ';' '#' '%' '*'
+	Tags   []Tag
 	Text   string
 	Span   token.Span
 }

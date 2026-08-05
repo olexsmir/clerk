@@ -1,0 +1,43 @@
+-- input --
+2024-01-15 Business dinner  ; client:acme, project:alpha
+    expenses:meals    $50  ; billable:
+    assets:cash            ; date:2024-01-16
+
+-- expect --
+Journal
+  Transaction j:1:1-5:0
+    Date: 2024-01-15
+    Payee: "Business dinner" j:1:12-1:27
+    Comment j:1:29-2:0
+      Marker: ";"
+      Tags
+        "client"="acme"  j:1:31-1:42
+        "project"="alpha"  j:1:44-1:57
+      Text: "client:acme, project:alpha"
+    Posting j:2:1-3:1
+      Account j:2:5-2:19
+        SubAccount: "expenses" j:2:5-2:13
+        SubAccount: "meals" j:2:14-2:19
+      Amount j:2:23-2:26
+        Quantity: 50
+        Commodity: "$" j:2:23-2:24
+        CommodityPos: Before
+        HasSpace: false
+        Precision: 0
+        Decimal: "."
+      Comment j:2:28-3:0
+        Marker: ";"
+        Tags
+          "billable"=""  j:2:30-2:39
+        Text: "billable:"
+    Posting j:3:1-5:0
+      Account j:3:5-3:16
+        SubAccount: "assets" j:3:5-3:11
+        SubAccount: "cash" j:3:12-3:16
+      Amount: <elided>
+      Comment j:3:28-4:0
+        Marker: ";"
+        Tags
+          "date"="2024-01-16"  j:3:30-3:45
+        Text: "date:2024-01-16"
+  BlankLine j:5:0-5:1

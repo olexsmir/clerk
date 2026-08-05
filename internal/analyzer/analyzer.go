@@ -24,7 +24,9 @@ type Analysis struct {
 	// PayeeTemplates holds the last transaction's postings per payee name.
 	PayeeTemplates map[string][]PostingTemplate
 
-	TagNames []string // unique, from tag directives
+	Tags      map[string]*TagInfo
+	TagNames  []string // unique tag names, sorted
+	TagValues []string // unique non-empty tag values across all tags, sorted
 
 	Dates       []ast.Date // unique transaction dats in sorted order
 	DateStrings []string   // same order as Dates, "YYYY-MM-DD"
@@ -70,6 +72,19 @@ type PayeeInfo struct {
 type PayeeUsage struct {
 	FileIndex int
 	Payee     *ast.Payee
+}
+
+type TagInfo struct {
+	Directives []*ast.TagDirective
+	Usage      []TagUsage
+	UsedCount  int
+	LastUsed   ast.Date
+	Values     []string // unique non-empty values from comment usages, sorted
+}
+
+type TagUsage struct {
+	FileIndex int
+	Tag       *ast.Tag
 }
 
 type PostingTemplate struct {

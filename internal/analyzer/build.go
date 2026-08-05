@@ -21,6 +21,7 @@ func Build(rj *journal.ResolvedJournal) *Analysis {
 		Accounts:              make(map[string]*AccountInfo),
 		Commodities:           make(map[string]*CommodityInfo),
 		Payees:                make(map[string]*PayeeInfo),
+		Tags:                  make(map[string]*TagInfo),
 		AccountsByPrefix:      make(map[string][]string),
 		PayeeTemplates:        make(map[string][]PostingTemplate),
 		CommodityDecimalMarks: make(map[string]byte),
@@ -37,7 +38,7 @@ func Build(rj *journal.ResolvedJournal) *Analysis {
 	a.sortAccountNames()
 	a.collectPayeeNames()
 	a.collectDates()
-	a.collectTagNames()
+	a.collectTags()
 	return a
 }
 
@@ -63,23 +64,35 @@ func (a *Analysis) addEntry(fileIndex int, entry ast.Entry) {
 		a.addCommodityDirective(e)
 	case *ast.PayeeDirective:
 		a.addPayeeDirective(e)
+	case *ast.TagDirective:
+		a.addTagDirective(e)
+	case *ast.Comment:
+		a.addCommentTags(fileIndex, nil, e)
 	case *ast.Transaction:
 		a.Transactions = append(a.Transactions, e)
 		a.addPostings(fileIndex, e.Postings, &e.Date)
 		a.addPayee(fileIndex, e.Payee)
 		a.addPayeeTemplate(e)
+		a.addCommentTags(fileIndex, &e.Date, e.Comment)
+		for _, c := range e.HeaderComments {
+			a.addCommentTags(fileIndex, &e.Date, c)
+		}
 		key := TxDuplicateKey(e)
 		a.TransactionsByKey[key] = append(a.TransactionsByKey[key], e)
 	case *ast.PeriodicTransaction:
 		a.PeriodicTransactions = append(a.PeriodicTransactions, e)
 		a.addPostings(fileIndex, e.Postings, nil)
+		a.addCommentTags(fileIndex, nil, e.Comment)
+		for _, c := range e.HeaderComments {
+			a.addCommentTags(fileIndex, nil, c)
+		}
 	case *ast.AutomatedTransaction:
 		a.AutomatedTransactions = append(a.AutomatedTransactions, e)
 		a.addPostings(fileIndex, e.Postings, nil)
-	case *ast.DecimalMarkDirective:
-		// Collect commodity decimal marks from directives with explicit format,
-		// but DecimalMarkDirective sets the default for all commodities.
-		// We don't track a "default" — individual commodities get theirs from amount formatting.
+		a.addCommentTags(fileIndex, nil, e.Comment)
+		for _, c := range e.HeaderComments {
+			a.addCommentTags(fileIndex, nil, c)
+		}
 	case *ast.DefaultCommodityDirective:
 		if e.Amount.Commodity != "" {
 			mark := e.Amount.QuantityFmt.Decimal
@@ -118,6 +131,37 @@ func (a *Analysis) addPayeeDirective(pd *ast.PayeeDirective) {
 		Name: pd.Name,
 		Span: pd.Span,
 	})
+}
+
+func (a *Analysis) addTagDirective(td *ast.TagDirective) {
+	if td.Name == "" {
+		return
+	}
+	info, ok := a.Tags[td.Name]
+	if !ok {
+		info = &TagInfo{}
+		a.Tags[td.Name] = info
+	}
+	info.Directives = append(info.Directives, td)
+}
+
+func (a *Analysis) addCommentTags(fileIndex int, date *ast.Date, c *ast.Comment) {
+	if c == nil {
+		return
+	}
+	for i := range c.Tags {
+		t := &c.Tags[i]
+		info, ok := a.Tags[t.Key]
+		if !ok {
+			info = &TagInfo{}
+			a.Tags[t.Key] = info
+		}
+		info.Usage = append(info.Usage, TagUsage{FileIndex: fileIndex, Tag: t})
+		info.UsedCount++
+		if date != nil {
+			info.LastUsed = maxDate(info.LastUsed, *date)
+		}
+	}
 }
 
 func (a *Analysis) addCommodityDirective(cd *ast.CommodityDirective) {
@@ -173,6 +217,11 @@ func (a *Analysis) addPostings(fileIndex int, postings []*ast.Posting, date *ast
 			}
 		}
 
+		a.addCommentTags(fileIndex, date, posting.Comment)
+		for i := range posting.Comments {
+			a.addCommentTags(fileIndex, date, &posting.Comments[i])
+		}
+
 		// Collect decimal mark from amount formatting.
 		if posting.Amount != nil && posting.Amount.Commodity != "" && posting.Amount.QuantityFmt.Decimal != 0 {
 			if _, ok := a.CommodityDecimalMarks[posting.Amount.Commodity]; !ok {
@@ -222,15 +271,35 @@ func (a *Analysis) collectDates() {
 	sort.Strings(a.DateStrings)
 }
 
-func (a *Analysis) collectTagNames() {
-	seen := make(map[string]bool)
-	for _, d := range a.Directives {
-		if td, ok := d.(*ast.TagDirective); ok && td.Name != "" && !seen[td.Name] {
-			seen[td.Name] = true
-			a.TagNames = append(a.TagNames, td.Name)
+func (a *Analysis) collectTags() {
+	names := make([]string, 0, len(a.Tags))
+	values := make(map[string]bool)
+	for name, info := range a.Tags {
+		names = append(names, name)
+		seen := make(map[string]bool)
+		for _, u := range info.Usage {
+			if u.Tag.Value == "" {
+				continue
+			}
+			seen[u.Tag.Value] = true
+			values[u.Tag.Value] = true
+		}
+		if len(seen) > 0 {
+			info.Values = sortedKeys(seen)
 		}
 	}
-	sort.Strings(a.TagNames)
+	sort.Strings(names)
+	a.TagNames = names
+	a.TagValues = sortedKeys(values)
+}
+
+func sortedKeys(m map[string]bool) []string {
+	out := make([]string, 0, len(m))
+	for k := range m {
+		out = append(out, k)
+	}
+	sort.Strings(out)
+	return out
 }
 
 func formatDate(d ast.Date) string {

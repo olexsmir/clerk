@@ -18,6 +18,8 @@ tag client
 
 ; client:acme
 ; project:alpha
+; client:a^cme
+; project:^
 
 2024-01-16 ^
   expenses:f^ood  $5
@@ -39,21 +41,26 @@ tag cli^ent
 acc^ount
 
 -- expect --
-20:11 payee ""
+19:10 tag-value "a"
+  acme
+20:10 tag-value ""
+  alpha
+22:11 payee ""
   Grocery
   Store
-21:12 account "expenses:f"
+23:12 account "expenses:f"
   expenses:food
-26:16 account "assets:c"
+28:16 account "assets:c"
   assets:cash
-28:11 commodity "U"
+30:11 commodity "U"
   USD
-30:8 payee "Gr"
+32:8 payee "Gr"
   Grocery
-32:7 tag "cli"
+34:7 tag "cli"
   client
-34:5 tag "cli"
+36:5 tag "cli"
   client
-35:6 tag "proj"
-37:3 directive "acc"
+37:6 tag "proj"
+  project
+39:3 directive "acc"
   account

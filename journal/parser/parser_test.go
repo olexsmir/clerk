@@ -15,6 +15,8 @@ func TestParser_ParseFile(t *testing.T) {
 		"comment hash",
 		"comment percent",
 		"comment star",
+		"comment with tags",
+		"transaction with tag comments",
 		"alias directive",
 		"tag directive",
 		"year directive",
@@ -130,6 +132,7 @@ func FuzzParser(f *testing.F) {
 	f.Add([]byte("~ monthly\n    expenses:food  $100\n    assets:checking\n"))
 	f.Add([]byte("= /^Income/\n  expenses:food  $10\n"))
 	f.Add([]byte("; a comment\n"))
+	f.Add([]byte("; tag1:val1, tag2:val2\n"))
 	f.Add([]byte("comment\nbody\nend\n"))
 	f.Add([]byte("\n\n\n"))
 	f.Add([]byte("перевірка\n"))

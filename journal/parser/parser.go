@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 
 	"olexsmir.xyz/clerk/internal/decimal"
 	"olexsmir.xyz/clerk/journal/ast"
@@ -1072,14 +1074,17 @@ func (p *Parser) parseCommentRest(s token.Span) *ast.Comment {
 	p.advance()
 	p.skipWhitespace()
 
+	var tags []ast.Tag
 	text := ""
 	if p.got(token.TEXT) {
 		text = p.cur.Literal
+		tags = parseCommentTags(text, p.cur.Span.Start)
 		p.advance()
 	}
 
 	return &ast.Comment{
 		Marker: marker,
+		Tags:   tags,
 		Text:   text,
 		Span:   p.span(s),
 	}
@@ -1332,4 +1337,62 @@ func dateSeparator(lit string) byte {
 		}
 	}
 	return 0
+}
+
+// parseCommentTags extacts tags from comment text.
+// A tag is a word immediately followed by a ':', with an optional value that ends at a comma or the end of a line.
+// https://hledger.org/1.52/hledger.html?highlight=tags#tags
+func parseCommentTags(text string, base token.Pos) []ast.Tag {
+	var tags []ast.Tag
+	for i := 0; i < len(text); {
+		colon := strings.IndexByte(text[i:], ':')
+		if colon < 0 {
+			break
+		}
+		colon += i
+
+		keyStart := colon
+		for keyStart > i {
+			r, size := utf8.DecodeLastRuneInString(text[:keyStart])
+			if unicode.IsSpace(r) {
+				break
+			}
+			keyStart -= size
+		}
+		if keyStart == colon { // nothing before the colon = not a tag
+			i = colon + 1
+			continue
+		}
+		key := text[keyStart:colon]
+
+		valueEnd := colon + 1
+		for valueEnd < len(text) && text[valueEnd] != ',' {
+			valueEnd++
+		}
+		value := strings.TrimSpace(text[colon+1 : valueEnd])
+
+		tags = append(tags, ast.Tag{
+			Key:   key,
+			Value: value,
+			Span: token.Span{
+				Start: tagPos(base, text, keyStart),
+				End:   tagPos(base, text, valueEnd),
+			},
+		})
+		i = valueEnd
+		if i < len(text) && text[i] == ',' {
+			i++
+		}
+	}
+
+	return tags
+}
+
+func tagPos(base token.Pos, text string, off int) token.Pos {
+	return token.Pos{
+		File:   base.File,
+		Offset: base.Offset + off,
+		Line:   base.Line,
+		Col:    base.Col + utf8.RuneCountInString(text[:off]),
+	}
 }

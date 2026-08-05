@@ -16,51 +16,54 @@ import (
 )
 
 func TestDetectCompletionCtx(t *testing.T) {
-	tests := []struct {
-		name string
-		ctx  cmplCtx
-		in   string
-		want string
+	tests := map[string]struct {
+		ctx      cmplCtx
+		in, want string
 	}{
-		{"posting account", cmplAccount, "    expenses:f^ood  $50\n", "expenses:f"},
-		{"posting account empty", cmplAccount, "    ^\n", ""},
-		{"posting account after colon", cmplAccount, "    expenses:^food  $50\n", "expenses:"},
-		{"posting amount commodity", cmplCommodity, "    expenses:food  $^50\n", "$"},
-		{"posting empty amount region", cmplCommodity, "    expenses:food  ^\n", ""},
-		{"posting commodity word", cmplCommodity, "    expenses:food  U^SD\n", "U"},
-		{"posting amount number", cmplNone, "    expenses:food  $5^0\n", ""},
-		{"posting cost quantity", cmplNone, "    expenses:food  $50 @^ 1.5\n", ""},
-		{"posting status", cmplAccount, "    * expenses:f^ood  $50\n", "expenses:f"},
-		{"posting virtual", cmplAccount, "    (expenses:f^ood)  $50\n", "expenses:f"},
-		{"posting comment tag", cmplTagName, "    expenses:food  ; clie^nt:x\n", "clie"},
-		{"posting comment tag value", cmplNone, "    expenses:food  ; client:^x\n", ""},
-		{"header payee", cmplPayee, "2024-01-15 acm^e\n    assets:cash\n", "acm"},
-		{"header payee empty", cmplPayee, "2024-01-15 ^\n", ""},
-		{"header payee right after date", cmplPayee, "2024-01-15^\n", ""},
-		{"header status and code", cmplPayee, "2024-01-15 * (123) gro^cer\n", "gro"},
-		{"header second date", cmplPayee, "2024-01-15=2024-01-16 acm^e\n", "acm"},
-		{"header quoted payee", cmplPayee, "2024-01-15 \"ac^me\"\n", "ac"},
-		{"header pipe note", cmplNone, "2024-01-15 acme | no^te\n", ""},
-		{"header pipe inline", cmplNone, "2024-01-15 acme|note x^y\n", ""},
-		{"header inline comment", cmplTagName, "2024-01-15 ; foo^", "foo"},
-		{"directive keyword partial", cmplDirective, "acc^ount expenses\n", "acc"},
-		{"directive keyword empty line", cmplDirective, "\n^", ""},
-		{"account directive value", cmplAccount, "account exp^enses\n", "exp"},
-		{"commodity directive value", cmplCommodity, "commodity U^SD\n", "U"},
-		{"payee directive value", cmplPayee, "payee ac^me\n", "ac"},
-		{"tag directive value", cmplTagName, "tag pro^ject\n", "pro"},
-		{"comment tag", cmplTagName, "; clie^nt:x\n", "clie"},
-		{"comment value", cmplNone, "; client:x^yz\n", ""},
-		{"comment plain text", cmplTagName, "; groc^eries\n", "groc"},
-		{"subdirective ignored", cmplNone, "account expenses\n    no^te ignore\n", ""},
-		{"periodic header", cmplNone, "~ monthly^ budget\n", ""},
-		{"cjk posting", cmplAccount, "    支出:食^物  50\n", "支出:食"},
-		{"ukrainian payee", cmplPayee, "2024-01-15 прод^укти\n", "прод"},
-		{"crlf posting", cmplAccount, "2024-01-15 x\r\n    expenses:f^ood  $50\r\n", "expenses:f"},
-		{"crlf header", cmplPayee, "2024-01-15 acm^e\r\n    assets:cash\r\n", "acm"},
+		"posting account":                  {cmplAccount, "    expenses:f^ood  $50\n", "expenses:f"},
+		"posting account empty":            {cmplAccount, "    ^\n", ""},
+		"posting account after colon":      {cmplAccount, "    expenses:^food  $50\n", "expenses:"},
+		"posting amount commodity":         {cmplCommodity, "    expenses:food  $^50\n", "$"},
+		"posting empty amount region":      {cmplCommodity, "    expenses:food  ^\n", ""},
+		"posting commodity word":           {cmplCommodity, "    expenses:food  U^SD\n", "U"},
+		"posting amount number":            {cmplNone, "    expenses:food  $5^0\n", ""},
+		"posting cost quantity":            {cmplNone, "    expenses:food  $50 @^ 1.5\n", ""},
+		"posting status":                   {cmplAccount, "    * expenses:f^ood  $50\n", "expenses:f"},
+		"posting virtual":                  {cmplAccount, "    (expenses:f^ood)  $50\n", "expenses:f"},
+		"posting comment tag":              {cmplTagName, "    expenses:food  ; clie^nt:x\n", "clie"},
+		"posting comment tag value":        {cmplTagValue, "    expenses:food  ; client:^x\n", ""},
+		"header payee":                     {cmplPayee, "2024-01-15 acm^e\n    assets:cash\n", "acm"},
+		"header payee empty":               {cmplPayee, "2024-01-15 ^\n", ""},
+		"header payee right after date":    {cmplPayee, "2024-01-15^\n", ""},
+		"header status and code":           {cmplPayee, "2024-01-15 * (123) gro^cer\n", "gro"},
+		"header second date":               {cmplPayee, "2024-01-15=2024-01-16 acm^e\n", "acm"},
+		"header quoted payee":              {cmplPayee, "2024-01-15 \"ac^me\"\n", "ac"},
+		"header pipe note":                 {cmplNone, "2024-01-15 acme | no^te\n", ""},
+		"header pipe inline":               {cmplNone, "2024-01-15 acme|note x^y\n", ""},
+		"header inline comment":            {cmplTagName, "2024-01-15 ; foo^", "foo"},
+		"directive keyword partial":        {cmplDirective, "acc^ount expenses\n", "acc"},
+		"directive keyword empty line":     {cmplDirective, "\n^", ""},
+		"account directive value":          {cmplAccount, "account exp^enses\n", "exp"},
+		"commodity directive value":        {cmplCommodity, "commodity U^SD\n", "U"},
+		"payee directive value":            {cmplPayee, "payee ac^me\n", "ac"},
+		"tag directive value":              {cmplTagName, "tag pro^ject\n", "pro"},
+		"comment tag":                      {cmplTagName, "; clie^nt:x\n", "clie"},
+		"comment value":                    {cmplTagValue, "; client:x^yz\n", "x"},
+		"comment value empty":              {cmplTagValue, "; client:^\n", ""},
+		"comment value after space":        {cmplTagValue, "; client: ac^me\n", "ac"},
+		"comment value second tag":         {cmplTagValue, "; a:b, client:x^\n", "x"},
+		"comment value with colon":         {cmplTagValue, "; url:https://example^\n", "https://example"},
+		"comment key after previous value": {cmplTagName, "; a:b:c, cli^ent:x\n", "cli"},
+		"comment plain text":               {cmplTagName, "; groc^eries\n", "groc"},
+		"subdirective ignored":             {cmplNone, "account expenses\n    no^te ignore\n", ""},
+		"periodic header":                  {cmplNone, "~ monthly^ budget\n", ""},
+		"cjk posting":                      {cmplAccount, "    支出:食^物  50\n", "支出:食"},
+		"ukrainian payee":                  {cmplPayee, "2024-01-15 прод^укти\n", "прод"},
+		"crlf posting":                     {cmplAccount, "2024-01-15 x\r\n    expenses:f^ood  $50\r\n", "expenses:f"},
+		"crlf header":                      {cmplPayee, "2024-01-15 acm^e\r\n    assets:cash\r\n", "acm"},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for tname, tt := range tests {
+		t.Run(tname, func(t *testing.T) {
 			cont := tt.in
 			i := strings.Index(cont, "^")
 			if i < 0 {
@@ -93,6 +96,8 @@ func (c cmplCtx) String() string {
 		return "commodity"
 	case cmplTagName:
 		return "tag"
+	case cmplTagValue:
+		return "tag-value"
 	case cmplDirective:
 		return "directive"
 	default:

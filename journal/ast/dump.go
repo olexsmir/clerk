@@ -361,6 +361,14 @@ func dumpComment(b *strings.Builder, c *Comment, depth int) {
 	fmt.Fprintf(b, "Comment %s\n", c.Span)
 	indent(b, depth+1)
 	fmt.Fprintf(b, "Marker: %q\n", string(c.Marker))
+	if len(c.Tags) > 0 {
+		indent(b, depth+1)
+		fmt.Fprintf(b, "Tags\n")
+		for _, t := range c.Tags {
+			indent(b, depth+2)
+			fmt.Fprintf(b, "%q=%q  %s\n", t.Key, t.Value, t.Span)
+		}
+	}
 	indent(b, depth+1)
 	fmt.Fprintf(b, "Text: %q\n", c.Text)
 }

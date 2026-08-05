@@ -3,19 +3,58 @@ tag project-xyz
 tag personal
 tag project-xyz
 
+2024-01-15 Client work  ; project:project-xyz, billed:
+    expenses:consulting  $100  ; rate:200
+    assets:receivable
+; reviewed:2024-02-01
+
+2024-02-03 Client work  ; billed:extra
+    expenses:consulting  $50
+    assets:receivable
 -- expect --
 files (1):
   0: in.journal
 
-commodities (0):
+commodities (1):
+  $
+    directives: 0
+    used: 2
+    usages: 2
+      file 0: $ ("100")
+      file 0: $ ("50")
+    last-used: 2024-02-03
 
-accounts (0):
+accounts (2):
+  assets:receivable
+    directives: 0
+    used: 2
+    usages: 2
+      file 0: assets:receivable
+      file 0: assets:receivable
+    last-used: 2024-02-03
+  expenses:consulting
+    directives: 0
+    used: 2
+    usages: 2
+      file 0: expenses:consulting
+      file 0: expenses:consulting
+    last-used: 2024-02-03
 
-payees (0):
+payees (1):
+  Client work
+    directives: 0
+    used: 2
+    usages: 2
+      file 0: Client work
+      file 0: Client work
 
-prefixes (0):
+prefixes (2):
+  assets:
+    assets:receivable
+  expenses:
+    expenses:consulting
 
-transactions: 0
+transactions: 2
 periodic transactions: 0
 automated transactions: 0
 
@@ -24,14 +63,73 @@ directives (3):
   tag personal
   tag project-xyz
 
-transaction keys (0):
+transaction keys (2):
+  2024-01-15|Client work|expenses:consulting,assets:receivable,
+  2024-02-03|Client work|expenses:consulting,assets:receivable,
 
-payee templates (0):
+payee templates (1):
+  Client work
+    expenses:consulting  $50
+    assets:receivable (inferred)
 
-dates (0):
+dates (2):
+  2024-01-15
+  2024-02-03
 
-tag names (2):
+tags (6):
+  billed
+    directives: 0
+    used: 2
+    usages: 2
+      file 0: billed=""
+      file 0: billed="extra"
+    values: extra
+    last-used: 2024-02-03
   personal
+    directives: 1
+    used: 0
+      tag personal
+    usages: 0
+  project
+    directives: 0
+    used: 1
+    usages: 1
+      file 0: project="project-xyz"
+    values: project-xyz
+    last-used: 2024-01-15
+  project-xyz
+    directives: 2
+    used: 0
+      tag project-xyz
+      tag project-xyz
+    usages: 0
+  rate
+    directives: 0
+    used: 1
+    usages: 1
+      file 0: rate="200"
+    values: 200
+    last-used: 2024-01-15
+  reviewed
+    directives: 0
+    used: 1
+    usages: 1
+      file 0: reviewed="2024-02-01"
+    values: 2024-02-01
+
+tag names (6):
+  billed
+  personal
+  project
+  project-xyz
+  rate
+  reviewed
+
+tag values (4):
+  200
+  2024-02-01
+  extra
   project-xyz
 
-commodity decimal marks (0):
+commodity decimal marks (1):
+  $: .

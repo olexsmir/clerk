@@ -68,8 +68,17 @@ payee templates (0):
 
 dates (0):
 
+tags (1):
+  mytag
+    directives: 1
+    used: 0
+      tag mytag
+    usages: 0
+
 tag names (1):
   mytag
+
+tag values (0):
 
 commodity decimal marks (1):
   $: .

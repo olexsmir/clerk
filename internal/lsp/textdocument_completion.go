@@ -51,6 +51,7 @@ const (
 	cmplPayee
 	cmplCommodity
 	cmplTagName
+	cmplTagValue
 	cmplDirective
 )
 
@@ -214,13 +215,48 @@ func cmplDirectiveContext(cursor, lineStart int, toks []token.Token) (cmplCtx, i
 	return cmplNone, cursor
 }
 
-// cmplTagContext completes tag names at the start of a comment, stopping at first ':'.
+// commentStart completes tag names before ':' of the current tag and tag values after it
 func cmplTagContext(content string, commentStart, cursor int) (cmplCtx, int) {
-	if strings.ContainsRune(content[commentStart:cursor], ':') {
-		return cmplNone, cursor
+	prefix := content[commentStart:cursor]
+	segStart := commentStart
+	seg := prefix
+	if comma := strings.LastIndexByte(prefix, ','); comma >= 0 {
+		segStart = commentStart + comma + 1
+		seg = prefix[comma+1:]
 	}
-	keyStart := commentStart + lastSeparator(content[commentStart:cursor]) + 1
+	if colon := strings.IndexByte(seg, ':'); colon >= 0 {
+		start := segStart + colon + 1
+		for start < cursor && (content[start] == ' ' || content[start] == '\t') {
+			start++
+		}
+		return cmplTagValue, start
+	}
+	keyStart := commentStart + lastSeparator(prefix) + 1
 	return cmplTagName, keyStart
+}
+
+// tagKeyAt returns the key of tag whose value region starts at start
+func tagKeyAt(content string, start int) (string, bool) {
+	lineStart, _ := lineBounds(content, start)
+	segStart := lineStart
+	for i := start - 1; i >= lineStart; i-- {
+		switch content[i] {
+		case ',', ';', '#', '%':
+			segStart = i + 1
+			i = lineStart - 1 // stop at the separator closest to start
+		}
+	}
+	colon := strings.IndexByte(content[segStart:start], ':')
+	if colon < 0 {
+		return "", false
+	}
+	colon += segStart
+	keyStart := lastSeparator(content[segStart:colon]) + 1
+	key := content[segStart+keyStart : colon]
+	if key == "" {
+		return "", false
+	}
+	return key, true
 }
 
 // commentMarker returns index of the first comment marker token at or before the cursor, or -1.
@@ -286,8 +322,17 @@ func cmplItems(a *analyzer.Analysis, ctx cmplCtx, content string, start, cursor 
 		}
 	case cmplTagName:
 		kind = protocol.CompletionItemKindProperty
-		for _, name := range a.TagNames {
-			cands = append(cands, cmplCand{label: name})
+		for name, info := range a.Tags {
+			cands = append(cands, cmplCand{label: name, count: info.UsedCount, lastUsed: info.LastUsed})
+		}
+	case cmplTagValue:
+		kind = protocol.CompletionItemKindProperty
+		if key, ok := tagKeyAt(content, start); ok {
+			if info, ok := a.Tags[key]; ok {
+				for _, v := range info.Values {
+					cands = append(cands, cmplCand{label: v})
+				}
+			}
 		}
 	case cmplDirective:
 		kind = protocol.CompletionItemKindKeyword

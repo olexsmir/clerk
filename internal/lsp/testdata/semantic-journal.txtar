@@ -117,6 +117,12 @@ end
   b  10 @@ 5 USD
   c  $-5.00 @ 0.9 BTC
 
+2024-01-22 Business dinner  ; client:acme, project:alpha
+    expenses:meals    $50  ; billable:
+    assets:cash            ; date:2024-01-16
+
+; tag:value, trailing text
+
 -- expect --
 0:0+12 comment
 1:0+2 comment
@@ -389,3 +395,20 @@ end
 116:12+1 operator
 116:14+3 number
 116:18+3 type
+118:0+10 class
+118:11+15 property
+118:28+2 comment
+118:30+11 property
+118:41+2 comment
+118:43+13 property
+119:4+14 namespace
+119:22+1 type
+119:23+2 number
+119:27+2 comment
+119:29+9 property
+120:4+11 namespace
+120:27+2 comment
+120:29+15 property
+122:0+2 comment
+122:2+9 property
+122:11+16 comment
