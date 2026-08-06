@@ -1,0 +1,18 @@
+-- in.journal --
+payee "Groceries"
+
+2024-05-01 * "Groceries"
+    expenses:food   50.00 USD
+    assets:cash
+
+2024-05-02 * "Cafe"
+    expenses:food   15.00 USD
+    assets:cash
+
+2024-05-03 * "Cafe"
+    expenses:food   20.00 USD
+    assets:cash
+
+-- expect --
+in.journal:7:14: undeclared-payee: undeclared payee: Cafe
+in.journal:11:14: undeclared-payee: undeclared payee: Cafe

@@ -28,6 +28,7 @@ var tests = map[string][]Rule{
 	"undeclared-tag":           {&UndeclaredTag{}},
 	"undeclared-commodity":     {&UndeclaredCommodity{}},
 	"undeclared-account":       {&UndeclaredAccount{}},
+	"undeclared-payee":         {&UndeclaredPayee{}},
 	"unbalanced-transaction":   {&UnbalancedTransaction{}},
 	"unused-account":           {&UnusedAccount{}},
 	"unused-tag":               {&UnusedTag{}},

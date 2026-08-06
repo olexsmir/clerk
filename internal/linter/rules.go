@@ -29,6 +29,7 @@ var Rules = []Rule{
 	&DuplicatedTag{},
 	&UndeclaredCommodity{},
 	&UndeclaredAccount{},
+	&UndeclaredPayee{},
 	&UnbalancedTransaction{},
 	&UndeclaredTag{},
 	&InvalidDateTag{},
