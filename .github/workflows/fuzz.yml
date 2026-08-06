@@ -1,0 +1,21 @@
+name: Fuzz
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  fuzz:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Fuzz lexer
+        run: go test -fuzz=FuzzLexer -fuzztime=90s ./journal/lexer/
+
+      - name: Fuzz parser
+        run: go test -fuzz=FuzzParser -fuzztime=90s ./journal/parser/
