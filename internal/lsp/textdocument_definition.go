@@ -25,74 +25,27 @@ func (s *server) Definition(_ context.Context, params *protocol.DefinitionParams
 }
 
 func findDefinitionUnderCursor(an *analyzer.Analysis, docPath, content string, cursor int) protocol.LocationSlice {
-	for _, pf := range an.Files {
-		if pf.Path != docPath {
-			continue
-		}
-		for _, entry := range pf.Ast.Entries {
-			if loc := definitionInEntry(an, content, entry, cursor); loc != nil {
-				return protocol.LocationSlice{*loc}
-			}
-		}
+	ref := findSymbolUnderCursor(an, docPath, content, cursor)
+	if ref == nil {
 		return nil
 	}
-	return nil
-}
-
-func definitionInEntry(an *analyzer.Analysis, content string, e ast.Entry, cursor int) *protocol.Location {
-	switch e := e.(type) {
-	case *ast.Transaction:
-		if e.Payee != nil && spanContains(content, e.Payee.Span, cursor) {
-			return findPayeeDefinition(an, e.Payee.Name)
-		}
-		return definitionInPostings(an, content, e.Postings, cursor)
-	case *ast.PeriodicTransaction:
-		return definitionInPostings(an, content, e.Postings, cursor)
-	case *ast.AutomatedTransaction:
-		return definitionInPostings(an, content, e.Postings, cursor)
-	case *ast.AccountDirective:
-		if spanContains(content, e.Account.Span, cursor) {
-			return findAccountDefinition(an, e.Account.String())
-		}
-	case *ast.CommodityDirective:
-		if spanContains(content, e.CommoditySpan, cursor) {
-			return findCommodityDefinition(an, e.Commodity)
-		}
-	case *ast.PayeeDirective:
-		if e.Name != nil && spanContains(content, e.Name.Span, cursor) {
-			return findPayeeDefinition(an, e.Name.Name)
-		}
-	}
-	return nil
-}
-
-func definitionInPostings(an *analyzer.Analysis, content string, postings []*ast.Posting, cursor int) *protocol.Location {
-	for _, p := range postings {
-		if spanContains(content, p.Account.Span, cursor) {
-			return findAccountDefinition(an, p.Account.String())
-		}
-		if loc := commodityDefinition(an, content, p.Amount, cursor); loc != nil {
-			return loc
-		}
-		if p.Cost != nil {
-			if loc := commodityDefinition(an, content, &p.Cost.Amount, cursor); loc != nil {
-				return loc
-			}
-		}
-		if p.Balance != nil {
-			if loc := commodityDefinition(an, content, &p.Balance.Amount, cursor); loc != nil {
-				return loc
-			}
-		}
-	}
-	return nil
-}
-
-func commodityDefinition(an *analyzer.Analysis, content string, am *ast.Amount, cursor int) *protocol.Location {
-	if am == nil || am.Commodity == "" || !spanContains(content, am.CommoditySpan, cursor) {
+	loc := resolveSymbol(ref, an)
+	if loc == nil {
 		return nil
 	}
-	return findCommodityDefinition(an, am.Commodity)
+	return protocol.LocationSlice{*loc}
+}
+
+func resolveSymbol(ref *symbolRef, an *analyzer.Analysis) *protocol.Location {
+	switch ref.kind {
+	case symbolAccount:
+		return findAccountDefinition(an, ref.name)
+	case symbolCommodity:
+		return findCommodityDefinition(an, ref.name)
+	case symbolPayee:
+		return findPayeeDefinition(an, ref.name)
+	}
+	return nil
 }
 
 func findAccountDefinition(an *analyzer.Analysis, name string) *protocol.Location {

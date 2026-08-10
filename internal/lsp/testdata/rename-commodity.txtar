@@ -1,0 +1,49 @@
+-- in.journal --
+commodity $
+    format 1,000.00
+
+commodity EUR
+    format 1.000,00 EUR
+
+2024-01-15 Grocery Store
+    expenses:food  ^$50
+    assets:cash  100.00 EUR
+
+2024-01-16 Another Store
+    expenses:food  50 E^UR
+    assets:cash  $30 @ ^$1.5
+    assets:checking  = ^$40
+
+-- rename --
+€
+USD
+€
+€
+
+-- expect --
+7:19
+  prep in.journal 7:19-7:20 "$"
+  ren in.journal 0:10-0:11 "€"
+  ren in.journal 7:19-7:20 "€"
+  ren in.journal 12:17-12:18 "€"
+  ren in.journal 12:23-12:24 "€"
+  ren in.journal 13:23-13:24 "€"
+11:23
+  prep in.journal 11:22-11:25 "EUR"
+  ren in.journal 3:10-3:13 "USD"
+  ren in.journal 8:24-8:27 "USD"
+  ren in.journal 11:22-11:25 "USD"
+12:23
+  prep in.journal 12:23-12:24 "$"
+  ren in.journal 0:10-0:11 "€"
+  ren in.journal 7:19-7:20 "€"
+  ren in.journal 12:17-12:18 "€"
+  ren in.journal 12:23-12:24 "€"
+  ren in.journal 13:23-13:24 "€"
+13:23
+  prep in.journal 13:23-13:24 "$"
+  ren in.journal 0:10-0:11 "€"
+  ren in.journal 7:19-7:20 "€"
+  ren in.journal 12:17-12:18 "€"
+  ren in.journal 12:23-12:24 "€"
+  ren in.journal 13:23-13:24 "€"

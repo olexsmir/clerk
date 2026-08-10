@@ -72,6 +72,9 @@ func (s *server) Initialize(ctx context.Context, params *protocol.InitializePara
 		Capabilities: protocol.ServerCapabilities{
 			DocumentFormattingProvider: &protocol.DocumentFormattingOptions{},
 			DefinitionProvider:         protocol.Boolean(true),
+			RenameProvider: &protocol.RenameOptions{
+				PrepareProvider: new(true),
+			},
 			CompletionProvider: &protocol.CompletionOptions{
 				TriggerCharacters: []string{":", "@"},
 			},

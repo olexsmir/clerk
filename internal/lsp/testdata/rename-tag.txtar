@@ -1,0 +1,40 @@
+-- in.journal --
+2024-01-15 Grocery Store ; cli^ent:acme, urgent
+    expenses:food  $50 ; project:alpha
+
+2024-01-16 Grocery Store
+    ; client:other
+    expenses:food  $30 ; client:beta, url:https://x/y
+
+tag cli^ent
+
+2024-01-17 Grocery Store ; ur^gent, url:https://x^/y
+    expenses:food  $10 ; pro^ject:beta
+
+-- rename --
+customer
+customer
+priority
+ignored
+task
+
+-- expect --
+0:30
+  prep in.journal 0:27-0:33 "client"
+  ren in.journal 0:27-0:33 "customer"
+  ren in.journal 4:6-4:12 "customer"
+  ren in.journal 5:25-5:31 "customer"
+  ren in.journal 7:4-7:10 "customer"
+7:7
+  prep <none>
+  ren <none>
+9:29
+  prep <none>
+  ren <none>
+9:48
+  prep <none>
+  ren <none>
+10:28
+  prep in.journal 10:25-10:32 "project"
+  ren in.journal 1:25-1:32 "task"
+  ren in.journal 10:25-10:32 "task"

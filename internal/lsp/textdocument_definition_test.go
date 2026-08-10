@@ -2,7 +2,6 @@ package lsp
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -10,7 +9,6 @@ import (
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 
-	"olexsmir.xyz/clerk/internal/lsp/lsputil"
 	"olexsmir.xyz/clerk/internal/testutil/golden"
 )
 
@@ -33,36 +31,16 @@ func TestDefinition_DocumentNotFound(t *testing.T) {
 // Golden
 
 func TestDefinitionTxtar(t *testing.T) {
-	tests := []string{
-		"definition-journal",
-		"definition-include",
-	}
-	for _, tt := range tests {
+	for _, tt := range []string{"definition-journal", "definition-include"} {
 		ar := golden.Read(t, tt)
 		t.Run(tt, func(t *testing.T) {
-			dir := t.TempDir()
-			for _, f := range ar.Files {
-				if f.Name != "expect" {
-					if err := os.WriteFile(filepath.Join(dir, f.Name), f.Data, 0o644); err != nil {
-						t.Fatal(err)
-					}
-				}
-			}
-
-			content, cursors := stripCursors(string(ar.Get("in.journal")))
-			u := uri.File(filepath.Join(dir, "in.journal"))
-
-			srv := NewServer("test")
-			srv.server.openDoc(u, content, 1, "journal")
+			h := newTxtarHarness(t, ar)
 
 			var b strings.Builder
-			for _, c := range cursors {
-				pos := lsputil.Position(content, c)
-				res, err := srv.server.Definition(t.Context(), &protocol.DefinitionParams{
-					TextDocumentPositionParams: protocol.TextDocumentPositionParams{
-						TextDocument: protocol.TextDocumentIdentifier{URI: u},
-						Position:     pos,
-					},
+			for i := range h.cursors {
+				pos := h.textDocumentPosition(i).Position
+				res, err := h.srv.Definition(t.Context(), &protocol.DefinitionParams{
+					TextDocumentPositionParams: h.textDocumentPosition(i),
 				})
 				if err != nil {
 					t.Fatal(err)
@@ -79,17 +57,5 @@ func TestDefinitionTxtar(t *testing.T) {
 			}
 			golden.Assert(t, ar, b.String())
 		})
-	}
-}
-
-func stripCursors(content string) (string, []int) {
-	var cursors []int
-	for {
-		i := strings.Index(content, "^")
-		if i < 0 {
-			return content, cursors
-		}
-		cursors = append(cursors, i)
-		content = content[:i] + content[i+1:]
 	}
 }

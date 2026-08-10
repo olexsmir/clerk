@@ -1,0 +1,44 @@
+-- in.journal --
+include sub.journal
+
+account ex^penses
+account expenses2
+account expenses:food
+
+2024-01-15 Grocery Store
+    expenses:food  $50
+    expenses2  $20
+    (expenses:food)  $10
+
+2024-01-16 Another Store
+    expen^ses:food  $30
+    assets:cash
+
+-- sub.journal --
+account expenses:food
+
+2024-01-16 Grocery Store
+    expenses:food  $5
+
+-- rename --
+costs
+food
+
+-- expect --
+2:10
+  prep in.journal 2:8-2:16 "expenses"
+  ren in.journal 2:8-2:16 "costs"
+  ren in.journal 4:8-4:21 "costs:food"
+  ren in.journal 7:4-7:17 "costs:food"
+  ren in.journal 9:5-9:18 "costs:food"
+  ren in.journal 12:4-12:17 "costs:food"
+  ren sub.journal 0:8-0:21 "costs:food"
+  ren sub.journal 3:4-3:17 "costs:food"
+12:9
+  prep in.journal 12:4-12:17 "expenses:food"
+  ren in.journal 4:8-4:21 "food"
+  ren in.journal 7:4-7:17 "food"
+  ren in.journal 9:5-9:18 "food"
+  ren in.journal 12:4-12:17 "food"
+  ren sub.journal 0:8-0:21 "food"
+  ren sub.journal 3:4-3:17 "food"

@@ -162,49 +162,23 @@ func TestCompleteItems_NoTransactions(t *testing.T) {
 // Golden
 
 func TestCompletionTxtar(t *testing.T) {
-	tests := []string{
-		"completion-journal",
-		"completion-unicode",
-		"completion-crlf",
-	}
-
-	for _, tt := range tests {
+	for _, tt := range []string{"completion-journal", "completion-unicode", "completion-crlf"} {
 		ar := golden.Read(t, tt)
 
 		t.Run(tt, func(t *testing.T) {
-			content := string(ar.Get("in.journal"))
-
-			var cursors []int
-			for {
-				m := strings.Index(content, "^")
-				if m < 0 {
-					break
-				}
-				cursors = append(cursors, m)
-				content = content[:m] + content[m+1:]
-			}
-			if len(cursors) == 0 {
-				t.Fatal("no '^' markers in in.journal")
-			}
-
-			srv := NewServer("test")
-			srv.server.openDoc(uri.URI("file:///test.journal"), content, 1, "journal")
-			srv.server.current = analyzer.Build(srv.server.loader.ResolveBytes("", []byte(content)))
+			h := newTxtarHarness(t, ar)
 
 			var b strings.Builder
-			for _, c := range cursors {
-				line, col := lsputil.LineCol(content, c)
-				res, err := srv.server.Completion(t.Context(), &protocol.CompletionParams{
-					TextDocumentPositionParams: protocol.TextDocumentPositionParams{
-						TextDocument: protocol.TextDocumentIdentifier{URI: uri.URI("file:///test.journal")},
-						Position:     protocol.Position{Line: uint32(line), Character: uint32(col)},
-					},
+			for i, c := range h.cursors {
+				tdp := h.textDocumentPosition(i)
+				res, err := h.srv.Completion(t.Context(), &protocol.CompletionParams{
+					TextDocumentPositionParams: tdp,
 				})
 				if err != nil {
 					t.Fatal(err)
 				}
-				ctx, start := detectCompletionCtx(content, c)
-				fmt.Fprintf(&b, "%d:%d %s %q\n", line, col, ctx, content[start:c])
+				ctx, start := detectCompletionCtx(h.content, c)
+				fmt.Fprintf(&b, "%d:%d %s %q\n", tdp.Position.Line, tdp.Position.Character, ctx, h.content[start:c])
 				list, ok := res.(*protocol.CompletionList)
 				if !ok {
 					t.Fatalf("Completion returned %T, want *protocol.CompletionList", res)
