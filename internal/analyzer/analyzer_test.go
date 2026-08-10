@@ -125,7 +125,9 @@ func fprint(w io.Writer, a *Analysis) {
 		fmt.Fprintf(w, "    directives: %d\n", len(info.Directives))
 		fmt.Fprintf(w, "    used: %d\n", info.UsedCount)
 		for _, d := range info.Directives {
-			fmt.Fprintf(w, "      payee %s\n", d.Name)
+			if d.Name != nil {
+				fmt.Fprintf(w, "      payee %s\n", d.Name.Name)
+			}
 		}
 		fmt.Fprintf(w, "    usages: %d\n", len(info.Usage))
 		for _, u := range info.Usage {
@@ -166,7 +168,9 @@ func fprint(w io.Writer, a *Analysis) {
 		case *ast.CommodityDirective:
 			fmt.Fprintf(w, "  commodity %s\n", d.Commodity)
 		case *ast.PayeeDirective:
-			fmt.Fprintf(w, "  payee %s\n", d.Name)
+			if d.Name != nil {
+				fmt.Fprintf(w, "  payee %s\n", d.Name.Name)
+			}
 		case *ast.TagDirective:
 			fmt.Fprintf(w, "  tag %s\n", d.Name)
 		case *ast.IncludeDirective:

@@ -21,7 +21,7 @@ type CommodityDirective struct {
 func (CommodityDirective) entryNode() {}
 
 type PayeeDirective struct {
-	Name    string
+	Name    *Payee
 	Comment *Comment
 	Span    token.Span
 }

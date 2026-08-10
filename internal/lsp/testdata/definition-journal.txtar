@@ -1,0 +1,49 @@
+-- in.journal --
+account ex^penses:food
+account assets:checking
+account untracked
+    no^te ignore
+
+commodity ^$
+    format 1,000.00
+
+payee Grocery^ Store
+
+^2024-01-15 Grocery^ Store ; no^te
+    ^expenses:food^  $5^0
+    expenses:food  ^$50
+    assets:checking  = ^$30
+    assets:cash  100.00 E^UR
+
+2024-01-16 Another^ Store
+    expenses:food  $50
+    assets:cash  100.00 E^UR
+    assets:checking  $30 @ ^$1.5
+
+2024-01-17 продукти
+    expenses:food  $10
+    assets:cash
+
+2024-01-18 прод^укти
+    expenses:food  $20
+    assets:ca^sh
+
+-- expect --
+0:10 in.journal 0:8-0:21
+3:6 <none>
+5:10 in.journal 5:10-5:11
+8:13 in.journal 8:6-8:19
+10:0 <none>
+10:18 in.journal 8:6-8:19
+10:29 <none>
+11:4 in.journal 0:8-0:21
+11:17 in.journal 0:8-0:21
+11:21 <none>
+12:19 in.journal 5:10-5:11
+13:23 in.journal 5:10-5:11
+14:25 in.journal 14:24-14:27
+16:18 in.journal 16:11-16:24
+18:25 in.journal 14:24-14:27
+19:27 in.journal 5:10-5:11
+25:15 in.journal 21:11-21:19
+27:13 in.journal 14:4-14:15

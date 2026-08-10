@@ -465,9 +465,9 @@ func (p *Parser) parsePayeeDirective() *ast.PayeeDirective {
 	p.expect(token.PAYEE)
 	p.skipWhitespace()
 
-	name := ""
+	var name *ast.Payee
 	if p.got(token.TEXT) || p.got(token.STRING) || p.got(token.COMMODITYMARK) {
-		name = p.parsePayee().Name
+		name = p.parsePayee()
 	}
 
 	comment := p.parseOptInlineComment()

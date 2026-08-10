@@ -1,0 +1,18 @@
+-- in.journal --
+include sub.journal
+
+2024-01-16 Another^ Store
+    expenses:fo^od  100.00 EUR
+    assets:ca^sh
+
+-- sub.journal --
+account expenses:food
+
+2024-01-15 Grocery Store
+    expenses:food  $50
+    assets:cash
+
+-- expect --
+2:18 in.journal 2:11-2:24
+3:15 sub.journal 0:8-0:21
+4:13 sub.journal 4:4-4:15

@@ -54,7 +54,7 @@ func (p *printer) writeAliasDirective(a *ast.AliasDirective) {
 
 func (p *printer) writePayeeDirective(pd *ast.PayeeDirective) {
 	p.buf.WriteString("payee ")
-	p.buf.WriteString(quoteString(pd.Name))
+	p.buf.WriteString(quoteString(pd.Name.Name))
 	p.writeInlineComment(pd.Comment)
 }
 

@@ -57,8 +57,10 @@ func dumpEntry(b *strings.Builder, e Entry, depth int) {
 	case *PayeeDirective:
 		indent(b, depth)
 		fmt.Fprintf(b, "PayeeDirective %s\n", e.Span)
-		indent(b, depth+1)
-		fmt.Fprintf(b, "Name: %q\n", e.Name)
+		if e.Name != nil {
+			indent(b, depth+1)
+			fmt.Fprintf(b, "Name: %q %s\n", e.Name.Name, e.Name.Span)
+		}
 		dumpOptComment(b, e.Comment, depth+1)
 	case *TagDirective:
 		indent(b, depth)

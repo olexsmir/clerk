@@ -63,7 +63,7 @@ type CommodityUsage struct {
 }
 
 type PayeeInfo struct {
-	Directives []*ast.Payee
+	Directives []*ast.PayeeDirective
 	Usage      []PayeeUsage
 	UsedCount  int
 	LastUsed   ast.Date

@@ -122,15 +122,15 @@ func (a *Analysis) addAccountDirective(ad *ast.AccountDirective) {
 }
 
 func (a *Analysis) addPayeeDirective(pd *ast.PayeeDirective) {
-	info, ok := a.Payees[pd.Name]
+	if pd.Name == nil {
+		return
+	}
+	info, ok := a.Payees[pd.Name.Name]
 	if !ok {
 		info = &PayeeInfo{}
-		a.Payees[pd.Name] = info
+		a.Payees[pd.Name.Name] = info
 	}
-	info.Directives = append(info.Directives, &ast.Payee{
-		Name: pd.Name,
-		Span: pd.Span,
-	})
+	info.Directives = append(info.Directives, pd)
 }
 
 func (a *Analysis) addTagDirective(td *ast.TagDirective) {
