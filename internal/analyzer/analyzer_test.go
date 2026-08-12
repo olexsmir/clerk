@@ -293,15 +293,4 @@ func fprint(w io.Writer, a *Analysis) {
 	for _, v := range a.TagValues {
 		fmt.Fprintf(w, "  %s\n", v)
 	}
-
-	// commodity decimal marks
-	csyms2 := make([]string, 0, len(a.CommodityDecimalMarks))
-	for sym := range a.CommodityDecimalMarks {
-		csyms2 = append(csyms2, sym)
-	}
-	sort.Strings(csyms2)
-	fmt.Fprintf(w, "\ncommodity decimal marks (%d):\n", len(a.CommodityDecimalMarks))
-	for _, sym := range csyms2 {
-		fmt.Fprintf(w, "  %s: %c\n", sym, a.CommodityDecimalMarks[sym])
-	}
 }

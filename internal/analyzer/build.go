@@ -17,16 +17,15 @@ func Build(rj *journal.ResolvedJournal) *Analysis {
 	}
 
 	a := &Analysis{
-		Files:                 rj.Occurrences,
-		Accounts:              make(map[string]*AccountInfo),
-		AccountAliases:        make(map[string]string),
-		Commodities:           make(map[string]*CommodityInfo),
-		Payees:                make(map[string]*PayeeInfo),
-		Tags:                  make(map[string]*TagInfo),
-		AccountsByPrefix:      make(map[string][]string),
-		PayeeTemplates:        make(map[string][]PostingTemplate),
-		CommodityDecimalMarks: make(map[string]byte),
-		TransactionsByKey:     make(map[string][]*ast.Transaction),
+		Files:             rj.Occurrences,
+		Accounts:          make(map[string]*AccountInfo),
+		AccountAliases:    make(map[string]string),
+		Commodities:       make(map[string]*CommodityInfo),
+		Payees:            make(map[string]*PayeeInfo),
+		Tags:              make(map[string]*TagInfo),
+		AccountsByPrefix:  make(map[string][]string),
+		PayeeTemplates:    make(map[string][]PostingTemplate),
+		TransactionsByKey: make(map[string][]*ast.Transaction),
 	}
 	for _, item := range rj.Items {
 		if item.IsInclude {
@@ -95,13 +94,6 @@ func (a *Analysis) addEntry(fileIndex int, entry ast.Entry) {
 		a.addCommentTags(fileIndex, nil, e.Comment)
 		for _, c := range e.HeaderComments {
 			a.addCommentTags(fileIndex, nil, c)
-		}
-	case *ast.DefaultCommodityDirective:
-		if e.Amount.Commodity != "" {
-			mark := e.Amount.QuantityFmt.Decimal
-			if mark != 0 {
-				a.CommodityDecimalMarks[e.Amount.Commodity] = mark
-			}
 		}
 	}
 
@@ -234,13 +226,6 @@ func (a *Analysis) addPostings(fileIndex int, postings []*ast.Posting, date *ast
 		a.addCommentTags(fileIndex, date, posting.Comment)
 		for i := range posting.Comments {
 			a.addCommentTags(fileIndex, date, &posting.Comments[i])
-		}
-
-		// Collect decimal mark from amount formatting.
-		if posting.Amount != nil && posting.Amount.Commodity != "" && posting.Amount.QuantityFmt.Decimal != 0 {
-			if _, ok := a.CommodityDecimalMarks[posting.Amount.Commodity]; !ok {
-				a.CommodityDecimalMarks[posting.Amount.Commodity] = posting.Amount.QuantityFmt.Decimal
-			}
 		}
 	}
 }

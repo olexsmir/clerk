@@ -35,9 +35,6 @@ type Analysis struct {
 	Dates       []ast.Date // unique transaction dats in sorted order
 	DateStrings []string   // same order as Dates, "YYYY-MM-DD"
 
-	// CommodityDecimalMarks decimal mark per commodity, detected from D/amounts.
-	CommodityDecimalMarks map[string]byte
-
 	// TransactionsByKey groups transactions by [TxDuplicateKey] signature.
 	TransactionsByKey map[string][]*ast.Transaction
 }
