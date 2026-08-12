@@ -18,7 +18,7 @@ func (s *server) Formatting(ctx context.Context, params *protocol.DocumentFormat
 	}
 
 	text := state.text
-	lex := lexer.New(params.TextDocument.URI.Path(), []byte(text))
+	lex := lexer.New(params.TextDocument.URI.Path(), text)
 	jnrl := parser.New(lex).ParseJournal()
 	if len(jnrl.Errors) > 0 {
 		return nil, fmt.Errorf("can't format file with errors: %v", jnrl.Errors[0].Message) // TODO: report all errors

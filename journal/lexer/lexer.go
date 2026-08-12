@@ -41,7 +41,7 @@ const (
 
 type Lexer struct {
 	file  string
-	input []byte
+	input string
 	mode  mode
 
 	ch     rune // current rune (0 = EOF/sentinel)
@@ -62,7 +62,7 @@ type Lexer struct {
 	subdirective bool
 }
 
-func New(file string, input []byte) *Lexer {
+func New(file string, input string) *Lexer {
 	l := &Lexer{
 		file:  file,
 		input: input,
@@ -690,7 +690,7 @@ func (l *Lexer) advance() {
 		l.ch = 0
 		l.chSize = 0
 	} else {
-		r, size := utf8.DecodeRune(l.input[l.rpos:])
+		r, size := utf8.DecodeRuneInString(l.input[l.rpos:])
 		l.ch = r
 		l.chSize = size
 	}
@@ -705,7 +705,7 @@ func (l *Lexer) advance() {
 }
 
 func (l *Lexer) peek() rune {
-	r, _ := utf8.DecodeRune(l.input[l.rpos:])
+	r, _ := utf8.DecodeRuneInString(l.input[l.rpos:])
 	return r
 }
 

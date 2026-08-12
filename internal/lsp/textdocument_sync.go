@@ -86,7 +86,7 @@ func (s *server) closeDoc(u uri.URI) {
 }
 
 func parseJournalStr(content string) *ast.Journal {
-	l := lexer.New("", []byte(content))
+	l := lexer.New("", content)
 	p := parser.New(l)
 	return p.ParseJournal()
 }

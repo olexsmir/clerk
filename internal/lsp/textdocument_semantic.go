@@ -522,7 +522,7 @@ func semEmitBalanceAssertion(content string, ba *ast.BalanceAssertion, emit semE
 }
 
 func semLexerFallback(content string, base []rawSpan, emit semEmitFunc) {
-	l := lexer.New("", []byte(content))
+	l := lexer.New("", content)
 
 	var commentStart, commentEnd int // 0 = not inside a comment line
 	lineStart := true                // the next significant token starts a line
