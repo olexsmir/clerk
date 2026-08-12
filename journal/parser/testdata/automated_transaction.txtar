@@ -39,7 +39,6 @@ Journal
         HasSpace: false
         IsExpr: true
         Precision: 0
-        Decimal: "."
     Posting j:6:1-8:0
       Account j:6:5-6:18
         SubAccount: "assets" j:6:5-6:11
@@ -51,7 +50,6 @@ Journal
         HasSpace: false
         IsExpr: true
         Precision: 0
-        Decimal: "."
   BlankLine j:8:0-8:1
   AutomatedTransaction j:8:1-10:1
     Expr: "income:salary" j:8:3-9:0
@@ -67,4 +65,3 @@ Journal
         IsExpr: true
         Expr: "amount * 0.5"
         Precision: 0
-        Decimal: "."

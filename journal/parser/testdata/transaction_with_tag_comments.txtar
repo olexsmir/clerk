@@ -24,7 +24,6 @@ Journal
         CommodityPos: Before
         HasSpace: false
         Precision: 0
-        Decimal: "."
       Comment j:2:28-3:0
         Marker: ";"
         Tags

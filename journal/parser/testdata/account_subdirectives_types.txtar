@@ -1,0 +1,59 @@
+-- input --
+account expenses:food
+  type X
+  note grocery shopping  ; what we spend
+  alias food
+
+account assets:bank
+  type asset
+  # hash comment
+  payee ^store$
+  alias bank
+  type A  ; duplicate type
+  alias
+
+-- expect --
+Journal
+  AccountDirective j:1:1-6:0
+    Account j:1:9-2:0
+      SubAccount: "expenses" j:1:9-1:17
+      SubAccount: "food" j:1:18-2:0
+    Subdirective
+      Name: "type" j:2:3-2:7
+      Value: "X" j:2:8-3:0
+    Subdirective
+      Name: "note" j:3:3-3:7
+      Value: "grocery shopping" j:3:8-3:24
+      Comment j:3:26-4:0
+        Marker: ";"
+        Text: "what we spend"
+    Subdirective
+      Name: "alias" j:4:3-4:8
+      Value: "food" j:4:9-5:0
+  BlankLine j:6:0-6:1
+  AccountDirective j:6:1-14:0
+    Account j:6:9-7:0
+      SubAccount: "assets" j:6:9-6:15
+      SubAccount: "bank" j:6:16-7:0
+    Subdirective
+      Name: "type" j:7:3-7:7
+      Value: "asset" j:7:8-8:0
+    Comment j:8:3-9:0
+      Marker: "#"
+      Text: "hash comment"
+    Subdirective
+      Name: "alias" j:10:3-10:8
+      Value: "bank" j:10:9-11:0
+    Subdirective
+      Name: "type" j:11:3-11:7
+      Value: "A" j:11:8-11:9
+      Comment j:11:11-12:0
+        Marker: ";"
+        Text: "duplicate type"
+    Subdirective
+      Name: "alias" j:12:3-13:0
+      Value: "" 0:0-0:0
+  BlankLine j:14:0-14:1
+  Errors
+    j:9:3-9:8: unknown subdirective "payee"
+    j:13:0-14:0: expected value for subdirective "alias"

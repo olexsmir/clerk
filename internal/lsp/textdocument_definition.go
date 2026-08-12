@@ -49,6 +49,9 @@ func resolveSymbol(ref *symbolRef, an *analyzer.Analysis) *protocol.Location {
 }
 
 func findAccountDefinition(an *analyzer.Analysis, name string) *protocol.Location {
+	if canon, ok := an.AccountAliases[name]; ok {
+		name = canon
+	}
 	info := an.Accounts[name]
 	if info == nil {
 		return nil

@@ -20,6 +20,9 @@ func (u *UnusedAccount) CheckJournal(an *analyzer.Analysis) []Find {
 		if len(info.Usages) > 0 {
 			continue
 		}
+		if _, aliased := an.AccountAliases[name]; aliased {
+			continue
+		}
 		for _, d := range info.Directives {
 			finds = append(finds, Find{
 				Code:     u.ID(),

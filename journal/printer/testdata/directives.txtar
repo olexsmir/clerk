@@ -1,8 +1,19 @@
 -- input --
 ; Directives
 account Assets:Cash ; cash account
+account Assets:Bank
+  type A
+  note main bank account  ; bank note
+  alias bank
+  alias checking  ; checking alias
+  ; some note
+  # hash comment
 commodity $
 commodity UAH
+commodity EUR
+  format EUR 1.000,00  ; euro format
+commodity CAD
+  format 1 000.00 CAD
 commodity 1000.00 USD
 commodity $1000.00
 commodity 1,000.00 UAH
@@ -39,8 +50,19 @@ end comment
 -- expect --
 ; Directives
 account Assets:Cash  ; cash account
+account Assets:Bank
+  type A
+  note main bank account  ; bank note
+  alias bank
+  alias checking  ; checking alias
+  ; some note
+  # hash comment
 commodity $
 commodity UAH
+commodity EUR
+  format EUR 1.000,00  ; euro format
+commodity CAD
+  format 1 000.00 CAD
 commodity 1000.00 USD
 commodity $1000.00
 commodity 1,000.00 UAH

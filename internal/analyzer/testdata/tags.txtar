@@ -41,6 +41,8 @@ accounts (2):
       file 0: expenses:consulting
     last-used: 2024-02-03
 
+aliases (0):
+
 payees (1):
   Client work
     directives: 0
@@ -132,5 +134,4 @@ tag values (4):
   extra
   project-xyz
 
-commodity decimal marks (1):
-  $: .
+commodity decimal marks (0):

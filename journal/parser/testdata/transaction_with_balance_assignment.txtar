@@ -16,7 +16,6 @@ Journal
         CommodityPos: Before
         HasSpace: false
         Precision: 0
-        Decimal: "."
       BalanceAssertion j:2:12-3:0
         IsStrict: false
         IsInclusive: false
@@ -27,5 +26,4 @@ Journal
           CommodityPos: Before
           HasSpace: false
           Precision: 0
-          Decimal: "."
   BlankLine j:4:0-4:1

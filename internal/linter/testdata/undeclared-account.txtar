@@ -1,14 +1,19 @@
 -- in.journal --
 account Expenses:Food
+  alias food
+
+account Assets:Bank
+  alias bank
+
+alias cash = Assets:Cash
 
 2026-01-15 * "Lunch"
-  Expenses:Food      $10
+  food      $10
   Assets:Cash
 
 2026-01-16 * "Dinner"
   Expenses:Food      $15
-  Assets:Cash
+  cash
 
 -- expect --
-in.journal:5:3: undeclared-account: undeclared account: Assets:Cash
-in.journal:9:3: undeclared-account: undeclared account: Assets:Cash
+in.journal:11:3: undeclared-account: undeclared account: Assets:Cash

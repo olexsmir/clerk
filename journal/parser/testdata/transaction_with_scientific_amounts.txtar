@@ -18,7 +18,6 @@ Journal
         CommodityPos: After
         HasSpace: true
         Precision: 0
-        Decimal: "."
     Posting j:3:1-4:1
       Account j:3:5-3:6
         SubAccount: "b" j:3:5-3:6
@@ -28,7 +27,6 @@ Journal
         CommodityPos: Before
         HasSpace: true
         Precision: 0
-        Decimal: "."
     Posting j:4:1-6:0
       Account j:4:5-4:6
         SubAccount: "c" j:4:5-4:6

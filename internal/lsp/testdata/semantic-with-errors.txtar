@@ -5,6 +5,12 @@
 
 some broken input
 
+commodity $
+  format 1.000,00
+
+account assets:bank
+  payee ^store$
+
 -- expect --
 0:0+10 class
 0:11+6 property
@@ -14,3 +20,9 @@ some broken input
 2:2+11 namespace
 2:17+1 type
 2:18+7 number negative
+6:0+9 keyword
+6:10+1 type
+7:2+6 keyword
+7:9+8 number
+9:0+7 keyword
+9:8+11 namespace

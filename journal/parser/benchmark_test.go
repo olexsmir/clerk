@@ -25,7 +25,7 @@ func bench(fpath string) func(b *testing.B) {
 		b.ResetTimer()
 		b.ReportAllocs()
 		for b.Loop() {
-			l := lexer.New("bench", string(src))
+			l := lexer.New("bench", src)
 			New(l).ParseJournal()
 		}
 	}

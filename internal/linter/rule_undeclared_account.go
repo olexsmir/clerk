@@ -17,6 +17,9 @@ func (u *UndeclaredAccount) CheckJournal(an *analyzer.Analysis) []Find {
 		if len(info.Directives) > 0 {
 			continue
 		}
+		if _, aliased := an.AccountAliases[name]; aliased {
+			continue
+		}
 		for _, usage := range info.Usages {
 			finds = append(finds, Find{
 				Code:     u.ID(),

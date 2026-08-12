@@ -203,14 +203,33 @@ func visitEntry(content string, e ast.Entry, emit semEmitFunc) {
 	case *ast.AccountDirective:
 		emit(directiveKeyword(e.Span, "account"), semDirective, 0)
 		emit(e.Account.Span, semAccount, 0)
+		for _, sd := range e.Subdirectives {
+			if sd.Name == "" {
+				emitComment(sd.Comment, emit)
+				continue
+			}
+			emit(sd.NameSpan, semDirective, 0)
+			switch sd.Name {
+			case "alias":
+				emit(sd.ValueSpan, semAccount, 0)
+			case "type", "note":
+				emit(sd.ValueSpan, semProperty, 0)
+			}
+			emitComment(sd.Comment, emit)
+		}
 		emitComment(e.Comment, emit)
 	case *ast.CommodityDirective:
 		emit(directiveKeyword(e.Span, "commodity"), semDirective, 0)
-		if e.Format.Span.End.Offset > 0 {
-			semEmitAmount(content, &e.Format, emit)
+		if e.FormatSub != nil {
+			if e.FormatSub.KeywordSpan.End.Offset > 0 {
+				emit(e.FormatSub.KeywordSpan, semDirective, 0)
+			}
+			semEmitAmount(content, &e.FormatSub.Amount, emit)
+			emitComment(e.FormatSub.Comment, emit)
 		} else if e.CommoditySpan.Start.Offset > 0 && e.CommoditySpan.End.Offset > 0 {
 			emit(e.CommoditySpan, semCommodity, 0)
 		}
+		emitBlockComments(e.BlockComments, emit)
 		emitComment(e.Comment, emit)
 	case *ast.IncludeDirective:
 		emitDirective(content, e.Span, len("include"), semString, e.Comment, emit)
@@ -464,6 +483,12 @@ func quantitySpan(content string, a *ast.Amount) (int, int) {
 
 type semEmitFunc func(tok token.Span, tokKind, modifier uint32)
 
+func emitBlockComments(cs []*ast.Comment, emit semEmitFunc) {
+	for _, c := range cs {
+		emitComment(c, emit)
+	}
+}
+
 func emitComment(c *ast.Comment, emit semEmitFunc) {
 	if c == nil {
 		return
@@ -522,7 +547,7 @@ func semEmitBalanceAssertion(content string, ba *ast.BalanceAssertion, emit semE
 }
 
 func semLexerFallback(content string, base []rawSpan, emit semEmitFunc) {
-	l := lexer.New("", content)
+	l := lexer.New("", []byte(content))
 
 	var commentStart, commentEnd int // 0 = not inside a comment line
 	lineStart := true                // the next significant token starts a line
@@ -615,16 +640,12 @@ func isLineStartToken(t token.Type) bool {
 	return false
 }
 
+// encodeSemTokens encodes tokens into LSP delta form. Input must be sorted by
+// line and column; [rawToSemanticTokens] produces such order.
 func encodeSemTokens(tokens []semanticToken) []uint32 {
 	if len(tokens) == 0 {
 		return nil
 	}
-	slices.SortFunc(tokens, func(a, b semanticToken) int {
-		if a.line != b.line {
-			return int(a.line) - int(b.line)
-		}
-		return int(a.col) - int(b.col)
-	})
 	data := make([]uint32, 0, len(tokens)*5)
 	var prevLine, prevCol uint32
 	for _, t := range tokens {

@@ -29,8 +29,8 @@ func (m *MissingCommodity) CheckJournal(an *analyzer.Analysis) []Find {
 			m.check(&finds, e.From)
 			m.check(&finds, e.To)
 		case *ast.CommodityDirective:
-			if e.Format.Commodity != "" {
-				m.check(&finds, e.Format)
+			if e.FormatSub != nil && e.FormatSub.Amount.Commodity != "" {
+				m.check(&finds, e.FormatSub.Amount)
 			}
 		case *ast.DefaultCommodityDirective:
 			m.check(&finds, e.Amount)

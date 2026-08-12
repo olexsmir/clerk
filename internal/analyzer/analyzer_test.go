@@ -31,6 +31,7 @@ func TestAnalysis(t *testing.T) {
 		"tags",
 		"decimal-marks",
 		"duplicate-transactions",
+		"aliases",
 	}
 
 	for _, tname := range tests {
@@ -109,6 +110,17 @@ func fprint(w io.Writer, a *Analysis) {
 		if info.LastUsed.Year != 0 {
 			fmt.Fprintf(w, "    last-used: %d-%02d-%02d\n", info.LastUsed.Year, info.LastUsed.Month, info.LastUsed.Day)
 		}
+	}
+
+	// account aliases
+	anames = anames[:0]
+	for name := range a.AccountAliases {
+		anames = append(anames, name)
+	}
+	sort.Strings(anames)
+	fmt.Fprintf(w, "\naliases (%d):\n", len(anames))
+	for _, name := range anames {
+		fmt.Fprintf(w, "  %s -> %s\n", name, a.AccountAliases[name])
 	}
 
 	// payees

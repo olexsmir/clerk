@@ -22,7 +22,6 @@ Journal
         CommodityPos: Before
         HasSpace: false
         Precision: 0
-        Decimal: "."
     Posting j:4:1-6:0
       Account j:4:5-4:25
         SubAccount: "assets" j:4:5-4:11
@@ -34,5 +33,4 @@ Journal
         CommodityPos: Before
         HasSpace: false
         Precision: 0
-        Decimal: "."
   BlankLine j:6:0-6:1

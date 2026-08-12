@@ -33,6 +33,8 @@ accounts (2):
       file 0: expenses:food
       file 0: expenses:food
 
+aliases (0):
+
 payees (0):
 
 prefixes (2):
@@ -59,5 +61,4 @@ tag names (0):
 
 tag values (0):
 
-commodity decimal marks (1):
-  $: .
+commodity decimal marks (0):

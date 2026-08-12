@@ -61,6 +61,7 @@ var tests = map[string]test{
 	"unicode-cyrillic.journal":                  {desc: "synthetic: unicode Cyrillic in descriptions and account names"},
 	"unicode-mixed-languages.journal":           {desc: "synthetic: mixed latin/cyrillic/cjk in descriptions and account names"},
 	"virtual-posting.dat":                       {desc: "ledger: virtual/balanced postings with [brackets]"},
+	"subdirectives.journal":                     {desc: "synthetic: account alias and commodity format subdirectives with comments"},
 }
 
 func TestParserOnRealJournals(t *testing.T) {

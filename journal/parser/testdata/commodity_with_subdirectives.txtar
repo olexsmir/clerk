@@ -7,12 +7,15 @@ commodity UAH
 Journal
   CommodityDirective j:1:1-5:0
     Commodity: "UAH" j:1:11-2:0
-    Amount j:2:10-3:0
-      Quantity: 1000
-      Commodity: "UAH" j:2:19-3:0
-      CommodityPos: After
-      HasSpace: true
-      Precision: 2
-      Decimal: "."
-      Thousands: " "
+    Format j:2:3-2:9
+      Amount j:2:10-3:0
+        Quantity: 1000
+        Commodity: "UAH" j:2:19-3:0
+        CommodityPos: After
+        HasSpace: true
+        Precision: 2
+        Decimal: "."
+        Thousands: " "
   BlankLine j:5:0-5:1
+  Errors
+    j:3:3-3:7: unknown subdirective "note"

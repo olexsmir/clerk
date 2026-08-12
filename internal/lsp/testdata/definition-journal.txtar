@@ -1,6 +1,10 @@
 -- in.journal --
 account ex^penses:food
 account assets:checking
+account expenses:food
+  alias foo^d
+alias fo^od = expenses:food
+alias food = expenses:fo^od
 account untracked
     no^te ignore
 
@@ -30,20 +34,23 @@ payee Grocery^ Store
 
 -- expect --
 0:10 in.journal 0:8-0:21
-3:6 <none>
-5:10 in.journal 5:10-5:11
-8:13 in.journal 8:6-8:19
-10:0 <none>
-10:18 in.journal 8:6-8:19
-10:29 <none>
-11:4 in.journal 0:8-0:21
-11:17 in.journal 0:8-0:21
-11:21 <none>
-12:19 in.journal 5:10-5:11
-13:23 in.journal 5:10-5:11
-14:25 in.journal 14:24-14:27
-16:18 in.journal 16:11-16:24
-18:25 in.journal 14:24-14:27
-19:27 in.journal 5:10-5:11
-25:15 in.journal 21:11-21:19
-27:13 in.journal 14:4-14:15
+3:11 in.journal 0:8-0:21
+4:8 in.journal 0:8-0:21
+5:24 in.journal 0:8-0:21
+7:6 <none>
+9:10 in.journal 9:10-9:11
+12:13 in.journal 12:6-12:19
+14:0 <none>
+14:18 in.journal 12:6-12:19
+14:29 <none>
+15:4 in.journal 0:8-0:21
+15:17 in.journal 0:8-0:21
+15:21 <none>
+16:19 in.journal 9:10-9:11
+17:23 in.journal 9:10-9:11
+18:25 in.journal 18:24-18:27
+20:18 in.journal 20:11-20:24
+22:25 in.journal 18:24-18:27
+23:27 in.journal 9:10-9:11
+29:15 in.journal 25:11-25:19
+31:13 in.journal 18:4-18:15

@@ -33,6 +33,9 @@ accounts (1):
       account expenses:food
     usages: 0
 
+aliases (1):
+  expenses:food -> expenses:food:old
+
 payees (1):
   TestPayee
     directives: 1

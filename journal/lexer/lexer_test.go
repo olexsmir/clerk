@@ -35,7 +35,7 @@ func TestLexer(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt, func(t *testing.T) {
 			a := golden.Read(t, tt)
-			golden.Assert(t, a, New("j", string(a.Get("input"))).dump())
+			golden.Assert(t, a, New("j", a.Get("input")).dump())
 		})
 	}
 }
@@ -75,7 +75,7 @@ func FuzzLexer(f *testing.F) {
 
 	f.Fuzz(func(t *testing.T, data []byte) {
 		// Pass 1: lex and validate token stream
-		l := New("j", string(data))
+		l := New("j", data)
 		var tokens []token.Token
 		maxTokens := max(len(data)*2, 16)
 		prevEnd := -1
@@ -125,7 +125,7 @@ func FuzzLexer(f *testing.F) {
 		}
 
 		// Pass 2: re-lex the same input — token stream must be identical
-		l2 := New("j", string(data))
+		l2 := New("j", data)
 		for _, expected := range tokens {
 			tok := l2.Next()
 			if tok.Type != expected.Type || tok.Literal != expected.Literal {

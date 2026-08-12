@@ -17,6 +17,10 @@ type Analysis struct {
 	Commodities map[string]*CommodityInfo
 	Payees      map[string]*PayeeInfo
 
+	// AccountAliases maps alias names to the account they resolve to, from
+	// account "alias" subdirectives and top-level "alias A = B" directives.
+	AccountAliases map[string]string
+
 	AccountNames     []string            // sorted for binary search
 	PayeeNames       []string            // sorted, all payee names from directives + usage
 	AccountsByPrefix map[string][]string // "expenses:" -> ["expenses:food", "expenses:taxi"]

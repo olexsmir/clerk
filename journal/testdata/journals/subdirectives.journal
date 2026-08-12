@@ -1,0 +1,35 @@
+; subdirectives coverage
+;
+; account directive blocks: alias/type/note subdirectives and comment lines;
+; commodity directive blocks: format subdirectives (inline and block forms)
+; and comment lines
+
+commodity $
+commodity $0.00
+commodity EUR
+  format EUR 1.000,00
+commodity UAH
+  format 1 000.00 UAH  ; hryvnia display format
+  ; block comment inside a commodity block
+commodity 1,000.00 USD
+
+account assets:bank
+  alias bank
+account assets:checking
+  type C
+  alias checking  ; main checking account
+  ; used for daily expenses
+  note main checking account
+account equity:opening
+account expenses:food
+  alias food
+  alias groceries  ; second alias for the same account
+
+2024-01-01 Opening balances
+    assets:bank      $1000.00
+    assets:checking  €200.00
+    equity:opening
+
+2024-01-02 Grocery store
+    expenses:food      50.00 UAH
+    assets:checking

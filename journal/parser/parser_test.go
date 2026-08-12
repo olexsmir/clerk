@@ -41,12 +41,14 @@ func TestParser_ParseFile(t *testing.T) {
 		"account directive",
 		"account directive with comment",
 		"account with subdirectives",
+		"account subdirectives types",
 		"comodity directive",
 		"comodity directive word",
 		"comodity directive no space",
 		"commodity quantity first",
 		"commodity quantity after",
 		"commodity with subdirectives",
+		"commodity format errors",
 		"payee directive",
 		"transaction",
 		"automated transaction",
@@ -101,7 +103,7 @@ func TestParser_ParseFile(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt, func(t *testing.T) {
 			a := golden.Read(t, tt)
-			l := lexer.New("j", string(a.Get("input")))
+			l := lexer.New("j", a.Get("input"))
 			f := New(l).ParseJournal()
 			golden.Assert(t, a, ast.Dump(f))
 		})
@@ -144,7 +146,7 @@ func FuzzParser(f *testing.F) {
 	f.Add([]byte{0xff, 0xfe, 0x00})
 
 	f.Fuzz(func(t *testing.T, data []byte) {
-		l := lexer.New("j", string(data))
+		l := lexer.New("j", data)
 		j := New(l).ParseJournal()
 		if j == nil {
 			t.Fatalf("nil journal for input %q", string(data))

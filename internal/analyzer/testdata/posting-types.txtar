@@ -38,6 +38,8 @@ accounts (3):
       file 0: virtual:unbalanced
     last-used: 2024-01-01
 
+aliases (0):
+
 payees (1):
   test
     directives: 0
@@ -76,5 +78,4 @@ tag names (0):
 
 tag values (0):
 
-commodity decimal marks (1):
-  $: .
+commodity decimal marks (0):

@@ -8,3 +8,12 @@ Journal
     Account j:1:9-2:0
       SubAccount: "expenses" j:1:9-1:17
       SubAccount: "food" j:1:18-2:0
+    Subdirective
+      Name: "note" j:2:3-2:7
+      Value: "some note" j:2:8-3:0
+    Subdirective
+      Name: "alias" j:3:3-3:8
+      Value: "food" j:3:9-3:13
+      Comment j:3:15-4:0
+        Marker: ";"
+        Text: "this gets ignored"

@@ -25,7 +25,7 @@ func bench(fpath string) func(b *testing.B) {
 		b.ResetTimer()
 		b.ReportAllocs()
 		for b.Loop() {
-			l := New("bench", string(src))
+			l := New("bench", src)
 			for l.Next().Type != token.EOF {
 			}
 		}

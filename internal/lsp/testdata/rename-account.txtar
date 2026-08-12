@@ -4,6 +4,9 @@ include sub.journal
 account ex^penses
 account expenses2
 account expenses:food
+  alias foo^d
+alias fo^od = expenses:food
+alias food = expenses:fo^od
 
 2024-01-15 Grocery Store
     expenses:food  $50
@@ -23,22 +26,49 @@ account expenses:food
 -- rename --
 costs
 food
+food
+food
+costs:food
 
 -- expect --
 2:10
   prep in.journal 2:8-2:16 "expenses"
   ren in.journal 2:8-2:16 "costs"
   ren in.journal 4:8-4:21 "costs:food"
-  ren in.journal 7:4-7:17 "costs:food"
-  ren in.journal 9:5-9:18 "costs:food"
-  ren in.journal 12:4-12:17 "costs:food"
+  ren in.journal 6:13-6:26 "costs:food"
+  ren in.journal 7:13-7:26 "costs:food"
+  ren in.journal 10:4-10:17 "costs:food"
+  ren in.journal 12:5-12:18 "costs:food"
+  ren in.journal 15:4-15:17 "costs:food"
   ren sub.journal 0:8-0:21 "costs:food"
   ren sub.journal 3:4-3:17 "costs:food"
-12:9
-  prep in.journal 12:4-12:17 "expenses:food"
+5:11
+  prep in.journal 5:8-5:12 "food"
+  ren in.journal 5:8-5:12 "food"
+  ren in.journal 6:6-6:10 "food"
+  ren in.journal 7:6-7:10 "food"
+6:8
+  prep in.journal 6:6-6:10 "food"
+  ren in.journal 5:8-5:12 "food"
+  ren in.journal 6:6-6:10 "food"
+  ren in.journal 7:6-7:10 "food"
+7:24
+  prep in.journal 7:13-7:26 "expenses:food"
   ren in.journal 4:8-4:21 "food"
-  ren in.journal 7:4-7:17 "food"
-  ren in.journal 9:5-9:18 "food"
-  ren in.journal 12:4-12:17 "food"
+  ren in.journal 6:13-6:26 "food"
+  ren in.journal 7:13-7:26 "food"
+  ren in.journal 10:4-10:17 "food"
+  ren in.journal 12:5-12:18 "food"
+  ren in.journal 15:4-15:17 "food"
   ren sub.journal 0:8-0:21 "food"
   ren sub.journal 3:4-3:17 "food"
+15:9
+  prep in.journal 15:4-15:17 "expenses:food"
+  ren in.journal 4:8-4:21 "costs:food"
+  ren in.journal 6:13-6:26 "costs:food"
+  ren in.journal 7:13-7:26 "costs:food"
+  ren in.journal 10:4-10:17 "costs:food"
+  ren in.journal 12:5-12:18 "costs:food"
+  ren in.journal 15:4-15:17 "costs:food"
+  ren sub.journal 0:8-0:21 "costs:food"
+  ren sub.journal 3:4-3:17 "costs:food"

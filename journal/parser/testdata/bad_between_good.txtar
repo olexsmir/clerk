@@ -18,7 +18,6 @@ Journal
         CommodityPos: Before
         HasSpace: false
         Precision: 0
-        Decimal: "."
     Posting j:4:1-5:1
       Account j:4:5-4:16
         SubAccount: "assets" j:4:5-4:11
@@ -29,6 +28,5 @@ Journal
         CommodityPos: Before
         HasSpace: false
         Precision: 0
-        Decimal: "."
   Errors
     j:3:5-3:7: expected account name, got ATAT

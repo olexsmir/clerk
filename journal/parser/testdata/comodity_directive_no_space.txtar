@@ -4,10 +4,11 @@ commodity $1000.00
 Journal
   CommodityDirective j:1:1-2:1
     Commodity: "$" j:1:11-1:12
-    Amount j:1:12-2:0
-      Quantity: 1000
-      Commodity: "$" j:1:11-1:12
-      CommodityPos: Before
-      HasSpace: false
-      Precision: 2
-      Decimal: "."
+    Format inline
+      Amount j:1:12-2:0
+        Quantity: 1000
+        Commodity: "$" j:1:11-1:12
+        CommodityPos: Before
+        HasSpace: false
+        Precision: 2
+        Decimal: "."

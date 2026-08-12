@@ -132,7 +132,7 @@ const (
 )
 
 type QuantityFormat struct {
-	Decimal   byte // '.' or ','
+	Decimal   byte // '.' or ','; 0 when the literal has no explicit decimal mark
 	Thousands byte // ',' '.' ' ' or 0
 	Precision int
 }

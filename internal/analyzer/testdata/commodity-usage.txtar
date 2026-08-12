@@ -53,6 +53,8 @@ accounts (2):
       file 0: expenses:food
     last-used: 2024-01-03
 
+aliases (0):
+
 payees (3):
   exchange
     directives: 0
@@ -109,7 +111,4 @@ tag names (0):
 
 tag values (0):
 
-commodity decimal marks (3):
-  $: .
-  AAPL: .
-  EUR: .
+commodity decimal marks (0):

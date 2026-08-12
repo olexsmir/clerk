@@ -34,12 +34,12 @@ func TestEncodeSemTokens(t *testing.T) {
 			0, 11, 5, semString, 0,
 			1, 4, 10, semAccount, 0,
 		}},
-		// the wire format requires non-negative deltas; unsorted input must
-		// be sorted first (commodity at col 36 comes after amount at col 32)
-		"unsorted input": {[]semanticToken{
+		// input must be sorted by line and column (rawToSemanticTokens output);
+		// deltas would underflow otherwise
+		"sorted": {[]semanticToken{
 			{line: 0, col: 0, length: 10, tokenType: semDate},
-			{line: 0, col: 36, length: 3, tokenType: semCommodity},
 			{line: 0, col: 32, length: 2, tokenType: semAmount},
+			{line: 0, col: 36, length: 3, tokenType: semCommodity},
 			{line: 1, col: 4, length: 6, tokenType: semAccount},
 		}, []uint32{
 			0, 0, 10, semDate, 0,

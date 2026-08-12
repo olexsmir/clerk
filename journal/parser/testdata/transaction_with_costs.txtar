@@ -38,7 +38,6 @@ Journal
           CommodityPos: After
           HasSpace: true
           Precision: 0
-          Decimal: "."
     Posting j:3:1-5:0
       Account j:3:2-4:0
         SubAccount: "assets" j:3:2-3:8
@@ -66,7 +65,6 @@ Journal
           CommodityPos: After
           HasSpace: true
           Precision: 0
-          Decimal: "."
     Posting j:7:1-9:0
       Account j:7:2-8:0
         SubAccount: "assets" j:7:2-7:8
@@ -94,7 +92,6 @@ Journal
           CommodityPos: After
           HasSpace: true
           Precision: 0
-          Decimal: "."
       BalanceAssertion j:10:34-11:0
         IsStrict: false
         IsInclusive: false
@@ -113,7 +110,6 @@ Journal
             CommodityPos: After
             HasSpace: true
             Precision: 0
-            Decimal: "."
     Posting j:11:1-13:0
       Account j:11:2-12:0
         SubAccount: "assets" j:11:2-11:8
@@ -133,7 +129,6 @@ Journal
         CommodityPos: After
         HasSpace: true
         Precision: 0
-        Decimal: "."
       Cost(unit) j:14:26-15:0
         Amount j:14:28-15:0
           Quantity: 7.53

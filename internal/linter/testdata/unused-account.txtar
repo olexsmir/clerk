@@ -1,6 +1,7 @@
 -- in.journal --
 account assets:cash
 account equity:opening
+  alias opening
 account assets:cash
 
 2024-05-02 * "groceries"

@@ -3,22 +3,40 @@ package ast
 import "olexsmir.xyz/clerk/journal/token"
 
 type AccountDirective struct {
-	Account Account
-	Comment *Comment
-	Span    token.Span
+	Account       Account
+	Subdirectives []AccountSubdirective // indented block lines, in order
+	Comment       *Comment
+	Span          token.Span
 }
 
 func (AccountDirective) entryNode() {}
 
+type AccountSubdirective struct {
+	Name      string     // "alias" / "type" / "note" / "" for comment lines
+	NameSpan  token.Span // keyword span; for comment lines, the marker span
+	Value     string     // text after the keyword; "" for comment lines
+	ValueSpan token.Span // value span; zero for comment lines and empty values
+	Comment   *Comment   // inline comment after the value; for comment lines, the line itself
+}
+
 type CommodityDirective struct {
 	Commodity     string
-	CommoditySpan token.Span // span of the commodity token
-	Format        Amount     // optional format hint: "1,000.00 UAH"
-	Comment       *Comment   // optional inline comment
+	CommoditySpan token.Span          // span of the commodity token
+	FormatSub     *FormatSubDirective // display format; nil when not given
+	BlockComments []*Comment          // indented comment-only lines inside the block
+	Comment       *Comment            // optional inline comment
 	Span          token.Span
 }
 
 func (CommodityDirective) entryNode() {}
+
+// FormatSubDirective is a commodity display format, either inline on the
+// directive line ("commodity $1,000.00") or as a "format" subdirective.
+type FormatSubDirective struct {
+	Amount      Amount
+	KeywordSpan token.Span // span of the "format" keyword; zero when inline
+	Comment     *Comment   // inline comment; subdirective form only
+}
 
 type PayeeDirective struct {
 	Name    *Payee

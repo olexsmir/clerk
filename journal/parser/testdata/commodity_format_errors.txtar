@@ -1,0 +1,48 @@
+-- input --
+commodity $
+  format 1.000,00
+
+commodity EUR
+  format EUR 100.00  ; ok
+
+commodity $100
+-- expect --
+Journal
+  CommodityDirective j:1:1-4:0
+    Commodity: "$" j:1:11-2:0
+    Format j:2:3-2:9
+      Amount j:2:10-3:0
+        Quantity: 1000
+        Commodity: ""
+        CommodityPos: Before
+        HasSpace: false
+        Precision: 2
+        Decimal: ","
+        Thousands: "."
+  BlankLine j:4:0-4:1
+  CommodityDirective j:4:1-7:0
+    Commodity: "EUR" j:4:11-5:0
+    Format j:5:3-5:9
+      Amount j:5:10-5:20
+        Quantity: 100
+        Commodity: "EUR" j:5:10-5:13
+        CommodityPos: Before
+        HasSpace: true
+        Precision: 2
+        Decimal: "."
+      Comment j:5:22-6:0
+        Marker: ";"
+        Text: "ok"
+  BlankLine j:7:0-7:1
+  CommodityDirective j:7:1-8:1
+    Commodity: "$" j:7:11-7:12
+    Format inline
+      Amount j:7:12-8:0
+        Quantity: 100
+        Commodity: "$" j:7:11-7:12
+        CommodityPos: Before
+        HasSpace: false
+        Precision: 0
+  Errors
+    j:2:10-2:10: commodity directive symbol "$" and format directive symbol "" should be the same
+    j:7:12-7:12: Please include a decimal point or decimal comma in commodity directives, to help us parse correctly. It may be followed by zero or more decimal digits.

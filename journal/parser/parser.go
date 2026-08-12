@@ -342,18 +342,59 @@ func (p *Parser) parseAccountDirective() *ast.AccountDirective {
 	comment := p.parseOptInlineComment()
 	p.expectNewline()
 
+	var subs []ast.AccountSubdirective
 	for p.got(token.INDENT) {
 		p.advance()
-		for !p.got(token.NEWLINE) && !p.got(token.EOF) {
-			p.advance()
+		p.skipWhitespace()
+		if p.got(token.NEWLINE) || p.got(token.EOF) {
+			// whitespace-only line: block continues
+			p.expectNewline()
+			continue
 		}
-		p.expectNewline()
+		switch {
+		case p.got(token.SEMICOLON):
+			// comment line: directive mode lexes only ';' as a comment marker
+			s := p.cur.Span
+			c := p.parseCommentRest(s)
+			p.expectNewline()
+			subs = append(subs, ast.AccountSubdirective{NameSpan: s, Comment: c})
+		case p.got(token.TEXT) && isCommentMarker(p.cur.Literal):
+			// '#', '%' and '*' lex as TEXT in directive mode; treat them as comment lines
+			c := p.parseTextComment()
+			subs = append(subs, ast.AccountSubdirective{NameSpan: c.Span, Comment: c})
+		case p.got(token.TEXT):
+			name := p.cur.Literal
+			if !isAccountSubdirective(name) {
+				p.errorf("unknown subdirective %q", name)
+				p.skipToNewline()
+				continue
+			}
+			kw := p.cur.Span
+			p.advance()
+			value, vspan := p.parseSubdirectiveValue()
+			if value == "" {
+				p.errorf("expected value for subdirective %q", name)
+			}
+			c := p.parseOptInlineComment()
+			p.expectNewline()
+			subs = append(subs, ast.AccountSubdirective{
+				Name:      name,
+				NameSpan:  kw,
+				Value:     value,
+				ValueSpan: vspan,
+				Comment:   c,
+			})
+		default:
+			p.errorf("expected subdirective name, got %s", p.cur.Type)
+			p.skipToNewline()
+		}
 	}
 
 	return &ast.AccountDirective{
-		Account: account,
-		Comment: comment,
-		Span:    p.span(s),
+		Account:       account,
+		Subdirectives: subs,
+		Comment:       comment,
+		Span:          p.span(s),
 	}
 }
 
@@ -364,7 +405,7 @@ func (p *Parser) parseCommodityDirective() *ast.CommodityDirective {
 
 	var commodity string
 	var commoditySpan token.Span
-	var format *ast.Amount
+	var format *ast.FormatSubDirective
 
 	switch p.cur.Type {
 	case token.COMMODITYMARK, token.TEXT, token.STRING:
@@ -375,16 +416,18 @@ func (p *Parser) parseCommodityDirective() *ast.CommodityDirective {
 		hadSpace := p.got(token.WHITESPACE)
 		p.skipWhitespace()
 		if p.got(token.INT) || p.got(token.DECIMAL) || p.got(token.TEXT) {
-			format = p.parseAmount()
-			format.Commodity = commodity
-			format.CommoditySpan = commoditySpan
-			format.CommodityPos = ast.CommodityBefore
-			format.HasSpace = hadSpace
+			amt := p.parseAmount()
+			amt.Commodity = commodity
+			amt.CommoditySpan = commoditySpan
+			amt.CommodityPos = ast.CommodityBefore
+			amt.HasSpace = hadSpace
+			format = &ast.FormatSubDirective{Amount: *amt}
 		}
 	case token.INT, token.DECIMAL:
-		format = p.parseAmount()
-		commodity = format.Commodity
-		commoditySpan = format.CommoditySpan
+		amt := p.parseAmount()
+		commodity = amt.Commodity
+		commoditySpan = amt.CommoditySpan
+		format = &ast.FormatSubDirective{Amount: *amt}
 	default:
 		p.errorf("expected commodity name or amount, got %s", p.cur.Type)
 	}
@@ -393,33 +436,63 @@ func (p *Parser) parseCommodityDirective() *ast.CommodityDirective {
 		p.errorf("expected commodity name, got %s", p.cur.Type)
 	}
 
+	// hledger parity: an inline format amount must include a decimal mark
+	if format != nil && format.Amount.QuantityFmt.Decimal == 0 {
+		p.errorfAt(format.Amount.Span.Start, "Please include a decimal point or decimal comma in commodity directives, to help us parse correctly. It may be followed by zero or more decimal digits.")
+	}
+
 	comment := p.parseOptInlineComment()
 	p.expectNewline()
 
+	var blockComments []*ast.Comment
 	for p.got(token.INDENT) {
 		p.advance()
 		p.skipWhitespace()
-		if p.got(token.TEXT) && p.cur.Literal == "format" {
-			p.advance()
-			p.skipWhitespace()
-			format = p.parseAmount()
+		if p.got(token.NEWLINE) || p.got(token.EOF) {
+			// whitespace-only line: block continues
 			p.expectNewline()
 			continue
 		}
-		for !p.got(token.NEWLINE) && !p.got(token.EOF) {
+		switch {
+		case p.got(token.TEXT) && p.cur.Literal == "format":
+			kw := p.cur.Span
 			p.advance()
+			p.skipWhitespace()
+			amt := p.parseAmount()
+			// hledger parity: the format symbol must match the declared commodity,
+			// and the amount must include a decimal mark; the node is kept either
+			// way so the printer can round-trip the input.
+			if amt.Commodity != commodity {
+				p.errorfAt(amt.Span.Start, "commodity directive symbol %q and format directive symbol %q should be the same", commodity, amt.Commodity)
+			} else if amt.QuantityFmt.Decimal == 0 {
+				p.errorfAt(amt.Span.Start, "Please include a decimal point or decimal comma in commodity directives, to help us parse correctly. It may be followed by zero or more decimal digits.")
+			}
+			c := p.parseOptInlineComment()
+			p.expectNewline()
+			format = &ast.FormatSubDirective{KeywordSpan: kw, Amount: *amt, Comment: c}
+		case p.got(token.SEMICOLON): // comment line
+			c := p.parseCommentRest(p.cur.Span)
+			p.expectNewline()
+			blockComments = append(blockComments, c)
+		case p.got(token.TEXT) && isCommentMarker(p.cur.Literal):
+			// '#', '%' and '*' lex as TEXT in directive mode; treat them as comment lines
+			blockComments = append(blockComments, p.parseTextComment())
+		case p.got(token.TEXT):
+			p.errorf("unknown subdirective %q", p.cur.Literal)
+			p.skipToNewline()
+		default:
+			p.errorf("expected subdirective name, got %s", p.cur.Type)
+			p.skipToNewline()
 		}
-		p.expectNewline()
 	}
 
 	cd := &ast.CommodityDirective{
 		Commodity:     commodity,
 		CommoditySpan: commoditySpan,
+		FormatSub:     format,
+		BlockComments: blockComments,
 		Comment:       comment,
 		Span:          p.span(s),
-	}
-	if format != nil {
-		cd.Format = *format
 	}
 	return cd
 }
@@ -770,7 +843,7 @@ func (p *Parser) isAmountStart() bool {
 func (p *Parser) parseAmount() *ast.Amount {
 	s := p.cur.Span
 	amt := &ast.Amount{
-		QuantityFmt: ast.QuantityFormat{Decimal: '.'},
+		QuantityFmt: ast.QuantityFormat{},
 	}
 	defer func() {
 		// The span covers from the first token to the start of the next unconsumed token.
@@ -851,7 +924,7 @@ func (p *Parser) parseAmountWithOptExpr() *ast.Amount {
 		lit := p.cur.Literal
 		amt := &ast.Amount{
 			IsExpr:      true,
-			QuantityFmt: ast.QuantityFormat{Decimal: '.'},
+			QuantityFmt: ast.QuantityFormat{},
 		}
 		if len(lit) >= 2 && lit[0] == '(' && lit[len(lit)-1] == ')' {
 			amt.Expr = strings.Trim(lit[1:len(lit)-1], " \t")
@@ -1193,6 +1266,96 @@ func (p *Parser) errorf(format string, args ...any) {
 	})
 }
 
+// errorfAt records a parse error pointing at a single position.
+func (p *Parser) errorfAt(pos token.Pos, format string, args ...any) {
+	p.errors = append(p.errors, &ast.ParseError{
+		Span:    token.Span{Start: pos, End: pos},
+		Message: fmt.Sprintf(format, args...),
+	})
+}
+
+func isAccountSubdirective(name string) bool {
+	switch name {
+	case "alias", "type", "note":
+		return true
+	}
+	return false
+}
+
+func isCommentMarker(s string) bool {
+	return len(s) > 0 && (s[0] == '#' || s[0] == '%' || s[0] == '*')
+}
+
+// skipToNewline consumes the rest of the current line.
+func (p *Parser) skipToNewline() {
+	for !p.got(token.NEWLINE) && !p.got(token.EOF) {
+		p.advance()
+	}
+	p.expectNewline()
+}
+
+// parseSubdirectiveValue consumes the tokens after a subdirective keyword up
+// to an inline comment or the end of the line, returning the raw text and its
+// span (trimmed of surrounding whitespace). Single-token values return the
+// lexer's literal, sharing the source backing without a copy.
+func (p *Parser) parseSubdirectiveValue() (string, token.Span) {
+	var b strings.Builder
+	var first, last token.Span
+	var single, pendingWS string
+	for !p.got(token.SEMICOLON) && !p.got(token.NEWLINE) && !p.got(token.EOF) {
+		t := p.cur
+		if t.Type == token.WHITESPACE || t.Type == token.INDENT {
+			if first.Start.Offset > 0 {
+				pendingWS = t.Literal // only the last whitespace run matters
+			}
+			p.advance()
+			continue
+		}
+		if first.Start.Offset == 0 {
+			first, last = t.Span, t.Span
+			single = t.Literal
+		} else {
+			if single != "" {
+				b.WriteString(single)
+				single = ""
+			}
+			if pendingWS != "" {
+				b.WriteString(pendingWS)
+				pendingWS = ""
+			}
+			b.WriteString(t.Literal)
+			last = t.Span
+		}
+		p.advance()
+	}
+	if first.Start.Offset == 0 {
+		return "", token.Span{}
+	}
+	if single != "" {
+		return single, token.Span{Start: first.Start, End: last.End}
+	}
+	return strings.TrimSpace(b.String()), token.Span{Start: first.Start, End: last.End}
+}
+
+// parseTextComment consumes a comment line whose marker ('#', '%' or '*')
+// lexed as TEXT inside a directive block, building the comment from token
+// literals. Tags are not extracted; the comment is one line.
+func (p *Parser) parseTextComment() *ast.Comment {
+	s := p.cur.Span
+	marker := p.cur.Literal[0]
+	var b strings.Builder
+	b.WriteString(p.cur.Literal)
+	p.advance()
+	for !p.got(token.NEWLINE) && !p.got(token.EOF) {
+		b.WriteString(p.cur.Literal)
+		p.advance()
+	}
+	text := strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(b.String()), string(marker)))
+	span := p.span(s) // marker to line end, without the newline
+	p.expectNewline()
+	return &ast.Comment{Marker: marker, Text: text, Span: span}
+}
+
 func isDirectiveKeyword(t token.Type) bool {
 	switch t {
 	case token.COMMENTKW, token.ACCOUNT, token.COMMODITY, token.INCLUDE,
@@ -1263,18 +1426,21 @@ func detectFormat(lit string) ast.QuantityFormat {
 	}
 
 	if len(seps) == 0 {
-		return ast.QuantityFormat{Decimal: '.', Thousands: 0, Precision: 0}
+		return ast.QuantityFormat{}
 	}
 
 	last := seps[len(seps)-1]
 	dec := lit[last]
+	if dec != '.' && dec != ',' {
+		// the last separator is a thousands mark; the literal has no decimal mark
+		dec = 0
+	}
 	var thou byte
 	if len(seps) > 1 {
 		thou = lit[seps[0]]
-	} else if dec == ' ' || dec == '_' || dec == '\'' {
+	} else if dec == 0 {
 		// single space/underscore/apostrophe is always thousands
-		thou = dec
-		dec = '.'
+		thou = lit[last]
 	}
 
 	// calculate precision when the last separator is a real decimal

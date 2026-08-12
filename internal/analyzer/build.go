@@ -19,6 +19,7 @@ func Build(rj *journal.ResolvedJournal) *Analysis {
 	a := &Analysis{
 		Files:                 rj.Occurrences,
 		Accounts:              make(map[string]*AccountInfo),
+		AccountAliases:        make(map[string]string),
 		Commodities:           make(map[string]*CommodityInfo),
 		Payees:                make(map[string]*PayeeInfo),
 		Tags:                  make(map[string]*TagInfo),
@@ -62,6 +63,8 @@ func (a *Analysis) addEntry(fileIndex int, entry ast.Entry) {
 		a.addAccountDirective(e)
 	case *ast.CommodityDirective:
 		a.addCommodityDirective(e)
+	case *ast.AliasDirective:
+		a.addAliasDirective(e)
 	case *ast.PayeeDirective:
 		a.addPayeeDirective(e)
 	case *ast.TagDirective:
@@ -119,6 +122,17 @@ func (a *Analysis) addAccountDirective(ad *ast.AccountDirective) {
 		a.Accounts[aname] = info
 	}
 	info.Directives = append(info.Directives, ad)
+	for _, sd := range ad.Subdirectives {
+		if sd.Name == "alias" {
+			a.AccountAliases[sd.Value] = aname
+		}
+	}
+}
+
+// addAliasDirective records a top-level "alias A = B" directive; the alias
+// source name resolves to the target account.
+func (a *Analysis) addAliasDirective(ad *ast.AliasDirective) {
+	a.AccountAliases[ad.From.String()] = ad.To.String()
 }
 
 func (a *Analysis) addPayeeDirective(pd *ast.PayeeDirective) {

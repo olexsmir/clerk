@@ -131,6 +131,18 @@ func symbolInEntry(content string, e ast.Entry, cursor int) *symbolRef {
 		if spanContains(content, e.Account.Span, cursor) {
 			return &symbolRef{symbolAccount, e.Account.String(), e.Account.Span}
 		}
+		for _, sd := range e.Subdirectives {
+			if sd.Name == "alias" && spanContains(content, sd.ValueSpan, cursor) {
+				return &symbolRef{symbolAccount, sd.Value, sd.ValueSpan}
+			}
+		}
+	case *ast.AliasDirective:
+		if spanContains(content, e.From.Span, cursor) {
+			return &symbolRef{symbolAccount, e.From.String(), e.From.Span}
+		}
+		if spanContains(content, e.To.Span, cursor) {
+			return &symbolRef{symbolAccount, e.To.String(), e.To.Span}
+		}
 	case *ast.CommodityDirective:
 		if spanContains(content, e.CommoditySpan, cursor) {
 			return &symbolRef{symbolCommodity, e.Commodity, e.CommoditySpan}
@@ -280,6 +292,20 @@ func renameEntry(add func(token.Span, string), ref *symbolRef, newName, content 
 	case *ast.AccountDirective:
 		if text, ok := ref.renameTo(symbolAccount, e.Account.String(), newName); ok {
 			add(e.Account.Span, text)
+		}
+		for _, sd := range e.Subdirectives {
+			if sd.Name == "alias" {
+				if text, ok := ref.renameTo(symbolAccount, sd.Value, newName); ok {
+					add(sd.ValueSpan, text)
+				}
+			}
+		}
+	case *ast.AliasDirective:
+		if text, ok := ref.renameTo(symbolAccount, e.From.String(), newName); ok {
+			add(e.From.Span, text)
+		}
+		if text, ok := ref.renameTo(symbolAccount, e.To.String(), newName); ok {
+			add(e.To.Span, text)
 		}
 	case *ast.CommodityDirective:
 		if text, ok := ref.renameTo(symbolCommodity, e.Commodity, newName); ok {

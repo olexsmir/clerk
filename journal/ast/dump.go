@@ -272,8 +272,10 @@ func dumpAmount(b *strings.Builder, a *Amount, depth int) {
 	}
 	indent(b, depth+1)
 	fmt.Fprintf(b, "Precision: %d\n", a.QuantityFmt.Precision)
-	indent(b, depth+1)
-	fmt.Fprintf(b, "Decimal: %q\n", string(a.QuantityFmt.Decimal))
+	if a.QuantityFmt.Decimal != 0 {
+		indent(b, depth+1)
+		fmt.Fprintf(b, "Decimal: %q\n", string(a.QuantityFmt.Decimal))
+	}
 	if a.QuantityFmt.Thousands != 0 {
 		indent(b, depth+1)
 		fmt.Fprintf(b, "Thousands: %q\n", string(a.QuantityFmt.Thousands))
@@ -318,6 +320,19 @@ func dumpAccountDirective(b *strings.Builder, a *AccountDirective, depth int) {
 	indent(b, depth)
 	fmt.Fprintf(b, "AccountDirective %s\n", a.Span)
 	dumpAccount(b, a.Account, depth+1)
+	for _, sd := range a.Subdirectives {
+		if sd.Name == "" {
+			dumpComment(b, sd.Comment, depth+1)
+			continue
+		}
+		indent(b, depth+1)
+		fmt.Fprintf(b, "Subdirective\n")
+		indent(b, depth+2)
+		fmt.Fprintf(b, "Name: %q %s\n", sd.Name, sd.NameSpan)
+		indent(b, depth+2)
+		fmt.Fprintf(b, "Value: %q %s\n", sd.Value, sd.ValueSpan)
+		dumpOptComment(b, sd.Comment, depth+2)
+	}
 	dumpOptComment(b, a.Comment, depth+1)
 }
 
@@ -326,8 +341,18 @@ func dumpCommodityDirective(b *strings.Builder, c *CommodityDirective, depth int
 	fmt.Fprintf(b, "CommodityDirective %s\n", c.Span)
 	indent(b, depth+1)
 	fmt.Fprintf(b, "Commodity: %q %s\n", c.Commodity, c.CommoditySpan)
-	if c.Format.QuantityFmt.Decimal != 0 {
-		dumpAmount(b, &c.Format, depth+1)
+	if c.FormatSub != nil {
+		indent(b, depth+1)
+		if c.FormatSub.KeywordSpan.End.Offset > 0 {
+			fmt.Fprintf(b, "Format %s\n", c.FormatSub.KeywordSpan)
+		} else {
+			fmt.Fprintf(b, "Format inline\n")
+		}
+		dumpAmount(b, &c.FormatSub.Amount, depth+2)
+		dumpOptComment(b, c.FormatSub.Comment, depth+2)
+	}
+	for _, cm := range c.BlockComments {
+		dumpComment(b, cm, depth+1)
 	}
 	dumpOptComment(b, c.Comment, depth+1)
 }

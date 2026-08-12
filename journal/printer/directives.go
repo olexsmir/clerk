@@ -17,31 +17,74 @@ func (p *printer) writeAccountDirective(a *ast.AccountDirective) {
 	p.buf.WriteString("account ")
 	p.buf.WriteString(a.Account.String())
 	p.writeInlineComment(a.Comment)
+	for _, sd := range a.Subdirectives {
+		p.buf.WriteByte('\n')
+		p.buf.WriteString(p.indent)
+		if sd.Name == "" {
+			p.writeComment(sd.Comment)
+			continue
+		}
+		p.buf.WriteString(sd.Name)
+		p.buf.WriteByte(' ')
+		p.buf.WriteString(sd.Value)
+		p.writeInlineComment(sd.Comment)
+	}
 }
 
 func (p *printer) writeCommodityDirective(c *ast.CommodityDirective) {
 	p.buf.WriteString("commodity ")
-	if c.Format.Quantity.IsZero() {
+	if c.FormatSub == nil {
 		p.buf.WriteString(c.Commodity)
 		p.writeInlineComment(c.Comment)
 		return
 	}
-	prec := max(c.Format.QuantityFmt.Precision, 2)
-	switch c.Format.CommodityPos {
-	case ast.CommodityBefore:
-		p.buf.WriteString(c.Format.Commodity)
-		if c.Format.HasSpace {
-			p.buf.WriteByte(' ')
-		}
-		p.writeDecimal(c.Format.Quantity, c.Format.QuantityFmt, prec)
-	case ast.CommodityAfter:
-		p.writeDecimal(c.Format.Quantity, c.Format.QuantityFmt, prec)
-		if c.Format.HasSpace {
-			p.buf.WriteByte(' ')
-		}
-		p.buf.WriteString(c.Format.Commodity)
+	if c.FormatSub.KeywordSpan.End.Offset == 0 {
+		// inline form: "commodity $1,000.00"
+		p.writeCommodityAmount(&c.FormatSub.Amount)
+		p.writeInlineComment(c.Comment)
+		return
 	}
+	p.buf.WriteString(c.Commodity)
 	p.writeInlineComment(c.Comment)
+	p.buf.WriteByte('\n')
+	p.buf.WriteString(p.indent)
+	p.buf.WriteString("format ")
+	p.writeCommodityAmount(&c.FormatSub.Amount)
+	p.writeInlineComment(c.FormatSub.Comment)
+	p.writeBlockComments(c.BlockComments)
+}
+
+// writeCommodityAmount renders a commodity format amount, preserving the
+// original commodity placement instead of the config's CommodityPos.
+func (p *printer) writeCommodityAmount(a *ast.Amount) {
+	prec := max(a.QuantityFmt.Precision, 2)
+	if a.Commodity == "" {
+		p.writeDecimal(a.Quantity, a.QuantityFmt, prec)
+		return
+	}
+	switch a.CommodityPos {
+	case ast.CommodityBefore:
+		p.buf.WriteString(a.Commodity)
+		if a.HasSpace {
+			p.buf.WriteByte(' ')
+		}
+		p.writeDecimal(a.Quantity, a.QuantityFmt, prec)
+	case ast.CommodityAfter:
+		p.writeDecimal(a.Quantity, a.QuantityFmt, prec)
+		if a.HasSpace {
+			p.buf.WriteByte(' ')
+		}
+		p.buf.WriteString(a.Commodity)
+	}
+}
+
+// writeBlockComments writes indented comment lines inside a directive block.
+func (p *printer) writeBlockComments(cs []*ast.Comment) {
+	for _, c := range cs {
+		p.buf.WriteByte('\n')
+		p.buf.WriteString(p.indent)
+		p.writeComment(c)
+	}
 }
 
 func (p *printer) writeAliasDirective(a *ast.AliasDirective) {

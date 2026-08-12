@@ -8,7 +8,8 @@ import (
 	"olexsmir.xyz/clerk/journal/ast"
 )
 
-// InvalidTypeTag flags type tag on account directive whose value is not valid account type code.
+// InvalidTypeTag flags account type declarations (the type: tag and the type
+// subdirective) whose value is not a valid account type code.
 type InvalidTypeTag struct{}
 
 func (InvalidTypeTag) ID() RuleID         { return "invalid-type-tag" }
@@ -17,19 +18,35 @@ func (i *InvalidTypeTag) CheckJournal(an *analyzer.Analysis) []Find {
 	var finds []Find
 	for _, entry := range an.Directives {
 		ad, ok := entry.(*ast.AccountDirective)
-		if !ok || ad.Comment == nil {
+		if !ok {
 			continue
 		}
-		for _, tag := range ad.Comment.Tags {
-			if tag.Key != "type" {
+		if ad.Comment != nil {
+			for _, tag := range ad.Comment.Tags {
+				if tag.Key != "type" {
+					continue
+				}
+				if err := i.parseAccountTypeCode(tag.Value); err != nil {
+					finds = append(finds, Find{
+						Code:     i.ID(),
+						Severity: i.Severity(),
+						Span:     tag.Span,
+						Message:  fmt.Sprintf("invalid type: tag value %q", tag.Value),
+					})
+				}
+			}
+		}
+		for _, sd := range ad.Subdirectives {
+			if sd.Name != "type" || sd.Value == "" {
+				// empty values are flagged by the parser
 				continue
 			}
-			if err := i.parseAccountTypeCode(tag.Value); err != nil {
+			if err := i.parseAccountTypeCode(sd.Value); err != nil {
 				finds = append(finds, Find{
 					Code:     i.ID(),
 					Severity: i.Severity(),
-					Span:     tag.Span,
-					Message:  fmt.Sprintf("invalid type: tag value %q", tag.Value),
+					Span:     sd.ValueSpan,
+					Message:  fmt.Sprintf("invalid type subdirective value %q", sd.Value),
 				})
 			}
 		}

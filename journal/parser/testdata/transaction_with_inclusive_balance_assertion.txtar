@@ -18,7 +18,6 @@ Journal
         CommodityPos: Before
         HasSpace: false
         Precision: 0
-        Decimal: "."
       BalanceAssertion j:2:11-3:0
         IsStrict: false
         IsInclusive: true
@@ -29,7 +28,6 @@ Journal
           CommodityPos: Before
           HasSpace: false
           Precision: 0
-          Decimal: "."
     Posting j:3:1-4:1
       Account j:3:5-3:6
         SubAccount: "b" j:3:5-3:6
@@ -39,7 +37,6 @@ Journal
         CommodityPos: Before
         HasSpace: false
         Precision: 0
-        Decimal: "."
       BalanceAssertion j:3:11-4:0
         IsStrict: false
         IsInclusive: true
@@ -50,7 +47,6 @@ Journal
           CommodityPos: Before
           HasSpace: false
           Precision: 0
-          Decimal: "."
     Posting j:4:1-6:0
       Account j:4:5-4:6
         SubAccount: "c" j:4:5-4:6
@@ -60,7 +56,6 @@ Journal
         CommodityPos: Before
         HasSpace: false
         Precision: 0
-        Decimal: "."
       BalanceAssertion j:4:11-5:0
         IsStrict: true
         IsInclusive: true
@@ -71,5 +66,4 @@ Journal
           CommodityPos: Before
           HasSpace: false
           Precision: 0
-          Decimal: "."
   BlankLine j:6:0-6:1

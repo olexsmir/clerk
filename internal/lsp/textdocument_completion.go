@@ -430,7 +430,7 @@ func lastSeparator(s string) int {
 
 func lexLine(content string, cursor int) []token.Token {
 	lineStart, lineEnd := lineBounds(content, cursor)
-	l := lexer.New("", content[lineStart:lineEnd])
+	l := lexer.New("", []byte(content[lineStart:lineEnd]))
 	var out []token.Token
 	for {
 		t := l.Next()

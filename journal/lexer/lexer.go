@@ -41,7 +41,7 @@ const (
 
 type Lexer struct {
 	file  string
-	input string
+	input []byte
 	mode  mode
 
 	ch     rune // current rune (0 = EOF/sentinel)
@@ -57,12 +57,13 @@ type Lexer struct {
 
 	includePath bool // true after [token.INCLUDE] is omitted
 
-	// subdirective is set when the current line is an account/commodity
-	// directive; the next indented line then lexes as directive content
+	// subdirective is set while inside an account/commodity directive block;
+	// every indented line then lexes as directive content until a
+	// non-indented line start clears it in lexDefault
 	subdirective bool
 }
 
-func New(file string, input string) *Lexer {
+func New(file string, input []byte) *Lexer {
 	l := &Lexer{
 		file:  file,
 		input: input,
@@ -115,8 +116,9 @@ func (l *Lexer) lexDefault() token.Token {
 	case l.ch == ' ' || l.ch == '\t':
 		tok := l.lexIndent()
 		if l.subdirective {
+			// keep directive mode for every line of a directive block; the
+			// flag is cleared at the next non-indented line start in lexDefault
 			l.mode = modeDirective
-			l.subdirective = false
 		} else {
 			l.mode = modePosting
 		}
@@ -690,7 +692,7 @@ func (l *Lexer) advance() {
 		l.ch = 0
 		l.chSize = 0
 	} else {
-		r, size := utf8.DecodeRuneInString(l.input[l.rpos:])
+		r, size := utf8.DecodeRune(l.input[l.rpos:])
 		l.ch = r
 		l.chSize = size
 	}
@@ -705,7 +707,7 @@ func (l *Lexer) advance() {
 }
 
 func (l *Lexer) peek() rune {
-	r, _ := utf8.DecodeRuneInString(l.input[l.rpos:])
+	r, _ := utf8.DecodeRune(l.input[l.rpos:])
 	return r
 }
 

@@ -43,6 +43,8 @@ accounts (2):
       file 0: expenses:food
     last-used: 2024-01-15
 
+aliases (0):
+
 payees (3):
   dinner
     directives: 0
@@ -99,5 +101,4 @@ tag names (0):
 
 tag values (0):
 
-commodity decimal marks (1):
-  $: .
+commodity decimal marks (0):

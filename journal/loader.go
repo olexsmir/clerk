@@ -180,7 +180,7 @@ func (l *Loader) resolveOccurrence(rj *ResolvedJournal, parent *ParsedFile, fpat
 		return
 	}
 
-	lex := lexer.New(fpath, string(src))
+	lex := lexer.New(fpath, src)
 	par := parser.NewWithYear(lex, defaultYear)
 	j := par.ParseJournal()
 

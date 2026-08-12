@@ -58,6 +58,8 @@ accounts (5):
     usages: 1
       file 0: expenses:transport
 
+aliases (0):
+
 payees (1):
   groceries
     directives: 0
@@ -98,5 +100,4 @@ tag names (0):
 
 tag values (0):
 
-commodity decimal marks (1):
-  $: .
+commodity decimal marks (0):
