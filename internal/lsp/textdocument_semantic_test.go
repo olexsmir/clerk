@@ -160,16 +160,8 @@ func TestServer_Semantic_Range(t *testing.T) {
 
 // Golden
 
-func TestSemanticTokensTxtar(t *testing.T) {
-	tests := []string{
-		"semantic-empty",
-		"semantic-journal",
-		"semantic-directives",
-		"semantic-unparseable",
-		"semantic-with-errors",
-	}
-
-	for _, tt := range tests {
+func TestGolden_SemanticTokens(t *testing.T) {
+	for _, tt := range []string{"semantic-empty", "semantic-journal", "semantic-directives", "semantic-unparseable", "semantic-with-errors"} {
 		ar := golden.Read(t, tt)
 
 		t.Run(tt+"_golden", func(t *testing.T) {

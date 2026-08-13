@@ -1,0 +1,165 @@
+-- in.journal --
+account expenses:food
+account expenses:taxi
+account assets:cash
+
+payee Grocery Store
+payee Coffee Shop
+
+commodity USD
+
+tag client
+tag project
+
+2024-01-01 Grocery Store
+    ; client:acme
+    ; project:alpha
+    expenses:food  $50
+    expenses:taxi  $30
+    assets:cash
+
+^
+2024-01-02 *
+    ^
+    expenses:^food  $50
+    expenses:food  $^50
+    expenses:food  ^
+    expenses:food  U^SD
+    expenses:food  $5^0
+    expenses:food  $50 @^ 1.5
+    * expenses:f^ood  $50
+    (expenses:f^ood)  $50
+    expenses:food  ; client:^x
+    expenses:food  ; client: ac^me
+    ; a:b, client:ac^
+    ; url:https://exa^mple
+    ; a:b:c, cli^ent:x
+    ; groc^eries
+
+2024-01-03 * (123) gro^cer
+2024-01-03=2024-01-04 cof^fee
+2024-01-03 "gro^cery"
+2024-01-03 acme | no^te
+2024-01-03 acme|note x^y
+2024-01-03 ; cli^
+2024-01-03^
+
+account expenses:food
+    no^te ignore
+
+account expenses:food
+    note: x
+
+    no^te foo
+
+account expenses:taxi
+    note: x
+   
+    no^te foo
+
+~ monthly^ budget
+
+
+2024-01-15 Grocery
+    expenses:food  $50
+    expenses:taxi  $30
+    assets:cash
+
+2024-01-16 ^
+    expenses:f^ood  $5
+    assets:cash
+
+-- expect --
+19:0 directive ""
+  C
+  D
+  N
+  P
+  Y
+  account
+  alias
+  apply
+  commodity
+  decimal-mark
+  end
+  include
+  payee
+  tag
+  year
+21:4 account ""
+  expenses:food
+  assets:cash
+  expenses:taxi
+22:13 account "expenses:"
+  expenses:food
+  expenses:taxi
+23:20 commodity "$"
+  $
+24:19 commodity ""
+  $
+  USD
+25:20 commodity "U"
+  USD
+26:21 none ""
+27:24 none ""
+28:16 account "expenses:f"
+  expenses:food
+29:15 account "expenses:f"
+  expenses:food
+30:28 tag-value ""
+  ac
+  acme
+  x
+31:31 tag-value "ac"
+  ac
+  acme
+32:20 tag-value "ac"
+  ac
+  acme
+33:21 tag-value "https://exa"
+  https://example
+34:16 tag "cli"
+  client
+35:10 tag "groc"
+37:22 payee "gro"
+  grocer
+  grocery
+  Grocery
+  Grocery Store
+38:25 payee "cof"
+  coffee
+  Coffee Shop
+39:15 payee "gro"
+  grocer
+  grocery
+  Grocery
+  Grocery Store
+40:20 none ""
+41:22 none ""
+42:16 tag "cli"
+  client
+43:10 payee ""
+  Grocery
+  Grocery Store
+  acme
+  acme|note xy
+  coffee
+  grocer
+  grocery
+  Coffee Shop
+46:6 none ""
+51:6 account "no"
+  expenses:food
+56:6 none ""
+58:9 none ""
+66:11 payee ""
+  Grocery
+  Grocery Store
+  acme
+  acme|note xy
+  coffee
+  grocer
+  grocery
+  Coffee Shop
+67:14 account "expenses:f"
+  expenses:food

@@ -1,0 +1,7 @@
+-- in.journal --
+account expenses:food
+account expenses:fo^od
+
+-- expect --
+1:19 account "expenses:fo"
+  expenses:food
