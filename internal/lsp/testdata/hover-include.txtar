@@ -1,0 +1,17 @@
+-- in.journal --
+include sub.journal
+
+2024-01-16 Another Store
+    expenses:food  100.00 E^UR
+    assets:ca^sh
+
+-- sub.journal --
+account expenses:food
+
+2024-01-15 Gro^cery Store
+    expenses:fo^od  $50
+    assets:cash
+
+-- expect --
+3:27 "**Amount:** 100.00 EUR" 3:19-3:29
+4:13 "**Account:** `assets:cash`\n**Postings:** 2\n**Last used:** 2024-01-16" 4:4-4:15

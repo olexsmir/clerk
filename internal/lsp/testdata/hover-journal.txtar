@@ -1,0 +1,65 @@
+-- in.journal --
+account expenses:fo^od
+account assets:cash
+  alias check^ing
+alias fo^od = expenses:food
+alias food = expenses:fo^od
+commodity E^UR
+payee Gro^cery Store
+tag cli^ent
+
+^2024-01-15 Gro^cery Store ; proj^ect:ho^me
+    expenses:food  ^$50^.00 @ ^$1.5
+    assets:checking  $5^0.00 @ $1.5
+    assets:cash  = ^$30
+    ; cl^ient:acme
+    ; completed:^
+
+2024-01-15 Market
+    expenses:food  $5
+    assets:cash  $-5
+
+2024-01-16 Grocery Store ; project:wo^rk
+    expenses:food  1.000,00 E^UR
+    assets:cash  -1.000,0^0 EUR
+
+2024-01-17 прод^укти
+    expenses:fo^od  $10
+    assets:ca^sh
+
+^
+~ monthly
+    expenses:fo^od  $1
+    assets:cash
+
+= expenses:food > 100
+    assets:ca^sh  $-1
+
+-- expect --
+0:19 "**Account:** `expenses:food`\n**Postings:** 5\n**Last used:** 2024-01-17" 0:8-0:21
+2:13 "**Account:** `assets:cash`\n**Postings:** 6\n**Last used:** 2024-01-17" 2:8-2:16
+3:8 "**Account:** `expenses:food`\n**Postings:** 5\n**Last used:** 2024-01-17" 3:6-3:10
+4:24 "**Account:** `expenses:food`\n**Postings:** 5\n**Last used:** 2024-01-17" 4:13-4:26
+5:11 "**Commodity:** `EUR`\n**Usage:** 2\n**Last used:** 2024-01-16" 5:10-5:13
+6:9 "**Payee:** Grocery Store\n**Transactions:** 2" 6:6-6:19
+7:7 "**Tag:** `client`\n**Usage:** 1\n**Values:**\n- `acme`" 7:4-7:10
+9:0 "**Date:** 2024-01-15\n\n**Payee:** Grocery Store\n\n**Transactions:** 2\n\n**Postings:** 3" 9:0-9:10
+9:14 "**Payee:** Grocery Store\n**Transactions:** 2" 9:11-9:24
+9:31 "**Tag:** `project`\n**Usage:** 2\n**Values:**\n- `home`\n- `work`" 9:27-9:34
+9:37 "**Tag:** `project`\n**Value:** `home`\n**Usage:** 1" 9:35-9:39
+10:19 "**Amount:** $50.00\n\n**Unit cost:** @ $1.5" 10:19-10:25
+10:22 "**Amount:** $50.00\n\n**Unit cost:** @ $1.5" 10:19-10:25
+10:28 "**Commodity:** `$`\n**Usage:** 10\n**Last used:** 2024-01-17" 10:28-10:29
+11:23 "**Amount:** $50.00\n\n**Unit cost:** @ $1.5" 11:21-11:27
+12:19 "**Commodity:** `$`\n**Usage:** 10\n**Last used:** 2024-01-17" 12:19-12:20
+13:8 "**Tag:** `client`\n**Usage:** 1\n**Values:**\n- `acme`" 13:6-13:12
+14:16 "**Tag:** `completed`\n**Value:** *(empty)*\n**Usage:** 1" 14:16-14:16
+20:37 "**Tag:** `project`\n**Value:** `work`\n**Usage:** 1" 20:35-20:39
+21:29 "**Amount:** 1.000,00 EUR" 21:19-21:31
+22:25 "**Amount:** -1.000,00 EUR" 22:17-22:30
+24:15 "**Payee:** продукти\n**Transactions:** 1" 24:11-24:19
+25:15 "**Account:** `expenses:food`\n**Postings:** 5\n**Last used:** 2024-01-17" 25:4-25:17
+26:13 "**Account:** `assets:cash`\n**Postings:** 6\n**Last used:** 2024-01-17" 26:4-26:15
+28:0 <none>
+30:15 "**Account:** `expenses:food`\n**Postings:** 5\n**Last used:** 2024-01-17" 30:4-30:17
+34:13 "**Account:** `assets:cash`\n**Postings:** 6\n**Last used:** 2024-01-17" 34:4-34:15
