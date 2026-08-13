@@ -4,75 +4,29 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
+	"olexsmir.xyz/clerk/internal/testutil"
+	"olexsmir.xyz/clerk/internal/testutil/golden"
 	"olexsmir.xyz/clerk/internal/testutil/txtar"
 	"olexsmir.xyz/clerk/journal/ast"
 )
 
-func TestLoader_Resolve_basic(t *testing.T) {
-	rj := resolveTxtar(t, "root.journal", `
--- root.journal --
-2024/01/01 t
-  a  $1
-`)
-	if len(rj.Occurrences) != 1 || len(rj.Items) != 1 || rj.Items[0].IsInclude {
-		t.Fatal("basic: expected 1 file, 1 non-include item")
-	}
-}
-
-func TestLoader_Resolve_withInclude(t *testing.T) {
-	rj := resolveTxtar(t, "parent.journal", `
--- parent.journal --
-include child.journal
-2024/01/01 t
-  a  $1
-
--- child.journal --
-account expenses:food
-2024/06/15 lunch
-  expenses:food  $5
-  assets:cash
-`)
-	// 2 files: parent (include + tx), child (directive + tx) = 4 items
-	if len(rj.Items) != 4 {
-		t.Fatalf("expected 4 items, got %d", len(rj.Items))
-	}
-	if !rj.Items[0].IsInclude {
-		t.Fatal("items[0] should be include marker")
-	}
-	if len(rj.Occurrences) != 2 {
-		t.Fatal("expected 2 occurrences")
-	}
-}
-
-func TestLoader_Resolve_yearPropagation(t *testing.T) {
-	rj := resolveTxtar(t, "parent.journal", `
--- parent.journal --
-year 2025
-include child.journal
-12-01 dinner
-  expenses:food  $10
-  assets:cash
-
--- child.journal --
-06-15 lunch
-  expenses:food  $5
-  assets:cash
-`)
-	dates := make([]string, 0, 2)
-	for _, item := range rj.Items {
-		if item.IsInclude {
-			continue
-		}
-		tx, ok := item.Occurrence.Ast.Entries[item.EntryIndex].(*ast.Transaction)
-		if !ok {
-			continue
-		}
-		dates = append(dates, fmt.Sprintf("%d-%02d-%02d", tx.Date.Year, tx.Date.Month, tx.Date.Day))
-	}
-	if len(dates) != 2 || dates[0] != "2025-06-15" || dates[1] != "2025-12-01" {
-		t.Fatalf("expected [2025-06-15 2025-12-01], got %v", dates)
+func TestLoader_Resolve(t *testing.T) {
+	for _, tname := range []string{"basic", "with-include", "year-propagation", "year-context", "repeated-include", "parse-errors"} {
+		t.Run(tname, func(t *testing.T) {
+			a := golden.Read(t, tname)
+			fsys, err := a.FS()
+			if err != nil {
+				t.Fatal(err)
+			}
+			rj, err := NewLoader().ResolveFS(fsys, "in.journal")
+			if err != nil {
+				t.Fatalf("resolving in.journal: %v", err)
+			}
+			golden.Assert(t, a, dumpResolved(rj))
+		})
 	}
 }
 
@@ -89,28 +43,43 @@ include a.journal
 	}
 }
 
-func TestLoader_Resolve_repeatedInclude(t *testing.T) {
-	rj := resolveTxtar(t, "parent.journal", `
--- parent.journal --
-include shared.journal
-include shared.journal
-
--- shared.journal --
-account expenses:shared
-`)
-	if len(rj.Occurrences) != 3 {
-		t.Fatalf("expected 3 occurrences, got %d", len(rj.Occurrences))
+func dumpResolved(rj *ResolvedJournal) string {
+	var b strings.Builder
+	for _, pf := range rj.Occurrences {
+		fmt.Fprintf(&b, "== %s ==\n", pf.Path)
+		for i, e := range pf.Ast.Entries {
+			if s := entrySummary(e); s != "" {
+				fmt.Fprintf(&b, "  %d %s\n", i+1, s)
+			}
+		}
+		for _, fe := range pf.FileErrors {
+			fmt.Fprintf(&b, "  error: %s\n", fe.Message)
+		}
+		for _, pe := range pf.Errors {
+			fmt.Fprintf(&b, "  parse-error: %s\n", pe.Message)
+		}
 	}
-	if len(rj.ByPath["shared.journal"]) != 2 {
-		t.Fatalf("expected 2 ByPath entries for shared.journal, got %d",
-			len(rj.ByPath["shared.journal"]))
-	}
+	return b.String()
 }
 
-func TestLoader_ResolveBytes_parseErrors(t *testing.T) {
-	rj := NewLoader().ResolveBytes("bad.journal", []byte("@@@ garbage\n"))
-	if len(rj.Occurrences[0].Errors) == 0 {
-		t.Fatal("expected parse errors for garbage input")
+func entrySummary(e ast.Entry) string {
+	switch e := e.(type) {
+	case *ast.BlankLine:
+		return ""
+	case *ast.IncludeDirective:
+		return "include " + e.Path
+	case *ast.YearDirective:
+		return fmt.Sprintf("year %d", e.Year)
+	case *ast.AccountDirective:
+		return "account " + e.Account.String()
+	case *ast.Transaction:
+		s := fmt.Sprintf("%04d-%02d-%02d", e.Date.Year, e.Date.Month, e.Date.Day)
+		if e.Payee != nil {
+			s += " " + e.Payee.Name
+		}
+		return s
+	default:
+		return fmt.Sprintf("<%T>", e)
 	}
 }
 
@@ -148,18 +117,6 @@ func TestLoader_ContentCache_LineEndings(t *testing.T) {
 	rj, err := NewLoader().Resolve(fpath)
 	if err != nil || len(rj.Occurrences[0].Errors) > 0 {
 		t.Fatal("CRLF file should parse without errors")
-	}
-}
-
-func TestLoader_ClearCache(t *testing.T) {
-	l := NewLoader()
-	if len(l.contentCache) != 0 {
-		t.Fatal("expected empty cache")
-	}
-	l.contentCache["x"] = []byte("y")
-	l.ClearCache()
-	if len(l.contentCache) != 0 {
-		t.Fatal("expected empty cache after clear")
 	}
 }
 
@@ -218,4 +175,87 @@ func mustResolve(t *testing.T, l *Loader, fpath string) *ResolvedJournal {
 func txDate(rj *ResolvedJournal) string {
 	tx := rj.Occurrences[0].Ast.Entries[0].(*ast.Transaction)
 	return fmt.Sprintf("%d-%02d-%02d", tx.Date.Year, tx.Date.Month, tx.Date.Day)
+}
+
+// writeFiles writes the given files into dir.
+func writeFiles(t *testing.T, dir string, files map[string]string) {
+	t.Helper()
+	for name, content := range files {
+		testutil.WriteFile(t, filepath.Join(dir, name), []byte(content))
+	}
+}
+
+// newLoaderDir writes files into a temp dir and returns a loader over it.
+func newLoaderDir(t *testing.T, files map[string]string) (*Loader, string) {
+	t.Helper()
+	dir := t.TempDir()
+	writeFiles(t, dir, files)
+	return NewLoader(), dir
+}
+
+// mustOccurrence returns the occurrence of path in the resolve.
+func mustOccurrence(t *testing.T, rj *ResolvedJournal, path string) *ParsedFile {
+	t.Helper()
+	got := rj.ByPath[path]
+	if len(got) == 0 {
+		t.Fatalf("file not resolved: %s", path)
+	}
+	return got[0]
+}
+
+// TestLoader_ParseCache_SharedPointer: two roots including the same file get
+// the same *ast.Journal for it (one parse, shared).
+func TestLoader_ParseCache_SharedPointer(t *testing.T) {
+	l, dir := newLoaderDir(t, map[string]string{
+		"a.journal": "include c.journal\n",
+		"b.journal": "include c.journal\n",
+		"c.journal": "account expenses:food\n",
+	})
+	c := filepath.Join(dir, "c.journal")
+
+	ca := mustOccurrence(t, mustResolve(t, l, filepath.Join(dir, "a.journal")), c)
+	cb := mustOccurrence(t, mustResolve(t, l, filepath.Join(dir, "b.journal")), c)
+	if ca.Ast != cb.Ast {
+		t.Error("c.journal parsed twice: Ast pointers differ")
+	}
+	if ca == cb {
+		t.Error("ParsedFile wrapper must be per-resolve")
+	}
+}
+
+// TestLoader_ParseCache_ContentChange: new content forces a new parse.
+func TestLoader_ParseCache_ContentChange(t *testing.T) {
+	l, dir := newLoaderDir(t, map[string]string{
+		"a.journal": "include c.journal\n",
+		"c.journal": "account expenses:food\n",
+	})
+	a, c := filepath.Join(dir, "a.journal"), filepath.Join(dir, "c.journal")
+
+	first := mustOccurrence(t, mustResolve(t, l, a), c).Ast
+	writeFiles(t, dir, map[string]string{"c.journal": "account expenses:travel\n"})
+	l.InvalidateFile(c) // the content cache would serve stale bytes
+	second := mustOccurrence(t, mustResolve(t, l, a), c).Ast
+	if first == second {
+		t.Error("edited file served the old parse")
+	}
+}
+
+// TestLoader_ContentProvider: open-buffer text wins over disk for includes.
+func TestLoader_ContentProvider(t *testing.T) {
+	l, dir := newLoaderDir(t, map[string]string{
+		"a.journal": "include c.journal\n",
+		"c.journal": "account expenses:old\n",
+	})
+	l.ContentProvider = func(path string) ([]byte, bool) {
+		if filepath.Base(path) == "c.journal" {
+			return []byte("account expenses:new\n"), true
+		}
+		return nil, false
+	}
+
+	pf := mustOccurrence(t, mustResolve(t, l, filepath.Join(dir, "a.journal")), filepath.Join(dir, "c.journal"))
+	ad := pf.Ast.Entries[0].(*ast.AccountDirective)
+	if ad.Account.String() != "expenses:new" {
+		t.Errorf("included content = %q, want expenses:new (buffer wins over disk)", ad.Account.String())
+	}
 }

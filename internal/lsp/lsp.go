@@ -20,41 +20,26 @@ import (
 type Server struct{ server *server }
 
 func NewServer(version string) Server {
-	var logger *slog.Logger
-	logFile, err := openLogFile()
-	if err == nil {
+	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
+	if logFile, err := openLogFile(); err == nil {
 		logger = slog.New(slog.NewTextHandler(logFile, nil))
-	} else {
-		logger = slog.New(slog.NewTextHandler(os.Stderr, nil))
 	}
 
-	return Server{
-		&server{
-			name:    "clerk",
-			version: version,
+	srv := &server{
+		name:    "clerk",
+		version: version,
 
-			openDocs: make(map[uri.URI]docState),
+		openDocs: make(map[uri.URI]docState),
 
-			config:  DefaultConfig,
-			linter:  linter.NewLinter(linter.Rules),
-			loader:  journal.NewLoader(),
-			printer: printer.DefaultConfig,
+		config:  DefaultConfig,
+		linter:  linter.NewLinter(linter.Rules),
+		loader:  journal.NewLoader(),
+		printer: printer.DefaultConfig,
 
-			log: logger,
-		},
+		log: logger,
 	}
-}
-
-func openLogFile() (*os.File, error) {
-	dir, err := xdg.StateDir()
-	if err != nil {
-		return nil, err
-	}
-	dir = filepath.Join(dir, "clerk")
-	if err := os.MkdirAll(dir, 0o700); err != nil {
-		return nil, err
-	}
-	return os.OpenFile(filepath.Join(dir, "lsp.log"), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
+	srv.loader.ContentProvider = srv.bufferContent
+	return Server{srv}
 }
 
 func (s *Server) Run(ctx context.Context, stdin io.ReadCloser, stdout io.WriteCloser) error {
@@ -73,8 +58,29 @@ func (s *Server) Run(ctx context.Context, stdin io.ReadCloser, stdout io.WriteCl
 	return conn.Err()
 }
 
+// bufferContent returns the open buffer text for a path, if any.
+// called by the loader during include resolution; must NOT hold the loader lock.
+func (s *server) bufferContent(path string) ([]byte, bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	st, ok := s.openDocs[uri.File(path)]
+	return []byte(st.text), ok
+}
+
 type readWriterCloser struct {
 	io.Reader
 	io.Writer
 	io.Closer
+}
+
+func openLogFile() (*os.File, error) {
+	dir, err := xdg.StateDir()
+	if err != nil {
+		return nil, err
+	}
+	dir = filepath.Join(dir, "clerk")
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		return nil, err
+	}
+	return os.OpenFile(filepath.Join(dir, "lsp.log"), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
 }

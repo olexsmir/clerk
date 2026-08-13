@@ -1,0 +1,6 @@
+-- in.journal --
+@@@ garbage
+
+-- expect --
+== in.journal ==
+  parse-error: unexpected token AT

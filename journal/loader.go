@@ -19,7 +19,6 @@ type ParsedFile struct {
 	Path       string
 	Src        []byte
 	Ast        *ast.Journal
-	Includes   []*ParsedFile
 	FileErrors []*ast.FileError
 	Errors     []*ast.ParseError
 }
@@ -35,7 +34,6 @@ type ResolvedItem struct {
 // Resolve/ResolveBytes returns a fresh journal; same source path may appear
 // as multiple occurrences with different parser contexts.
 type ResolvedJournal struct {
-	Primary     *ParsedFile    // first occurrence (root file)
 	Occurrences []*ParsedFile  // all occurrences in depth-first order
 	Items       []ResolvedItem // flat stream, occur-order
 	ByPath      map[string][]*ParsedFile
@@ -50,14 +48,36 @@ func (rj *ResolvedJournal) FileErrors() []*ast.FileError {
 	return all
 }
 
+// parseCacheMax bounds the number of parsed files retained by the loader.
+const parseCacheMax = 64
+
+type parseKey struct {
+	canon, content string
+	defaultYear    int
+}
+
+type parseEntry struct {
+	src []byte
+	ast *ast.Journal
+}
+
 // Loader include-aware journal parsing caching.
 type Loader struct {
 	mu           sync.RWMutex
 	contentCache map[string][]byte // canonical path: normalised content
+	parseCache   map[parseKey]parseEntry
+
+	// ContentProvider, when set, is consulted before any disk read. It returns
+	// the file's authoritative content and ok=true, or ok=false to fall back to
+	// disk. The zero value (nil) keeps the loader disk-only.
+	ContentProvider func(path string) ([]byte, bool)
 }
 
 func NewLoader() *Loader {
-	return &Loader{contentCache: make(map[string][]byte)}
+	return &Loader{
+		contentCache: make(map[string][]byte),
+		parseCache:   make(map[parseKey]parseEntry),
+	}
 }
 
 // Resolve performs a fresh include-aware parse of fpath, returning a flat
@@ -77,9 +97,6 @@ func (l *Loader) ResolveBytes(fpath string, src []byte) *ResolvedJournal {
 		ByPath: make(map[string][]*ParsedFile),
 	}
 	l.resolveOccurrence(rj, nil, fpath, src, 0, nil)
-	if len(rj.Occurrences) > 0 {
-		rj.Primary = rj.Occurrences[0]
-	}
 	return rj
 }
 
@@ -106,7 +123,6 @@ func (l *Loader) ResolveFS(fsys fs.FS, fpath string) (*ResolvedJournal, error) {
 }
 
 func (l *Loader) remapFilePaths(rj *ResolvedJournal, oldRoot string) {
-	// remap paths; keep Include field consistent for walkers
 	for _, pf := range rj.Occurrences {
 		if rel, err := filepath.Rel(oldRoot, pf.Path); err == nil {
 			pf.Path = filepath.ToSlash(rel)
@@ -127,22 +143,21 @@ func (l *Loader) remapFilePaths(rj *ResolvedJournal, oldRoot string) {
 
 // InvalidateFile removes a file from the content cache
 func (l *Loader) InvalidateFile(fpath string) {
-	canon := canonicalPath(fpath)
+	canon := CanonicalPath(fpath)
 	l.mu.Lock()
 	delete(l.contentCache, canon)
 	l.mu.Unlock()
 }
 
-// ClearCache empties the content cache
-func (l *Loader) ClearCache() {
-	l.mu.Lock()
-	l.contentCache = make(map[string][]byte)
-	l.mu.Unlock()
-}
-
-// readContent reads a file via content cache; normalises line endings and caches.
+// readContent reads a file, preferring the content provider, then the disk content cache.
 func (l *Loader) readContent(fpath string) ([]byte, error) {
-	canon := canonicalPath(fpath)
+	if l.ContentProvider != nil {
+		if content, ok := l.ContentProvider(fpath); ok {
+			return normaliseNewlines(content), nil
+		}
+	}
+
+	canon := CanonicalPath(fpath)
 
 	l.mu.RLock()
 	content, ok := l.contentCache[canon]
@@ -156,20 +171,22 @@ func (l *Loader) readContent(fpath string) ([]byte, error) {
 		return nil, err
 	}
 
-	// normalise line endings for consistent caching and parsing
-	content = bytes.ReplaceAll(raw, []byte("\r\n"), []byte("\n"))
-	content = bytes.ReplaceAll(content, []byte("\r"), []byte("\n"))
-
+	content = normaliseNewlines(raw)
 	l.mu.Lock()
 	l.contentCache[canon] = content
 	l.mu.Unlock()
 	return content, nil
 }
 
+func normaliseNewlines(raw []byte) []byte {
+	content := bytes.ReplaceAll(raw, []byte("\r\n"), []byte("\n"))
+	return bytes.ReplaceAll(content, []byte("\r"), []byte("\n"))
+}
+
 // resolveOccurrence recursively parses one occurrence and its includes
 func (l *Loader) resolveOccurrence(rj *ResolvedJournal, parent *ParsedFile, fpath string, src []byte, defaultYear int, stack []string) {
 	// cycle detection uses canonical paths to catch cycles through symlinks.
-	canon := canonicalPath(fpath)
+	canon := CanonicalPath(fpath)
 	if slices.Contains(stack, canon) {
 		if parent != nil {
 			parent.FileErrors = append(parent.FileErrors, &ast.FileError{
@@ -180,26 +197,27 @@ func (l *Loader) resolveOccurrence(rj *ResolvedJournal, parent *ParsedFile, fpat
 		return
 	}
 
-	lex := lexer.New(fpath, src)
-	par := parser.NewWithYear(lex, defaultYear)
-	j := par.ParseJournal()
+	key := parseKey{canon: canon, content: string(src), defaultYear: defaultYear}
+	entry, ok := l.parseLookup(key)
+	if !ok {
+		lex := lexer.New(fpath, src)
+		par := parser.NewWithYear(lex, defaultYear)
+		j := par.ParseJournal()
+		entry = parseEntry{src: src, ast: j}
+		l.parseStore(key, entry)
+	}
 
 	pf := &ParsedFile{
-		Path:     fpath,
-		Src:      src,
-		Ast:      j,
-		Includes: []*ParsedFile{},
-		Errors:   j.Errors,
+		Path:   fpath,
+		Src:    entry.src,
+		Ast:    entry.ast,
+		Errors: entry.ast.Errors,
 	}
 	rj.Occurrences = append(rj.Occurrences, pf)
 	rj.ByPath[fpath] = append(rj.ByPath[fpath], pf)
 
-	if parent != nil {
-		parent.Includes = append(parent.Includes, pf)
-	}
-
 	currentYear := defaultYear
-	for i, entry := range j.Entries {
+	for i, entry := range entry.ast.Entries {
 		switch e := entry.(type) {
 		case *ast.BlankLine:
 			continue
@@ -270,7 +288,8 @@ func resolveIncludePath(parentPath, incPattern string) (string, error) {
 	return target, nil
 }
 
-func canonicalPath(path string) string {
+// CanonicalPath resolvea path to it's canonical form: absolute, symlinks evaluated, cleaned.
+func CanonicalPath(path string) string {
 	abs, err := filepath.Abs(path)
 	if err != nil {
 		return filepath.Clean(path)
@@ -280,4 +299,23 @@ func canonicalPath(path string) string {
 		return filepath.Clean(abs)
 	}
 	return filepath.Clean(canonical)
+}
+
+func (l *Loader) parseLookup(key parseKey) (parseEntry, bool) {
+	l.mu.RLock()
+	entry, ok := l.parseCache[key]
+	l.mu.RUnlock()
+	return entry, ok
+}
+
+func (l *Loader) parseStore(key parseKey, entry parseEntry) {
+	l.mu.Lock()
+	l.parseCache[key] = entry
+	if len(l.parseCache) > parseCacheMax {
+		for k := range l.parseCache {
+			delete(l.parseCache, k)
+			break
+		}
+	}
+	l.mu.Unlock()
 }

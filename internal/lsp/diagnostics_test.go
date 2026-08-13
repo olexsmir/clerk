@@ -3,21 +3,20 @@ package lsp
 import (
 	"testing"
 
-	"go.lsp.dev/uri"
+	"olexsmir.xyz/clerk/internal/analyzer"
+	"olexsmir.xyz/clerk/journal"
 )
 
 func BenchmarkDiagnostics(b *testing.B) {
 	content := openJouranl(b, "../../journal/testdata/journals/actual-1ktxns-100accts.journal")
-
 	srv := NewServer("test")
-	srv.server.openDoc(uri.URI("file:///test.journal"), content, 1, "journal")
 
+	// Per-edit cost: a fresh loader skips the parse cache, so each iteration re-parses, then lints and groups findings.
 	b.ReportAllocs()
 	b.ResetTimer()
 	for b.Loop() {
-		// Per-edit cost: re-resolve (parse) + lint + group findings.
-		a := srv.server.buildAnalysis()
-		finds := dedupFinds(srv.server.linter.Run(a))
+		an := analyzer.Build(journal.NewLoader().ResolveBytes("/test.journal", []byte(content)))
+		finds := dedupFinds(srv.server.linter.Run(an))
 		_ = srv.server.groupFindsByFile(finds)
 	}
 }

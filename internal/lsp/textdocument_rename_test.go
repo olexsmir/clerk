@@ -11,7 +11,6 @@ import (
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 
-	"olexsmir.xyz/clerk/internal/analyzer"
 	"olexsmir.xyz/clerk/internal/lsp/lsputil"
 	"olexsmir.xyz/clerk/internal/testutil/golden"
 	"olexsmir.xyz/clerk/journal"
@@ -137,13 +136,12 @@ func BenchmarkRename(b *testing.B) {
 	if err != nil {
 		b.Fatal(err)
 	}
-	a := analyzer.Build(rj)
 	content := string(rj.Occurrences[0].Src)
 
 	srv := NewServer("test")
 	u := uri.File(abs)
 	srv.server.openDoc(u, content, 1, "journal")
-	srv.server.current = a
+	srv.server.analysisFor(u) // warm the per-doc cache
 
 	for tname, tt := range map[string]struct {
 		newName string

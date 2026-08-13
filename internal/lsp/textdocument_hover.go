@@ -18,7 +18,7 @@ func (s *server) Hover(_ context.Context, params *protocol.HoverParams) (*protoc
 		return nil, nil
 	}
 
-	an := s.analysis()
+	an := s.analysisFor(params.TextDocument.URI)
 	cursor := state.lineIdx.Offset(int(params.Position.Line), int(params.Position.Character))
 	el := hoverAt(an, params.TextDocument.URI.Path(), state.text, cursor)
 	if el == nil {

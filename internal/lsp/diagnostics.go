@@ -40,34 +40,40 @@ func (s *server) publishDiagnostics(ctx context.Context) {
 		return
 	}
 
-	a := s.buildAnalysis()
-	if a == nil {
-		s.log.Debug("no files in workspace")
-		return
-	}
-
-	activePaths := make(map[string]bool, len(a.Files))
-	for _, pf := range a.Files {
-		activePaths[pf.Path] = true
-	}
-
-	if ctx.Err() != nil {
-		return
-	}
-
-	finds := dedupFinds(s.linter.Run(a))
-
 	s.mu.Lock()
-	s.current = a
+	var dirtyURIs []uri.URI
+	for u, state := range s.openDocs {
+		if state.dirty {
+			dirtyURIs = append(dirtyURIs, u)
+		}
+	}
 	s.mu.Unlock()
+	if len(dirtyURIs) == 0 {
+		s.log.Debug("no dirty files")
+		return
+	}
+
+	// Rebuild every dirty doc and publish the union of their files;
+	// the same included file may appear in several trees and must be published once.
+	var finds []linter.Find
+	paths := make(map[string]bool)
+	for _, u := range dirtyURIs {
+		a := s.analysisFor(u)
+		if a == nil {
+			continue
+		}
+		for _, pf := range a.Files {
+			paths[pf.Path] = true
+		}
+		finds = append(finds, s.linter.Run(a)...)
+	}
 
 	if ctx.Err() != nil {
 		return
 	}
 
-	diagsByFile := s.groupFindsByFile(finds)
-
-	for fpath := range activePaths {
+	diagsByFile := s.groupFindsByFile(dedupFinds(finds))
+	for fpath := range paths {
 		if ctx.Err() != nil {
 			return
 		}
@@ -79,7 +85,7 @@ func (s *server) publishDiagnostics(ctx context.Context) {
 		}
 	}
 
-	s.log.Debug("diagnostics published", "files", len(a.Files), "findings", len(finds))
+	s.log.Debug("diagnostics published", "files", len(paths), "findings", len(finds))
 }
 
 func (s *server) groupFindsByFile(finds []linter.Find) map[string][]protocol.Diagnostic {

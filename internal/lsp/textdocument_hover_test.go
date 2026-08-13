@@ -13,7 +13,6 @@ import (
 	"olexsmir.xyz/clerk/internal/analyzer"
 	"olexsmir.xyz/clerk/internal/lsp/lsputil"
 	"olexsmir.xyz/clerk/internal/testutil/golden"
-	"olexsmir.xyz/clerk/journal"
 	"olexsmir.xyz/clerk/journal/ast"
 	"olexsmir.xyz/clerk/journal/token"
 )
@@ -109,12 +108,9 @@ func TestGolden_Hover(t *testing.T) {
 func BenchmarkHover(b *testing.B) {
 	content := openJouranl(b, "../../journal/testdata/journals/actual-1ktxns-100accts.journal")
 
-	// Path must match the open doc: hoverAt resolves the document by path.
-	an := analyzer.Build(journal.NewLoader().ResolveBytes("/test.journal", []byte(content)))
-
 	srv := NewServer("test")
 	srv.server.openDoc(uri.URI("file:///test.journal"), content, 1, "journal")
-	srv.server.current = an
+	srv.server.analysisFor(uri.URI("file:///test.journal")) // warm the per-doc cache
 
 	for tname, tt := range map[string]int{
 		"date":              strings.Index(content, "2000-01-01 transaction 1") + 3,

@@ -1,3 +1,4 @@
+// TODO:
 package lsp
 
 import (
@@ -9,7 +10,6 @@ import (
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 
-	"olexsmir.xyz/clerk/internal/analyzer"
 	"olexsmir.xyz/clerk/internal/lsp/lsputil"
 	"olexsmir.xyz/clerk/internal/testutil/golden"
 	"olexsmir.xyz/clerk/journal"
@@ -83,12 +83,11 @@ func BenchmarkCompletion(b *testing.B) {
 	if err != nil {
 		b.Fatal(err)
 	}
-	a := analyzer.Build(rj)
 	content := string(rj.Occurrences[0].Src)
 
 	srv := NewServer("test")
 	srv.server.openDoc(uri.URI("file:///test.journal"), content, 1, "journal")
-	srv.server.current = a
+	srv.server.analysisFor(uri.URI("file:///test.journal")) // warm the per-doc cache
 
 	for tname, tt := range map[string]int{
 		"1k txns, account":     strings.Index(content, "\n  1:2:3 ") + len("\n  ") + 2,

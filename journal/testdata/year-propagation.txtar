@@ -1,0 +1,19 @@
+-- in.journal --
+year 2025
+include child.journal
+12-01 dinner
+  expenses:food  $10
+  assets:cash
+
+-- child.journal --
+06-15 lunch
+  expenses:food  $5
+  assets:cash
+
+-- expect --
+== in.journal ==
+  1 year 2025
+  2 include child.journal
+  3 2025-12-01 dinner
+== child.journal ==
+  1 2025-06-15 lunch

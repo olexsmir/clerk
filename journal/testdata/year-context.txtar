@@ -1,0 +1,31 @@
+-- in.journal --
+include a.journal
+include b.journal
+
+-- a.journal --
+year 2025
+include c.journal
+
+-- b.journal --
+year 2030
+include c.journal
+
+-- c.journal --
+06-15 lunch
+  expenses:food  $5
+  assets:cash
+
+-- expect --
+== in.journal ==
+  1 include a.journal
+  2 include b.journal
+== a.journal ==
+  1 year 2025
+  2 include c.journal
+== c.journal ==
+  1 2025-06-15 lunch
+== b.journal ==
+  1 year 2030
+  2 include c.journal
+== c.journal ==
+  1 2030-06-15 lunch

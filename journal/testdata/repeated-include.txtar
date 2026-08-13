@@ -1,0 +1,15 @@
+-- in.journal --
+include shared.journal
+include shared.journal
+
+-- shared.journal --
+account expenses:shared
+
+-- expect --
+== in.journal ==
+  1 include shared.journal
+  2 include shared.journal
+== shared.journal ==
+  1 account expenses:shared
+== shared.journal ==
+  1 account expenses:shared

@@ -30,13 +30,13 @@ func (s *server) Completion(ctx context.Context, params *protocol.CompletionPara
 	if detectedCtx == cmplNone {
 		return &protocol.CompletionList{}, nil
 	}
-	a := s.analysis()
-	if a == nil {
+	an := s.analysisFor(params.TextDocument.URI)
+	if an == nil {
 		return &protocol.CompletionList{}, nil
 	}
 	return &protocol.CompletionList{
 		IsIncomplete: true,
-		Items:        cmplItems(a, detectedCtx, state.text, state.lineIdx, start, cursor),
+		Items:        cmplItems(an, detectedCtx, state.text, state.lineIdx, start, cursor),
 	}, nil
 }
 

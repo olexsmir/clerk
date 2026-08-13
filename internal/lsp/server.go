@@ -3,7 +3,6 @@ package lsp
 import (
 	"context"
 	"log/slog"
-	"maps"
 	"sync"
 
 	"go.lsp.dev/protocol"
@@ -36,30 +35,41 @@ type server struct {
 	config Config
 }
 
-func (s *server) analysis() *analyzer.Analysis {
+// analysisFor returns the cached analysis for an open doc, rebuilds when the doc or a file it inclues changed.
+func (s *server) analysisFor(u uri.URI) *analyzer.Analysis {
 	s.mu.Lock()
-	a := s.current
-	s.mu.Unlock()
-	if a != nil {
-		return a
+	state, ok := s.openDocs[u]
+	if !ok {
+		s.mu.Unlock()
+		return nil
 	}
-	return s.buildAnalysis()
-}
+	if !state.dirty {
+		an := state.analysis
+		s.mu.Unlock()
+		return an
+	}
+	text := state.text
+	version := state.version
+	s.mu.Unlock()
 
-func (s *server) buildAnalysis() *analyzer.Analysis {
+	an := analyzer.Build(s.loader.ResolveBytes(u.Path(), []byte(text)))
+
 	s.mu.Lock()
-	docs := make(map[uri.URI]docState, len(s.openDocs))
-	maps.Copy(docs, s.openDocs)
-	s.mu.Unlock()
-
-	var a *analyzer.Analysis
-	for duri, state := range docs {
-		rj := s.loader.ResolveBytes(duri.Path(), []byte(state.text))
-		if a == nil {
-			a = analyzer.Build(rj)
-		}
+	state, ok = s.openDocs[u]
+	if !ok || state.version != version {
+		// editot or closed while building. doc stays dirty so te request rebuilds
+		s.mu.Unlock()
+		return an
 	}
-	return a
+	state.analysis = an
+	state.dirty = false
+	state.paths = make(map[string]bool, len(an.Files))
+	for _, pf := range an.Files {
+		state.paths[journal.CanonicalPath(pf.Path)] = true
+	}
+	s.openDocs[u] = state
+	s.mu.Unlock()
+	return an
 }
 
 func (s *server) Initialize(ctx context.Context, params *protocol.InitializeParams) (*protocol.InitializeResult, error) {

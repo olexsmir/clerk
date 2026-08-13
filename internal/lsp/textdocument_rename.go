@@ -21,7 +21,7 @@ func (s *server) PrepareRename(_ context.Context, params *protocol.PrepareRename
 		return nil, nil
 	}
 
-	an := s.analysis()
+	an := s.analysisFor(params.TextDocument.URI)
 	cursor := state.lineIdx.Offset(int(params.Position.Line), int(params.Position.Character))
 	ref := findSymbolUnderCursor(an, params.TextDocument.URI.Path(), state.text, cursor)
 	if ref == nil {
@@ -40,7 +40,7 @@ func (s *server) Rename(_ context.Context, params *protocol.RenameParams) (*prot
 		return nil, nil
 	}
 
-	an := s.analysis()
+	an := s.analysisFor(params.TextDocument.URI)
 	cursor := state.lineIdx.Offset(int(params.Position.Line), int(params.Position.Character))
 	ref := findSymbolUnderCursor(an, params.TextDocument.URI.Path(), state.text, cursor)
 	if ref == nil {

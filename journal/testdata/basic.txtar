@@ -1,0 +1,7 @@
+-- in.journal --
+2024/01/01 t
+  a  $1
+
+-- expect --
+== in.journal ==
+  1 2024-01-01 t

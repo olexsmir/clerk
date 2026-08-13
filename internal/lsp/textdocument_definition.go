@@ -20,7 +20,7 @@ func (s *server) Definition(_ context.Context, params *protocol.DefinitionParams
 		return nil, nil
 	}
 
-	an := s.analysis()
+	an := s.analysisFor(params.TextDocument.URI)
 	cursor := state.lineIdx.Offset(int(params.Position.Line), int(params.Position.Character))
 	return findDefinitionUnderCursor(an, params.TextDocument.URI.Path(), state.text, cursor), nil
 }
