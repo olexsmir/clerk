@@ -1,21 +1,16 @@
 package lsp
 
 import (
-	"os"
 	"testing"
 
 	"go.lsp.dev/uri"
 )
 
 func BenchmarkDiagnostics(b *testing.B) {
-	path := "../../journal/testdata/journals/actual-1ktxns-100accts.journal"
-	src, err := os.ReadFile(path)
-	if err != nil {
-		b.Fatal(err)
-	}
+	content := openJouranl(b, "../../journal/testdata/journals/actual-1ktxns-100accts.journal")
 
 	srv := NewServer("test")
-	srv.server.openDoc(uri.URI("file:///test.journal"), string(src), 1, "journal")
+	srv.server.openDoc(uri.URI("file:///test.journal"), content, 1, "journal")
 
 	b.ReportAllocs()
 	b.ResetTimer()

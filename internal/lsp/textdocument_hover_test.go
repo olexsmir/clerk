@@ -3,7 +3,6 @@ package lsp
 import (
 	"context"
 	"fmt"
-	"os"
 	"strings"
 	"testing"
 	"time"
@@ -108,15 +107,10 @@ func TestGolden_Hover(t *testing.T) {
 }
 
 func BenchmarkHover(b *testing.B) {
-	path := "../../journal/testdata/journals/actual-1ktxns-100accts.journal"
-	src, err := os.ReadFile(path)
-	if err != nil {
-		b.Fatal(err)
-	}
-	content := string(src)
+	content := openJouranl(b, "../../journal/testdata/journals/actual-1ktxns-100accts.journal")
 
 	// Path must match the open doc: hoverAt resolves the document by path.
-	an := analyzer.Build(journal.NewLoader().ResolveBytes("/test.journal", src))
+	an := analyzer.Build(journal.NewLoader().ResolveBytes("/test.journal", []byte(content)))
 
 	srv := NewServer("test")
 	srv.server.openDoc(uri.URI("file:///test.journal"), content, 1, "journal")

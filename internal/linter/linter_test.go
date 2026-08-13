@@ -63,9 +63,7 @@ func TestLinter(t *testing.T) {
 
 func BenchmarkLinter(b *testing.B) {
 	ldr := journal.NewLoader()
-	rj, err := ldr.Resolve(
-		"../../journal/testdata/journals/actual-1ktxns-100accts.journal",
-	)
+	rj, err := ldr.Resolve("../../journal/testdata/journals/actual-1ktxns-100accts.journal")
 	if err != nil {
 		b.Fatalf("failed to load benchmark journal: %v", err)
 	}

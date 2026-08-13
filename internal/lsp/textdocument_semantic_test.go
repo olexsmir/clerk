@@ -2,6 +2,7 @@ package lsp
 
 import (
 	"fmt"
+	"os"
 	"slices"
 	"strings"
 	"testing"
@@ -217,4 +218,25 @@ func renderSemanticTokens(tokens []semanticToken) string {
 func tokSem(content []byte) []semanticToken {
 	c := string(content)
 	return tokenizeForSemantics(c, parseJournalStr(c))
+}
+
+func BenchmarkSemanticTokens(b *testing.B) {
+	content := openJouranl(b, "../../journal/testdata/journals/actual-1ktxns-100accts.journal")
+
+	// Cold path: each iteration re-parses and re-encodes, as after an edit.
+	b.ReportAllocs()
+	b.ResetTimer()
+	for b.Loop() {
+		tokens := tokenizeForSemantics(content, parseJournalStr(content))
+		_ = encodeSemTokens(tokens)
+	}
+}
+
+func openJouranl(t testing.TB, path string) string {
+	t.Helper()
+	src, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(src)
 }
