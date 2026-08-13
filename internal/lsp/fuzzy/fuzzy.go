@@ -2,7 +2,22 @@ package fuzzy
 
 import "strings"
 
-// Score scores how well pattern matches text as a subsequence.
+// Matcher scores a precompiled pattern against candidate texts; [Compile]
+// hoists the lowercasing and rune conversion out of a per-candidate loop.
+type Matcher struct {
+	p []rune // lowercased pattern runes; empty matches everything
+}
+
+// Compile builds a matcher for pattern. The empty pattern matches every
+// text with score 1.
+func Compile(pattern string) Matcher {
+	if pattern == "" {
+		return Matcher{}
+	}
+	return Matcher{p: []rune(strings.ToLower(pattern))}
+}
+
+// Score scores how well the pattern matches text as a subsequence.
 // It returns 0 if pattern is not a case-insensitive subsequence of text,
 // otherwise a score in (0, 1], where 1 is a perfect contiguous match at a
 // segment boundary. An empty pattern matches everything with score 1.
@@ -13,11 +28,11 @@ import "strings"
 // exactly. The total is normalized by 4L+1, the maximum score of a perfect
 // match of length L, so exact segment matches score 1 regardless of length
 // ("food" and "expenses" both match "expenses:food" at 1.0).
-func Score(pattern, text string) float64 {
-	if pattern == "" {
+func (m Matcher) Score(text string) float64 {
+	p := m.p
+	if len(p) == 0 {
 		return 1
 	}
-	p := []rune(strings.ToLower(pattern))
 	t := []rune(text)
 	tl := []rune(strings.ToLower(text))
 
@@ -52,6 +67,9 @@ func Score(pattern, text string) float64 {
 	}
 	return score
 }
+
+// Score scores pattern against text; see [Matcher.Score].
+func Score(pattern, text string) float64 { return Compile(pattern).Score(text) }
 
 // isFuzzySep reports whether r is a segment boundary for fuzzy matching:
 // account-name separators and word boundaries.

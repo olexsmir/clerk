@@ -6,7 +6,6 @@ import (
 	"math"
 	"sort"
 	"strings"
-	"time"
 
 	"go.lsp.dev/protocol"
 
@@ -23,7 +22,7 @@ func (s *server) Completion(ctx context.Context, params *protocol.CompletionPara
 	if !ok {
 		return &protocol.CompletionList{}, nil
 	}
-	cursor := lsputil.Offset(state.text, int(params.Position.Line), int(params.Position.Character))
+	cursor := state.lineIdx.Offset(int(params.Position.Line), int(params.Position.Character))
 	if cursor > len(state.text) {
 		return &protocol.CompletionList{}, nil
 	}
@@ -37,7 +36,7 @@ func (s *server) Completion(ctx context.Context, params *protocol.CompletionPara
 	}
 	return &protocol.CompletionList{
 		IsIncomplete: true,
-		Items:        cmplItems(a, detectedCtx, state.text, start, cursor),
+		Items:        cmplItems(a, detectedCtx, state.text, state.lineIdx, start, cursor),
 	}, nil
 }
 
@@ -292,14 +291,14 @@ func inDirectiveBody(content string, cursor int) bool {
 }
 
 type cmplCand struct {
-	label    string
-	score    float64
-	count    int
-	lastUsed ast.Date
+	label        string
+	score        float64
+	count        int
+	lastUsedDays int64 // days since 1970-01-01; 0 when unset
 }
 
 // cmplItems ranks candidates for the content against typed pattern
-func cmplItems(a *analyzer.Analysis, ctx cmplCtx, content string, start, cursor int) []protocol.CompletionItem {
+func cmplItems(a *analyzer.Analysis, ctx cmplCtx, content string, li *lsputil.LineIndex, start, cursor int) []protocol.CompletionItem {
 	pattern := content[start:cursor]
 
 	var kind protocol.CompletionItemKind
@@ -307,23 +306,27 @@ func cmplItems(a *analyzer.Analysis, ctx cmplCtx, content string, start, cursor 
 	switch ctx {
 	case cmplAccount:
 		kind = protocol.CompletionItemKindClass
+		cands = make([]cmplCand, 0, len(a.Accounts))
 		for name, info := range a.Accounts {
-			cands = append(cands, cmplCand{label: name, count: info.UsedCount, lastUsed: info.LastUsed})
+			cands = append(cands, cmplCand{label: name, count: info.UsedCount, lastUsedDays: dateToDays(info.LastUsed)})
 		}
 	case cmplPayee:
 		kind = protocol.CompletionItemKindVariable
+		cands = make([]cmplCand, 0, len(a.Payees))
 		for name, info := range a.Payees {
-			cands = append(cands, cmplCand{label: name, count: info.UsedCount, lastUsed: info.LastUsed})
+			cands = append(cands, cmplCand{label: name, count: info.UsedCount, lastUsedDays: dateToDays(info.LastUsed)})
 		}
 	case cmplCommodity:
 		kind = protocol.CompletionItemKindValue
+		cands = make([]cmplCand, 0, len(a.Commodities))
 		for name, info := range a.Commodities {
-			cands = append(cands, cmplCand{label: name, count: info.UsedCount, lastUsed: info.LastUsed})
+			cands = append(cands, cmplCand{label: name, count: info.UsedCount, lastUsedDays: dateToDays(info.LastUsed)})
 		}
 	case cmplTagName:
 		kind = protocol.CompletionItemKindProperty
+		cands = make([]cmplCand, 0, len(a.Tags))
 		for name, info := range a.Tags {
-			cands = append(cands, cmplCand{label: name, count: info.UsedCount, lastUsed: info.LastUsed})
+			cands = append(cands, cmplCand{label: name, count: info.UsedCount, lastUsedDays: dateToDays(info.LastUsed)})
 		}
 	case cmplTagValue:
 		kind = protocol.CompletionItemKindProperty
@@ -343,17 +346,18 @@ func cmplItems(a *analyzer.Analysis, ctx cmplCtx, content string, start, cursor 
 		return nil
 	}
 
-	var newest ast.Date
+	var newest int64 // days since epoch of the newest transaction; 0 when none
 	if n := len(a.Dates); n > 0 {
-		newest = a.Dates[n-1]
+		newest = dateToDays(a.Dates[n-1])
 	}
+	m := fuzzy.Compile(pattern)
 	ranked := cands[:0]
 	for i := range cands {
-		sc := fuzzy.Score(pattern, cands[i].label)
+		sc := m.Score(cands[i].label)
 		if sc != 0 {
 			sc *= 1 + math.Log1p(float64(cands[i].count))
-			if cands[i].count > 0 && cands[i].lastUsed.Year != 0 && newest.Year != 0 {
-				days := daysBetween(cands[i].lastUsed, newest)
+			if cands[i].count > 0 && cands[i].lastUsedDays != 0 && newest != 0 {
+				days := newest - cands[i].lastUsedDays
 				sc *= 1 + 0.5*max(0, 1-float64(days)/365)
 			}
 		}
@@ -366,8 +370,8 @@ func cmplItems(a *analyzer.Analysis, ctx cmplCtx, content string, start, cursor 
 		if ranked[i].score != ranked[j].score {
 			return ranked[i].score > ranked[j].score
 		}
-		if ranked[i].lastUsed != ranked[j].lastUsed {
-			return ranked[i].lastUsed.Compare(ranked[j].lastUsed) > 0
+		if ranked[i].lastUsedDays != ranked[j].lastUsedDays {
+			return ranked[i].lastUsedDays > ranked[j].lastUsedDays
 		}
 		return ranked[i].label < ranked[j].label
 	})
@@ -376,8 +380,8 @@ func cmplItems(a *analyzer.Analysis, ctx cmplCtx, content string, start, cursor 
 	}
 
 	replace := protocol.Range{
-		Start: lsputil.Position(content, start),
-		End:   lsputil.Position(content, cursor),
+		Start: li.Position(start),
+		End:   li.Position(cursor),
 	}
 	items := make([]protocol.CompletionItem, len(ranked))
 	for i, r := range ranked {
@@ -399,10 +403,26 @@ func cmplItems(a *analyzer.Analysis, ctx cmplCtx, content string, start, cursor 
 	return items
 }
 
-func daysBetween(a, b ast.Date) int {
-	return int(time.Date(b.Year, time.Month(b.Month), b.Day, 0, 0, 0, 0, time.UTC).
-		Sub(time.Date(a.Year, time.Month(a.Month), a.Day, 0, 0, 0, 0, time.UTC)).
-		Hours() / 24)
+// dateToDays converts a date to days since 1970-01-01; zero dates map to 0.
+func dateToDays(d ast.Date) int64 {
+	if d.Year == 0 {
+		return 0
+	}
+	return daysFromCivil(d.Year, d.Month, d.Day)
+}
+
+// daysFromCivil converts a proleptic Gregorian date to days since 1970-01-01
+// (Howard Hinnant's algorithm).
+func daysFromCivil(y, m, d int) int64 {
+	if m <= 2 {
+		y--
+	}
+	era := y / 400
+	yoe := y - era*400
+	mp := (m + 9) % 12
+	doy := (153*mp+2)/5 + d - 1
+	doe := yoe*365 + yoe/4 - yoe/100 + doy
+	return int64(era)*146097 + int64(doe) - 719468
 }
 
 // lineBounds returns the byte offsets of the line containing cursor
