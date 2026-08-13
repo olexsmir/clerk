@@ -48,17 +48,28 @@ func (s *server) SemanticTokensRange(ctx context.Context, params *protocol.Seman
 
 func (s *server) tokensForDoc(doc uri.URI) ([]semanticToken, bool) {
 	s.mu.Lock()
-	defer s.mu.Unlock()
 	st, ok := s.openDocs[doc]
+	s.mu.Unlock()
 	if !ok {
 		return nil, false
 	}
 	if st.semTokens != nil {
 		return st.semTokens, true
 	}
-	st.semTokens = tokenizeForSemantics(st.text, parseJournalStr(st.text))
-	s.openDocs[doc] = st
-	return st.semTokens, true
+	// Tokenize outside the lock: a full tokenization of a large journal is
+	// milliseconds, during which didChange/didOpen would otherwise stall.
+	tokens := tokenizeForSemantics(st.text, parseJournalStr(st.text))
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	cur, ok := s.openDocs[doc]
+	if !ok {
+		return nil, false
+	}
+	if cur.text == st.text { // unchanged during tokenization
+		cur.semTokens = tokens
+		s.openDocs[doc] = cur
+	}
+	return tokens, true
 }
 
 // Implementation
