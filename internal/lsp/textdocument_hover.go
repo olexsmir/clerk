@@ -8,7 +8,6 @@ import (
 	"go.lsp.dev/protocol"
 
 	"olexsmir.xyz/clerk/internal/analyzer"
-	"olexsmir.xyz/clerk/internal/lsp/lsputil"
 	"olexsmir.xyz/clerk/journal/ast"
 	"olexsmir.xyz/clerk/journal/token"
 )
@@ -20,7 +19,7 @@ func (s *server) Hover(_ context.Context, params *protocol.HoverParams) (*protoc
 	}
 
 	an := s.analysis()
-	cursor := lsputil.Offset(state.text, int(params.Position.Line), int(params.Position.Character))
+	cursor := state.lineIdx.Offset(int(params.Position.Line), int(params.Position.Character))
 	el := hoverAt(an, params.TextDocument.URI.Path(), state.text, cursor)
 	if el == nil {
 		return nil, nil
@@ -31,7 +30,7 @@ func (s *server) Hover(_ context.Context, params *protocol.HoverParams) (*protoc
 			Kind:  protocol.MarkupKindMarkdown,
 			Value: buildHoverContent(an, state.text, el),
 		},
-		Range: new(spanToProtocolRange(state.text, el.span)),
+		Range: new(state.lineIdx.SpanRange(el.span)),
 	}, nil
 }
 
@@ -58,15 +57,16 @@ type hoverElement struct {
 	tx       *ast.Transaction // date hover
 }
 
+// hoverAt finds the hover target under the cursor in the document matching
+// docPath. Only the entry containing the cursor can match; entries are in
+// file order, so [entryAt] finds the containing entry in O(log n).
 func hoverAt(an *analyzer.Analysis, docPath, content string, cursor int) *hoverElement {
 	for _, pf := range an.Files {
 		if pf.Path != docPath {
 			continue
 		}
-		for _, entry := range pf.Ast.Entries {
-			if el := hoverInEntry(content, entry, cursor); el != nil {
-				return el
-			}
+		if entry := entryAt(pf.Ast.Entries, cursor); entry != nil {
+			return hoverInEntry(content, entry, cursor)
 		}
 		return nil
 	}

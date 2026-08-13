@@ -27,6 +27,20 @@ func Utf16Col(line string, byteOffset int) int {
 	return col
 }
 
+// Utf16ColBytes returns the UTF-16 code unit column of b (without newline).
+func Utf16ColBytes(b []byte) int {
+	col := 0
+	for i := 0; i < len(b); {
+		r, size := utf8.DecodeRune(b[i:])
+		if r == utf8.RuneError && size <= 1 {
+			break
+		}
+		col += utf16Len(r)
+		i += size
+	}
+	return col
+}
+
 // Utf16Len returns the UTF-16 code unit length of content[offset:end].
 func Utf16Len(content string, offset, end int) int {
 	if offset < 0 {

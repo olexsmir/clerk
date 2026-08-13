@@ -6,6 +6,7 @@ import (
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 
+	"olexsmir.xyz/clerk/internal/lsp/lsputil"
 	"olexsmir.xyz/clerk/journal/ast"
 	"olexsmir.xyz/clerk/journal/lexer"
 	"olexsmir.xyz/clerk/journal/parser"
@@ -39,7 +40,8 @@ type docState struct {
 	text       string
 	version    int32
 	languageID protocol.LanguageKind
-	semTokens  []semanticToken // cached semantic tokens
+	semTokens  []semanticToken    // cached semantic tokens
+	lineIdx    *lsputil.LineIndex // cached line index for the text
 }
 
 func (s *server) openDoc(u uri.URI, text string, version int32, langID protocol.LanguageKind) {
@@ -48,6 +50,7 @@ func (s *server) openDoc(u uri.URI, text string, version int32, langID protocol.
 		text:       text,
 		version:    version,
 		languageID: langID,
+		lineIdx:    lsputil.NewLineIndex(text),
 	}
 	s.mu.Unlock()
 }
@@ -65,6 +68,7 @@ func (s *server) updateDoc(u uri.URI, version int32, changes []protocol.TextDocu
 		case *protocol.TextDocumentContentChangeWholeDocument:
 			state.text = ev.Text
 			state.semTokens = nil
+			state.lineIdx = lsputil.NewLineIndex(ev.Text)
 		case *protocol.TextDocumentContentChangePartial:
 			_ = ev // TODO: incremental edit support
 		}

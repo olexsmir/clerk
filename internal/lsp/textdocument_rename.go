@@ -22,14 +22,14 @@ func (s *server) PrepareRename(_ context.Context, params *protocol.PrepareRename
 	}
 
 	an := s.analysis()
-	cursor := lsputil.Offset(state.text, int(params.Position.Line), int(params.Position.Character))
+	cursor := state.lineIdx.Offset(int(params.Position.Line), int(params.Position.Character))
 	ref := findSymbolUnderCursor(an, params.TextDocument.URI.Path(), state.text, cursor)
 	if ref == nil {
 		return nil, nil
 	}
 
 	return &protocol.PrepareRenamePlaceholder{
-		Range:       spanToProtocolRange(state.text, ref.span),
+		Range:       state.lineIdx.SpanRange(ref.span),
 		Placeholder: ref.name,
 	}, nil
 }
@@ -41,7 +41,7 @@ func (s *server) Rename(_ context.Context, params *protocol.RenameParams) (*prot
 	}
 
 	an := s.analysis()
-	cursor := lsputil.Offset(state.text, int(params.Position.Line), int(params.Position.Character))
+	cursor := state.lineIdx.Offset(int(params.Position.Line), int(params.Position.Character))
 	ref := findSymbolUnderCursor(an, params.TextDocument.URI.Path(), state.text, cursor)
 	if ref == nil {
 		return nil, nil
@@ -80,10 +80,8 @@ func findSymbolUnderCursor(an *analyzer.Analysis, docPath, content string, curso
 		if pf.Path != docPath {
 			continue
 		}
-		for _, entry := range pf.Ast.Entries {
-			if ref := symbolInEntry(content, entry, cursor); ref != nil {
-				return ref
-			}
+		if entry := entryAt(pf.Ast.Entries, cursor); entry != nil {
+			return symbolInEntry(content, entry, cursor)
 		}
 		return nil
 	}
@@ -248,10 +246,16 @@ func renameChanges(an *analyzer.Analysis, ref *symbolRef, newName string) map[ur
 	changes := make(map[uri.URI][]protocol.TextEdit)
 	for _, pf := range an.Files {
 		content := string(pf.Src)
+		// LineIndex is built lazily: most files have no matching edits, and
+		// each edit needs an O(log n) offset-to-position lookup, not a scan.
+		var li *lsputil.LineIndex
 		var edits []protocol.TextEdit
 		add := func(span token.Span, text string) {
+			if li == nil {
+				li = lsputil.NewLineIndex(content)
+			}
 			edits = append(edits, protocol.TextEdit{
-				Range:   spanToProtocolRange(content, span),
+				Range:   li.SpanRange(span),
 				NewText: text,
 			})
 		}
