@@ -2,7 +2,6 @@ package lsp
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"go.lsp.dev/jsonrpc2"
@@ -84,7 +83,18 @@ func (s *server) publishDiagnostics(ctx context.Context) {
 }
 
 func (s *server) groupFindsByFile(finds []linter.Find) map[string][]protocol.Diagnostic {
-	diags := make(map[string][]protocol.Diagnostic)
+	// count per file to pre-size the diagnostic slices: append growth on ~10k
+	// findings is the dominant allocation in the diagnostics path
+	counts := make(map[string]int, len(finds))
+	for _, find := range finds {
+		if find.Span.Start.File != "" {
+			counts[find.Span.Start.File]++
+		}
+	}
+	diags := make(map[string][]protocol.Diagnostic, len(counts))
+	for fpath, n := range counts {
+		diags[fpath] = make([]protocol.Diagnostic, 0, n)
+	}
 	for _, find := range finds {
 		file := find.Span.Start.File
 		if file == "" {
@@ -106,18 +116,25 @@ func (s *server) findToDiagnostic(find linter.Find) protocol.Diagnostic {
 }
 
 func dedupFinds(finds []linter.Find) []linter.Find {
-	seen := make(map[string]bool)
+	seen := make(map[findKey]bool, len(finds))
 	dedup := make([]linter.Find, 0, len(finds))
 	for _, f := range finds {
-		s := f.Span.Start
-		key := fmt.Sprintf("%s:%d:%d:%s", s.File, s.Line, s.Col, f.Code) // TODO: performace
-		if seen[key] {
+		k := findKey{f.Span.Start.File, f.Span.Start.Line, f.Span.Start.Col, f.Code}
+		if seen[k] {
 			continue
 		}
-		seen[key] = true
+		seen[k] = true
 		dedup = append(dedup, f)
 	}
 	return dedup
+}
+
+// findKey identifies a find by its position and rule; a struct key avoids a
+// per-find fmt.Sprintf.
+type findKey struct {
+	file      string
+	line, col int
+	code      linter.RuleID
 }
 
 func spanToRange(span token.Span) protocol.Range {

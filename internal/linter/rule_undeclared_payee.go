@@ -1,8 +1,6 @@
 package linter
 
 import (
-	"fmt"
-
 	"olexsmir.xyz/clerk/internal/analyzer"
 )
 
@@ -25,7 +23,7 @@ func (u *UndeclaredPayee) CheckJournal(an *analyzer.Analysis) []Find {
 				Code:     u.ID(),
 				Severity: u.Severity(),
 				Span:     usage.Payee.Span,
-				Message:  fmt.Sprintf("undeclared payee: %s", name),
+				Message:  "undeclared payee: " + name,
 			})
 		}
 	}

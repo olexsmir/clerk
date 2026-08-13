@@ -1,8 +1,6 @@
 package linter
 
 import (
-	"fmt"
-
 	"olexsmir.xyz/clerk/internal/analyzer"
 )
 
@@ -25,7 +23,7 @@ func (u *UndeclaredAccount) CheckJournal(an *analyzer.Analysis) []Find {
 				Code:     u.ID(),
 				Severity: u.Severity(),
 				Span:     usage.Posting.Account.Span,
-				Message:  fmt.Sprintf("undeclared account: %s", name),
+				Message:  "undeclared account: " + name,
 			})
 		}
 	}

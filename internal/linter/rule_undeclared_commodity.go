@@ -1,8 +1,6 @@
 package linter
 
 import (
-	"fmt"
-
 	"olexsmir.xyz/clerk/internal/analyzer"
 )
 
@@ -22,7 +20,7 @@ func (u *UndeclaredCommodity) CheckJournal(an *analyzer.Analysis) []Find {
 				Code:     u.ID(),
 				Severity: u.Severity(),
 				Span:     usage.Amount.Span,
-				Message:  fmt.Sprintf("undeclared commodity: %s", name),
+				Message:  "undeclared commodity: " + name,
 			})
 		}
 	}
