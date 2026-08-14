@@ -101,13 +101,44 @@ func findPayeeDefinition(an *analyzer.Analysis, name string) *protocol.Location 
 	return nil
 }
 
-func locationForDirective(a *analyzer.Analysis, d ast.Entry, span token.Span) *protocol.Location {
-	for i, pf := range a.Files {
-		if slices.Contains(pf.Ast.Entries, d) {
-			return locationFor(a, i, span)
+func findTagDefinition(an *analyzer.Analysis, key string) *protocol.Location {
+	info := an.Tags[key]
+	if info == nil {
+		return nil
+	}
+	if len(info.Directives) > 0 {
+		d := info.Directives[0]
+		fileIdx := fileIndexForEntry(an, d)
+		if fileIdx < 0 {
+			return nil
+		}
+		if span, ok := tagDirectiveSpan(string(an.Files[fileIdx].Src), d); ok {
+			return locationFor(an, fileIdx, span)
 		}
 	}
+	if len(info.Usage) > 0 {
+		u := info.Usage[0]
+		span := tagKeySpan(string(an.Files[u.FileIndex].Src), u.Tag)
+		return locationFor(an, u.FileIndex, span)
+	}
 	return nil
+}
+
+func fileIndexForEntry(a *analyzer.Analysis, d ast.Entry) int {
+	for i, pf := range a.Files {
+		if slices.Contains(pf.Ast.Entries, d) {
+			return i
+		}
+	}
+	return -1
+}
+
+func locationForDirective(a *analyzer.Analysis, d ast.Entry, span token.Span) *protocol.Location {
+	fileIdx := fileIndexForEntry(a, d)
+	if fileIdx < 0 {
+		return nil
+	}
+	return locationFor(a, fileIdx, span)
 }
 
 func locationFor(a *analyzer.Analysis, fileIdx int, span token.Span) *protocol.Location {

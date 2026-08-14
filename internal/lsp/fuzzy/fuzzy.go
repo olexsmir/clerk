@@ -1,6 +1,9 @@
 package fuzzy
 
-import "strings"
+import (
+	"strings"
+	"unicode"
+)
 
 // Matcher scores a precompiled pattern against candidate texts; [Compile]
 // hoists the lowercasing and rune conversion out of a per-candidate loop.
@@ -34,14 +37,13 @@ func (m Matcher) Score(text string) float64 {
 		return 1
 	}
 	t := []rune(text)
-	tl := []rune(strings.ToLower(text))
 
 	total := 0
 	prev := -1
 	for i, pr := range p {
 		j := prev + 1
 		for ; j < len(t); j++ {
-			if tl[j] == pr {
+			if unicode.ToLower(t[j]) == pr {
 				break
 			}
 		}

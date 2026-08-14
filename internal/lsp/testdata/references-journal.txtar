@@ -1,0 +1,63 @@
+-- in.journal --
+account ex^penses:food
+account assets:cash
+
+2024-01-15 Gro^cery Store
+    expenses:food  ^$50
+    assets:cash  $-50
+
+2024-01-16 Grocery Store ; proj^ect:work
+    expenses:food  $30
+    assets:cash  $-30
+
+2024-01-17 Coffee Shop ; project:home
+    expenses:food  $5
+    assets:cash  $-5
+
+payee Gro^cery Store
+
+commodity U^SD
+
+tag proj^ect
+
+-- expect --
+includeDeclaration:false
+0:10 in.journal 4:4-4:17
+0:10 in.journal 8:4-8:17
+0:10 in.journal 12:4-12:17
+3:14 in.journal 3:11-3:24
+3:14 in.journal 7:11-7:24
+4:19 in.journal 4:19-4:20
+4:19 in.journal 5:17-5:18
+4:19 in.journal 8:19-8:20
+4:19 in.journal 9:17-9:18
+4:19 in.journal 12:19-12:20
+4:19 in.journal 13:17-13:18
+7:31 in.journal 7:27-7:34
+7:31 in.journal 11:25-11:32
+15:9 in.journal 3:11-3:24
+15:9 in.journal 7:11-7:24
+17:11 <none>
+19:8 <none>
+includeDeclaration:true
+0:10 in.journal 4:4-4:17
+0:10 in.journal 8:4-8:17
+0:10 in.journal 12:4-12:17
+0:10 in.journal 0:8-0:21
+3:14 in.journal 3:11-3:24
+3:14 in.journal 7:11-7:24
+3:14 in.journal 15:6-15:19
+4:19 in.journal 4:19-4:20
+4:19 in.journal 5:17-5:18
+4:19 in.journal 8:19-8:20
+4:19 in.journal 9:17-9:18
+4:19 in.journal 12:19-12:20
+4:19 in.journal 13:17-13:18
+7:31 in.journal 7:27-7:34
+7:31 in.journal 11:25-11:32
+7:31 in.journal 19:4-19:11
+15:9 in.journal 3:11-3:24
+15:9 in.journal 7:11-7:24
+15:9 in.journal 15:6-15:19
+17:11 in.journal 17:10-17:13
+19:8 <none>

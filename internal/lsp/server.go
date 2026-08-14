@@ -28,7 +28,6 @@ type server struct {
 
 	mu         sync.Mutex
 	openDocs   map[uri.URI]docState
-	current    *analyzer.Analysis
 	diagCancel context.CancelFunc
 
 	cfgMu  sync.RWMutex
@@ -83,6 +82,8 @@ func (s *server) Initialize(ctx context.Context, params *protocol.InitializePara
 			DocumentFormattingProvider: &protocol.DocumentFormattingOptions{},
 			DefinitionProvider:         protocol.Boolean(true),
 			HoverProvider:              protocol.Boolean(true),
+			ReferencesProvider:         protocol.Boolean(true),
+			WorkspaceSymbolProvider:    protocol.Boolean(true),
 			RenameProvider: &protocol.RenameOptions{
 				PrepareProvider: new(true),
 			},

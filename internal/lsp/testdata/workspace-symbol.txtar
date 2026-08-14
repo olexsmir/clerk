@@ -1,0 +1,35 @@
+-- in.journal --
+account expenses:food
+account expenses:taxi
+account assets:cash
+
+2024-01-15 Grocery Store ; project:work
+    expenses:food  $50
+    assets:cash  $-50
+
+payee Grocery Store
+payee Coffee Shop
+
+commodity USD
+commodity EUR
+
+tag project
+tag client
+^
+
+-- queries --
+food
+cash
+grocery
+EUR
+project
+xyz
+
+-- expect --
+"food" class expenses:food in.journal 0:8-0:21
+"cash" class assets:cash in.journal 2:8-2:19
+"grocery" object Grocery Store in.journal 8:6-8:19
+"EUR" variable EUR in.journal 12:10-12:13
+"project" property project in.journal 14:4-14:11
+"xyz" <none>
+"" <none>

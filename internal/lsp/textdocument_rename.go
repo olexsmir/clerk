@@ -163,6 +163,20 @@ const (
 	symbolTag
 )
 
+func (s symbolKind) ToProtocol() protocol.SymbolKind {
+	switch s {
+	case symbolAccount:
+		return protocol.SymbolKindClass
+	case symbolCommodity:
+		return protocol.SymbolKindVariable
+	case symbolPayee:
+		return protocol.SymbolKindObject
+	case symbolTag:
+		return protocol.SymbolKindProperty
+	}
+	return protocol.SymbolKindFile
+}
+
 // symbolRef is a symbol under the cursor, ready to be resolved or renamed.
 type symbolRef struct {
 	kind symbolKind
