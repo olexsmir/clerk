@@ -21,6 +21,9 @@ type Analysis struct {
 	// account "alias" subdirectives and top-level "alias A = B" directives.
 	AccountAliases map[string]string
 
+	// AliasDirectives holds every top-level "alias A = B" directive in entry order.
+	AliasDirectives []*ast.AliasDirective
+
 	AccountNames     []string            // sorted for binary search
 	PayeeNames       []string            // sorted, all payee names from directives + usage
 	AccountsByPrefix map[string][]string // "expenses:" -> ["expenses:food", "expenses:taxi"]

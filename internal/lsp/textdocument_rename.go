@@ -68,7 +68,7 @@ func (s *server) Rename(_ context.Context, params *protocol.RenameParams) (*prot
 		return nil, nil
 	}
 
-	changes := renameChanges(an, ref, params.NewName)
+	changes := renameChanges(an, ref, params.NewName, state.lineIdx)
 	if len(changes) == 0 {
 		return nil, nil
 	}
@@ -255,137 +255,147 @@ func symbolInPostings(content string, postings []*ast.Posting, cursor int) *symb
 	return nil
 }
 
-// renameChanges collects the workspace edits renaming ref to newName
-func renameChanges(an *analyzer.Analysis, ref *symbolRef, newName string) map[uri.URI][]protocol.TextEdit {
-	changes := make(map[uri.URI][]protocol.TextEdit)
-	for _, pf := range an.Files {
-		content := string(pf.Src)
-		// LineIndex is built lazily: most files have no matching edits, and
-		// each edit needs an O(log n) offset-to-position lookup, not a scan.
-		var li *lsputil.LineIndex
-		var edits []protocol.TextEdit
-		add := func(span token.Span, text string) {
-			if li == nil {
-				li = lsputil.NewLineIndex(content)
+func renameChanges(an *analyzer.Analysis, ref *symbolRef, newName string, primaryLI *lsputil.LineIndex) map[uri.URI][]protocol.TextEdit {
+	type fileEdits struct {
+		li    *lsputil.LineIndex
+		edits []protocol.TextEdit
+	}
+	files := make(map[int]*fileEdits)
+	add := func(fileIdx int, span token.Span, text string) {
+		fe := files[fileIdx]
+		if fe == nil {
+			fe = &fileEdits{}
+			if fileIdx == 0 {
+				fe.li = primaryLI
+			} else {
+				fe.li = lsputil.NewLineIndex(string(an.Files[fileIdx].Src))
 			}
-			edits = append(edits, protocol.TextEdit{
-				Range:   li.SpanRange(span),
-				NewText: text,
-			})
+			files[fileIdx] = fe
 		}
-		for _, e := range pf.Ast.Entries {
-			renameEntry(add, ref, newName, content, e)
-		}
-		if len(edits) > 0 {
-			changes[uri.File(pf.Path)] = edits
-		}
+		fe.edits = append(fe.edits, protocol.TextEdit{
+			Range:   fe.li.SpanRange(span),
+			NewText: text,
+		})
+	}
+
+	switch ref.kind {
+	case symbolAccount:
+		renameAccountEdits(an, ref, newName, add)
+	case symbolCommodity:
+		renameCommodityEdits(an, ref, newName, add)
+	case symbolPayee:
+		renamePayeeEdits(an, ref, newName, add)
+	case symbolTag:
+		renameTagEdits(an, ref, newName, add)
+	}
+
+	changes := make(map[uri.URI][]protocol.TextEdit, len(files))
+	for fileIdx, fe := range files {
+		changes[uri.File(an.Files[fileIdx].Path)] = fe.edits
 	}
 	sortAndDedup(changes)
 	return changes
 }
 
-func renameEntry(add func(token.Span, string), ref *symbolRef, newName, content string, e ast.Entry) {
-	switch e := e.(type) {
-	case *ast.Transaction:
-		renamePayee(add, ref, newName, e.Payee)
-		renameCommentTags(add, ref, newName, content, e.Comment)
-		for _, c := range e.HeaderComments {
-			renameCommentTags(add, ref, newName, content, c)
+func renameAccountEdits(an *analyzer.Analysis, ref *symbolRef, newName string, add func(int, token.Span, string)) {
+	for _, name := range an.AccountNames {
+		if !accountMatches(name, ref.name) {
+			continue
 		}
-		renamePostings(add, ref, newName, content, e.Postings)
-	case *ast.PeriodicTransaction:
-		renameCommentTags(add, ref, newName, content, e.Comment)
-		for _, c := range e.HeaderComments {
-			renameCommentTags(add, ref, newName, content, c)
+		info := an.Accounts[name]
+		text := newName + strings.TrimPrefix(name, ref.name)
+		for _, u := range info.Usages {
+			add(u.FileIndex, u.Posting.Account.Span, text)
 		}
-		renamePostings(add, ref, newName, content, e.Postings)
-	case *ast.AutomatedTransaction:
-		renameCommentTags(add, ref, newName, content, e.Comment)
-		for _, c := range e.HeaderComments {
-			renameCommentTags(add, ref, newName, content, c)
-		}
-		renamePostings(add, ref, newName, content, e.Postings)
-	case *ast.Comment:
-		renameCommentTags(add, ref, newName, content, e)
-	case *ast.AccountDirective:
-		if text, ok := ref.renameTo(symbolAccount, e.Account.String(), newName); ok {
-			add(e.Account.Span, text)
-		}
-		for _, sd := range e.Subdirectives {
-			if sd.Name == "alias" {
-				if text, ok := ref.renameTo(symbolAccount, sd.Value, newName); ok {
-					add(sd.ValueSpan, text)
+	}
+	for _, info := range an.Accounts {
+		for _, d := range info.Directives {
+			fileIdx := fileIndexForEntry(an, d)
+			if fileIdx < 0 {
+				continue
+			}
+			if accountMatches(d.Account.String(), ref.name) {
+				add(fileIdx, d.Account.Span, newName+strings.TrimPrefix(d.Account.String(), ref.name))
+			}
+			for _, sd := range d.Subdirectives {
+				if sd.Name == "alias" && accountMatches(sd.Value, ref.name) {
+					add(fileIdx, sd.ValueSpan, newName+strings.TrimPrefix(sd.Value, ref.name))
 				}
 			}
 		}
-	case *ast.AliasDirective:
-		if text, ok := ref.renameTo(symbolAccount, e.From.String(), newName); ok {
-			add(e.From.Span, text)
+	}
+	for _, ad := range an.AliasDirectives {
+		fileIdx := fileIndexForEntry(an, ad)
+		if fileIdx < 0 {
+			continue
 		}
-		if text, ok := ref.renameTo(symbolAccount, e.To.String(), newName); ok {
-			add(e.To.Span, text)
+		if accountMatches(ad.From.String(), ref.name) {
+			add(fileIdx, ad.From.Span, newName+strings.TrimPrefix(ad.From.String(), ref.name))
 		}
-	case *ast.CommodityDirective:
-		if text, ok := ref.renameTo(symbolCommodity, e.Commodity, newName); ok {
-			add(e.CommoditySpan, text)
+		if accountMatches(ad.To.String(), ref.name) {
+			add(fileIdx, ad.To.Span, newName+strings.TrimPrefix(ad.To.String(), ref.name))
 		}
-	case *ast.PayeeDirective:
-		renamePayee(add, ref, newName, e.Name)
-	case *ast.TagDirective:
-		if text, ok := ref.renameTo(symbolTag, e.Name, newName); ok {
-			if span, ok := tagDirectiveSpan(content, e); ok {
-				add(span, text)
+	}
+}
+
+func renameCommodityEdits(an *analyzer.Analysis, ref *symbolRef, newName string, add func(int, token.Span, string)) {
+	info := an.Commodities[ref.name]
+	if info == nil {
+		return
+	}
+	for _, d := range info.Directives {
+		if fileIdx := fileIndexForEntry(an, d); fileIdx >= 0 {
+			add(fileIdx, d.CommoditySpan, newName)
+		}
+	}
+	for _, u := range info.Usages {
+		add(u.FileIndex, u.Amount.CommoditySpan, newName)
+	}
+}
+
+func renamePayeeEdits(an *analyzer.Analysis, ref *symbolRef, newName string, add func(int, token.Span, string)) {
+	info := an.Payees[ref.name]
+	if info == nil {
+		return
+	}
+	for _, d := range info.Directives {
+		if d.Name != nil {
+			if fileIdx := fileIndexForEntry(an, d); fileIdx >= 0 {
+				add(fileIdx, d.Name.Span, newName)
 			}
 		}
 	}
-}
-
-func renamePostings(add func(token.Span, string), ref *symbolRef, newName, content string, postings []*ast.Posting) {
-	for _, p := range postings {
-		if text, ok := ref.renameTo(symbolAccount, p.Account.String(), newName); ok {
-			add(p.Account.Span, text)
-		}
-		renameCommodity(add, ref, newName, p.Amount)
-		if p.Cost != nil {
-			renameCommodity(add, ref, newName, &p.Cost.Amount)
-		}
-		if p.Balance != nil {
-			renameCommodity(add, ref, newName, &p.Balance.Amount)
-		}
-		renameCommentTags(add, ref, newName, content, p.Comment)
-		for i := range p.Comments {
-			renameCommentTags(add, ref, newName, content, &p.Comments[i])
-		}
+	for _, u := range info.Usage {
+		add(u.FileIndex, u.Payee.Span, newName)
 	}
 }
 
-func renameCommodity(add func(token.Span, string), ref *symbolRef, newName string, am *ast.Amount) {
-	if am == nil {
+func renameTagEdits(an *analyzer.Analysis, ref *symbolRef, newName string, add func(int, token.Span, string)) {
+	info := an.Tags[ref.name]
+	if info == nil {
 		return
 	}
-	if text, ok := ref.renameTo(symbolCommodity, am.Commodity, newName); ok {
-		add(am.CommoditySpan, text)
-	}
-}
-
-func renamePayee(add func(token.Span, string), ref *symbolRef, newName string, p *ast.Payee) {
-	if p == nil {
-		return
-	}
-	if text, ok := ref.renameTo(symbolPayee, p.Name, newName); ok {
-		add(p.Span, text)
-	}
-}
-
-func renameCommentTags(add func(token.Span, string), ref *symbolRef, newName, content string, c *ast.Comment) {
-	if c == nil {
-		return
-	}
-	for i := range c.Tags {
-		t := &c.Tags[i]
-		if text, ok := ref.renameTo(symbolTag, t.Key, newName); ok {
-			add(tagKeySpan(content, t), text)
+	contents := make(map[int]string) // file index → source, converted once per file
+	content := func(fileIdx int) string {
+		s, ok := contents[fileIdx]
+		if !ok {
+			s = string(an.Files[fileIdx].Src)
+			contents[fileIdx] = s
 		}
+		return s
+	}
+	for _, d := range info.Directives {
+		fileIdx := fileIndexForEntry(an, d)
+		if fileIdx < 0 {
+			continue
+		}
+		if span, ok := tagDirectiveSpan(content(fileIdx), d); ok {
+			add(fileIdx, span, newName)
+		}
+	}
+	for _, u := range info.Usage {
+		span := tagKeySpan(content(u.FileIndex), u.Tag)
+		add(u.FileIndex, span, newName)
 	}
 }
 

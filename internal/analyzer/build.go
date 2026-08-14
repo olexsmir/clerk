@@ -127,6 +127,7 @@ func (a *Analysis) addAccountDirective(ad *ast.AccountDirective) {
 // source name resolves to the target account.
 func (a *Analysis) addAliasDirective(ad *ast.AliasDirective) {
 	a.AccountAliases[ad.From.String()] = ad.To.String()
+	a.AliasDirectives = append(a.AliasDirectives, ad)
 }
 
 func (a *Analysis) addPayeeDirective(pd *ast.PayeeDirective) {
