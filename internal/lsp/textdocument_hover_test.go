@@ -10,7 +10,6 @@ import (
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 
-	"olexsmir.xyz/clerk/internal/analyzer"
 	"olexsmir.xyz/clerk/internal/lsp/lsputil"
 	"olexsmir.xyz/clerk/internal/testutil/golden"
 	"olexsmir.xyz/clerk/journal/ast"
@@ -44,18 +43,7 @@ func TestTagValueSpan(t *testing.T) {
 	}
 }
 
-func TestCountTransactionsOnDate(t *testing.T) {
-	tx := func(y, m, d int) *ast.Transaction { return &ast.Transaction{Date: ast.Date{Year: y, Month: m, Day: d}} }
-	an := &analyzer.Analysis{Transactions: []*ast.Transaction{tx(2024, 1, 15), tx(2024, 1, 15), tx(2024, 2, 1)}}
-	if got := countTransactionsOnDate(an, ast.Date{Year: 2024, Month: 1, Day: 15}); got != 2 {
-		t.Errorf("got %d, want 2", got)
-	}
-	if got := countTransactionsOnDate(an, ast.Date{Year: 2025, Month: 1, Day: 15}); got != 0 {
-		t.Errorf("got %d, want 0", got)
-	}
-}
-
-func TestServerHover_DocumentNotFound(t *testing.T) {
+func TestServer_Hover_DocumentNotFound(t *testing.T) {
 	srv := NewServer("test")
 	res, err := srv.server.Hover(context.Background(), &protocol.HoverParams{
 		TextDocumentPositionParams: protocol.TextDocumentPositionParams{

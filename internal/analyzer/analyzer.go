@@ -35,8 +35,8 @@ type Analysis struct {
 	Dates       []ast.Date // unique transaction dats in sorted order
 	DateStrings []string   // same order as Dates, "YYYY-MM-DD"
 
-	// TransactionsByKey groups transactions by [TxDuplicateKey] signature.
-	TransactionsByKey map[string][]*ast.Transaction
+	TransactionsCountByDate map[string]int                // counts transactions per date, keyed by [formatDate]
+	TransactionsByKey       map[string][]*ast.Transaction // groups transactions by [TxDuplicateKey] signature
 }
 
 type AccountInfo struct {

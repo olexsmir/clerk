@@ -17,15 +17,16 @@ func Build(rj *journal.ResolvedJournal) *Analysis {
 	}
 
 	a := &Analysis{
-		Files:             rj.Occurrences,
-		Accounts:          make(map[string]*AccountInfo),
-		AccountAliases:    make(map[string]string),
-		Commodities:       make(map[string]*CommodityInfo),
-		Payees:            make(map[string]*PayeeInfo),
-		Tags:              make(map[string]*TagInfo),
-		AccountsByPrefix:  make(map[string][]string),
-		PayeeTemplates:    make(map[string][]PostingTemplate),
-		TransactionsByKey: make(map[string][]*ast.Transaction),
+		Files:                   rj.Occurrences,
+		Accounts:                make(map[string]*AccountInfo),
+		AccountAliases:          make(map[string]string),
+		Commodities:             make(map[string]*CommodityInfo),
+		Payees:                  make(map[string]*PayeeInfo),
+		Tags:                    make(map[string]*TagInfo),
+		AccountsByPrefix:        make(map[string][]string),
+		PayeeTemplates:          make(map[string][]PostingTemplate),
+		TransactionsByKey:       make(map[string][]*ast.Transaction),
+		TransactionsCountByDate: make(map[string]int),
 	}
 	for _, item := range rj.Items {
 		if item.IsInclude {
@@ -81,6 +82,7 @@ func (a *Analysis) addEntry(fileIndex int, entry ast.Entry) {
 		}
 		key := TxDuplicateKey(e)
 		a.TransactionsByKey[key] = append(a.TransactionsByKey[key], e)
+		a.TransactionsCountByDate[formatDate(e.Date)]++
 	case *ast.PeriodicTransaction:
 		a.PeriodicTransactions = append(a.PeriodicTransactions, e)
 		a.addPostings(fileIndex, e.Postings, nil)
@@ -299,6 +301,11 @@ func sortedKeys(m map[string]bool) []string {
 	}
 	sort.Strings(out)
 	return out
+}
+
+// CountTransactionsOnDate returns the number of transactions on d.
+func (a *Analysis) CountTransactionsOnDate(d ast.Date) int {
+	return a.TransactionsCountByDate[formatDate(d)]
 }
 
 func formatDate(d ast.Date) string {

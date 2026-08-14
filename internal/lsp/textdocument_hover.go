@@ -321,19 +321,9 @@ func buildDateHover(an *analyzer.Analysis, tx *ast.Transaction) string {
 	if tx.Payee != nil {
 		fmt.Fprintf(&sb, "\n\n**Payee:** %s", tx.Payee.Name)
 	}
-	fmt.Fprintf(&sb, "\n\n**Transactions:** %d", countTransactionsOnDate(an, tx.Date))
+	fmt.Fprintf(&sb, "\n\n**Transactions:** %d", an.CountTransactionsOnDate(tx.Date))
 	fmt.Fprintf(&sb, "\n\n**Postings:** %d", len(tx.Postings))
 	return sb.String()
-}
-
-func countTransactionsOnDate(an *analyzer.Analysis, d ast.Date) int {
-	count := 0
-	for _, tx := range an.Transactions {
-		if tx.Date.Compare(d) == 0 {
-			count++
-		}
-	}
-	return count
 }
 
 func writeDateSection(sb *strings.Builder, label string, d ast.Date) {
