@@ -81,7 +81,7 @@ func TestGolden_Symbols(t *testing.T) {
 }
 
 func BenchmarkSymbols(b *testing.B) {
-	content := openJouranl(b, "../../journal/testdata/journals/actual-1ktxns-100accts.journal")
+	content := openJournal(b, "../../journal/testdata/journals/actual-1ktxns-100accts.journal")
 
 	srv := NewServer("test")
 	u := uri.URI("file:///test.journal")

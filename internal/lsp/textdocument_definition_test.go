@@ -14,7 +14,7 @@ import (
 	"olexsmir.xyz/clerk/journal"
 )
 
-func TestDefinition_DocumentNotFound(t *testing.T) {
+func TestServer_Definition_DocumentNotFound(t *testing.T) {
 	srv := NewServer("test")
 	res, err := srv.server.Definition(t.Context(), &protocol.DefinitionParams{
 		TextDocumentPositionParams: protocol.TextDocumentPositionParams{

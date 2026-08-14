@@ -94,7 +94,7 @@ func TestGolden_Hover(t *testing.T) {
 }
 
 func BenchmarkHover(b *testing.B) {
-	content := openJouranl(b, "../../journal/testdata/journals/actual-1ktxns-100accts.journal")
+	content := openJournal(b, "../../journal/testdata/journals/actual-1ktxns-100accts.journal")
 
 	srv := NewServer("test")
 	srv.server.openDoc(uri.URI("file:///test.journal"), content, 1, "journal")
@@ -117,9 +117,13 @@ func BenchmarkHover(b *testing.B) {
 				},
 			}
 
-			// warm up
-			if _, err := srv.server.Hover(b.Context(), params); err != nil {
+			// warm up: assert the cursor resolved to a hover
+			res, err := srv.server.Hover(b.Context(), params)
+			if err != nil {
 				b.Fatal(err)
+			}
+			if res == nil {
+				b.Fatalf("%s: no hover", tname)
 			}
 			b.ReportAllocs()
 			b.ResetTimer()

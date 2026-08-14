@@ -8,7 +8,7 @@ import (
 )
 
 func BenchmarkDiagnostics(b *testing.B) {
-	content := openJouranl(b, "../../journal/testdata/journals/actual-1ktxns-100accts.journal")
+	content := openJournal(b, "../../journal/testdata/journals/actual-1ktxns-100accts.journal")
 	srv := NewServer("test")
 
 	// Per-edit cost: a fresh loader skips the parse cache, so each iteration re-parses, then lints and groups findings.

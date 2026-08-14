@@ -221,7 +221,7 @@ func tokSem(content []byte) []semanticToken {
 }
 
 func BenchmarkSemanticTokens(b *testing.B) {
-	content := openJouranl(b, "../../journal/testdata/journals/actual-1ktxns-100accts.journal")
+	content := openJournal(b, "../../journal/testdata/journals/actual-1ktxns-100accts.journal")
 
 	// Cold path: each iteration re-parses and re-encodes, as after an edit.
 	b.ReportAllocs()
@@ -232,7 +232,7 @@ func BenchmarkSemanticTokens(b *testing.B) {
 	}
 }
 
-func openJouranl(t testing.TB, path string) string {
+func openJournal(t testing.TB, path string) string {
 	t.Helper()
 	src, err := os.ReadFile(path)
 	if err != nil {
