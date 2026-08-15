@@ -25,7 +25,7 @@ func (o *OrderDate) CheckJournal(an *analyzer.Analysis) []Find {
 				finds = append(finds, Find{
 					Code:     o.ID(),
 					Severity: o.Severity(),
-					Message:  fmt.Sprintf("transaction is out of chronological order (date %s before %s)", o.dateString(txn.Date), o.dateString(*anchor)),
+					Message:  fmt.Sprintf("transaction is out of chronological order (date %s before %s)", txn.Date, *anchor),
 					Span:     txn.Date.Span,
 				})
 				continue
@@ -34,8 +34,4 @@ func (o *OrderDate) CheckJournal(an *analyzer.Analysis) []Find {
 		}
 	}
 	return finds
-}
-
-func (o OrderDate) dateString(d ast.Date) string {
-	return fmt.Sprintf("%d-%02d-%02d", d.Year, d.Month, d.Day)
 }

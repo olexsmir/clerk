@@ -1,6 +1,7 @@
 package ast
 
 import (
+	"fmt"
 	"strings"
 
 	"olexsmir.xyz/clerk/journal/token"
@@ -53,6 +54,15 @@ func (d Date) Compare(other Date) int {
 		return 1
 	}
 	return 0
+}
+
+// String renders d as "YYYY-MM-DD", or "" for an unset or invalid date.
+func (d Date) String() string {
+	if (d.Year == 0 && d.Month == 0 && d.Day == 0) ||
+		(d.Month < 1 || d.Month > 12 || d.Day < 1 || d.Day > 31) {
+		return ""
+	}
+	return fmt.Sprintf("%04d-%02d-%02d", d.Year, d.Month, d.Day)
 }
 
 type Time struct {

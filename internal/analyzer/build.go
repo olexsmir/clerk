@@ -1,7 +1,6 @@
 package analyzer
 
 import (
-	"fmt"
 	"sort"
 	"strings"
 
@@ -45,7 +44,8 @@ func Build(rj *journal.ResolvedJournal) *Analysis {
 
 func TxDuplicateKey(tx *ast.Transaction) string {
 	var b strings.Builder
-	fmt.Fprintf(&b, "%04d-%02d-%02d|", tx.Date.Year, tx.Date.Month, tx.Date.Day)
+	b.WriteString(tx.Date.String())
+	b.WriteByte('|')
 	if tx.Payee != nil {
 		b.WriteString(tx.Payee.Name)
 	}
@@ -82,7 +82,7 @@ func (a *Analysis) addEntry(fileIndex int, entry ast.Entry) {
 		}
 		key := TxDuplicateKey(e)
 		a.TransactionsByKey[key] = append(a.TransactionsByKey[key], e)
-		a.TransactionsCountByDate[formatDate(e.Date)]++
+		a.TransactionsCountByDate[e.Date.String()]++
 	case *ast.PeriodicTransaction:
 		a.PeriodicTransactions = append(a.PeriodicTransactions, e)
 		a.addPostings(fileIndex, e.Postings, nil)
@@ -260,7 +260,7 @@ func (a *Analysis) addPayeeTemplate(tx *ast.Transaction) {
 func (a *Analysis) collectDates() {
 	seen := make(map[string]bool)
 	for _, tx := range a.Transactions {
-		s := formatDate(tx.Date)
+		s := tx.Date.String()
 		if s != "" && !seen[s] {
 			seen[s] = true
 			a.Dates = append(a.Dates, tx.Date)
@@ -306,17 +306,7 @@ func sortedKeys(m map[string]bool) []string {
 
 // CountTransactionsOnDate returns the number of transactions on d.
 func (a *Analysis) CountTransactionsOnDate(d ast.Date) int {
-	return a.TransactionsCountByDate[formatDate(d)]
-}
-
-func formatDate(d ast.Date) string {
-	if d.Year == 0 && d.Month == 0 && d.Day == 0 {
-		return ""
-	}
-	if d.Month < 1 || d.Month > 12 || d.Day < 1 || d.Day > 31 {
-		return ""
-	}
-	return fmt.Sprintf("%04d-%02d-%02d", d.Year, d.Month, d.Day)
+	return a.TransactionsCountByDate[d.String()]
 }
 
 func (a *Analysis) addCommodityUsage(fileIndex int, am *ast.Amount, date *ast.Date) {
