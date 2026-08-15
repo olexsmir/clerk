@@ -84,6 +84,7 @@ func (s *server) Initialize(ctx context.Context, params *protocol.InitializePara
 			HoverProvider:              protocol.Boolean(true),
 			ReferencesProvider:         protocol.Boolean(true),
 			WorkspaceSymbolProvider:    protocol.Boolean(true),
+			DocumentSymbolProvider:     protocol.Boolean(true),
 			RenameProvider: &protocol.RenameOptions{
 				PrepareProvider: new(true),
 			},

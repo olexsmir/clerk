@@ -168,13 +168,8 @@ func locationFor(a *analyzer.Analysis, fileIdx int, span token.Span) *protocol.L
 	}
 }
 
-// spanRangeFromSrc converts a span to a protocol range. Parsed spans carry
-// 1-based Line/Col and are converted directly; spans whose end runs into
-// trailing whitespace or uses the next-line-start convention (Col == 0) get a
-// one-line scan back from the end offset.
 func spanRangeFromSrc(src []byte, span token.Span) protocol.Range {
 	if span.Start.Line == 0 || span.End.Line == 0 {
-		// spans built from offsets without Line/Col: full line index
 		return lsputil.NewLineIndex(string(src)).SpanRange(span)
 	}
 	start := protocol.Position{Line: uint32(span.Start.Line - 1), Character: uint32(span.Start.Col - 1)}
@@ -183,9 +178,12 @@ func spanRangeFromSrc(src []byte, span token.Span) protocol.Range {
 		// the span's stored end position matches its offset
 		return protocol.Range{Start: start, End: protocol.Position{Line: uint32(span.End.Line - 1), Character: uint32(span.End.Col - 1)}}
 	}
-	// Trim trailing whitespace back from the end offset; both scans are
+	// trim trailing whitespace back from the end offset; both scans are
 	// bounded by the one line the span ends on.
-	line := span.End.Line - 1 // 1-based line holding the end
+	line := span.End.Line - 1 // 0-based line of the end, decremented per newline trimmed
+	if end < len(src) && src[end] == '\n' {
+		line-- // end sits on a newline, which the parser records as the next line's start
+	}
 	for end > span.Start.Offset && isSpanSpace(src[end-1]) {
 		if src[end-1] == '\n' {
 			line--
@@ -199,7 +197,7 @@ func spanRangeFromSrc(src []byte, span token.Span) protocol.Range {
 	return protocol.Range{
 		Start: start,
 		End: protocol.Position{
-			Line:      uint32(line - 1),
+			Line:      uint32(line),
 			Character: uint32(lsputil.Utf16ColBytes(src[lineStart:end])),
 		},
 	}
@@ -221,9 +219,6 @@ func spanContains(content string, span token.Span, offset int) bool {
 	return span.Start.Offset <= offset && offset <= end
 }
 
-// entryAt returns the entry whose start offset is at or before cursor, the
-// only entry whose tokens can contain it. Entries are stored in file order,
-// so a binary search replaces a linear scan for late-cursor requests.
 func entryAt(entries []ast.Entry, cursor int) ast.Entry {
 	idx := sort.Search(len(entries), func(i int) bool { return entryStart(entries[i]) > cursor }) - 1
 	if idx < 0 {

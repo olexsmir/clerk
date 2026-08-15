@@ -1,0 +1,43 @@
+-- in.journal --
+account expenses:food
+account expenses:taxi
+account assets:cash
+
+2024-01-15 Grocery Store ; project:work
+    expenses:food  $50
+    assets:cash  $-50
+
+2024-01-16 * Coffee Shop | cappuccino
+    expenses:taxi  $4
+    assets:cash  $-4
+
+payee Grocery Store
+payee Coffee Shop
+
+commodity USD
+commodity EUR
+
+tag project
+tag client
+
+~ monthly
+    expenses:food  $10
+
+= expenses:food
+    expenses:food  $-1
+^
+
+-- expect --
+"expenses:food" class 0:0-0:21 0:8-0:21
+"expenses:taxi" class 1:0-1:21 1:8-1:21
+"assets:cash" class 2:0-2:19 2:8-2:19
+"2024-01-15 Grocery Store" event 4:0-6:21 4:0-4:10
+"2024-01-16 * Coffee Shop | cappuccino" event 8:0-10:20 8:0-8:10
+"Grocery Store" object 12:0-12:19 12:6-12:19
+"Coffee Shop" object 13:0-13:17 13:6-13:17
+"USD" variable 15:0-15:13 15:10-15:13
+"EUR" variable 16:0-16:13 16:10-16:13
+"project" property 18:0-18:11 18:4-18:11
+"client" property 19:0-19:10 19:4-19:10
+"~ monthly" event 21:0-22:22 21:2-21:9
+"= expenses:food" event 24:0-25:22 24:2-24:15
