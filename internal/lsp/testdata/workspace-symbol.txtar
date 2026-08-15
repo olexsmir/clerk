@@ -4,8 +4,14 @@ account expenses:taxi
 account assets:cash
 
 2024-01-15 Grocery Store ; project:work
-    expenses:food  $50
-    assets:cash  $-50
+  expenses:food  $50
+  assets:cash  $-50
+
+2024-01-16 * Coffee Shop | cappuccino
+  expenses:taxi  $4
+  assets:cash  $-4
+
+^
 
 payee Grocery Store
 payee Coffee Shop
@@ -15,7 +21,12 @@ commodity EUR
 
 tag project
 tag client
-^
+
+~ monthly
+  expenses:food  $10
+
+= expenses:food
+ expenses:food  $-1
 
 -- queries --
 food
@@ -24,12 +35,24 @@ grocery
 EUR
 project
 xyz
+cappuccino
+monthly
+2024
+expenses:food
 
 -- expect --
 "food" class expenses:food in.journal 0:8-0:21
+"food" event = expenses:food in.journal 26:2-26:15
 "cash" class assets:cash in.journal 2:8-2:19
-"grocery" object Grocery Store in.journal 8:6-8:19
-"EUR" variable EUR in.journal 12:10-12:13
-"project" property project in.journal 14:4-14:11
+"grocery" object Grocery Store in.journal 14:6-14:19
+"grocery" event 2024-01-15 Grocery Store in.journal 4:0-4:10
+"EUR" variable EUR in.journal 18:10-18:13
+"project" property project in.journal 20:4-20:11
 "xyz" <none>
+"cappuccino" event 2024-01-16 * Coffee Shop | cappuccino in.journal 8:0-8:10
+"monthly" event ~ monthly in.journal 23:2-23:9
+"2024" event 2024-01-15 Grocery Store in.journal 4:0-4:10
+"2024" event 2024-01-16 * Coffee Shop | cappuccino in.journal 8:0-8:10
+"expenses:food" class expenses:food in.journal 0:8-0:21
+"expenses:food" event = expenses:food in.journal 26:2-26:15
 "" <none>

@@ -158,6 +158,7 @@ type symbolKind int
 
 const (
 	symbolAccount symbolKind = iota
+	symbolTransaction
 	symbolCommodity
 	symbolPayee
 	symbolTag
@@ -167,6 +168,8 @@ func (s symbolKind) ToProtocol() protocol.SymbolKind {
 	switch s {
 	case symbolAccount:
 		return protocol.SymbolKindClass
+	case symbolTransaction:
+		return protocol.SymbolKindEvent
 	case symbolCommodity:
 		return protocol.SymbolKindVariable
 	case symbolPayee:
@@ -182,23 +185,6 @@ type symbolRef struct {
 	kind symbolKind
 	name string
 	span token.Span
-}
-
-// renameTo returns the replacement rext for an occurrence of the nodeKind with the given name.
-func (ref *symbolRef) renameTo(nodeKind symbolKind, name, newName string) (text string, renamed bool) {
-	if ref.kind != nodeKind {
-		return "", false
-	}
-	if ref.kind == symbolAccount {
-		if !accountMatches(name, ref.name) {
-			return "", false
-		}
-		return newName + strings.TrimPrefix(name, ref.name), true
-	}
-	if name != ref.name {
-		return "", false
-	}
-	return newName, true
 }
 
 func accountMatches(name, old string) bool {

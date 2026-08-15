@@ -3,12 +3,14 @@ package lsp
 import (
 	"context"
 	"sort"
+	"strings"
 
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 
 	"olexsmir.xyz/clerk/internal/analyzer"
 	"olexsmir.xyz/clerk/internal/lsp/fuzzy"
+	"olexsmir.xyz/clerk/journal/ast"
 )
 
 func (s *server) Symbols(_ context.Context, params *protocol.WorkspaceSymbolParams) (protocol.WorkspaceSymbolResult, error) {
@@ -37,31 +39,41 @@ func (s *server) Symbols(_ context.Context, params *protocol.WorkspaceSymbolPara
 const maxSymbolResults = 100
 
 type scoredSymbol struct {
-	kind  symbolKind
-	name  string
-	score float64
+	kind     symbolKind
+	name     string
+	score    float64
+	tnxEntry ast.Entry // set if kind == symbolTransaction, used for location resolution
 }
 
 func searchSymbols(an *analyzer.Analysis, query string) []protocol.WorkspaceSymbol {
 	matcher := fuzzy.Compile(query)
-
-	scored := make([]scoredSymbol, 0, len(an.AccountNames)+len(an.Commodities)+len(an.PayeeNames)+len(an.TagNames))
-	add := func(kind symbolKind, name string) {
-		if score := matcher.Score(name); score > 0 {
-			scored = append(scored, scoredSymbol{kind, name, score})
+	scored := make([]scoredSymbol, 0)
+	add := func(s scoredSymbol) {
+		if score := matcher.Score(s.name); score > 0 {
+			s.score = score
+			scored = append(scored, s)
 		}
 	}
 	for _, name := range an.AccountNames {
-		add(symbolAccount, name)
+		add(scoredSymbol{kind: symbolAccount, name: name})
 	}
 	for name := range an.Commodities {
-		add(symbolCommodity, name)
+		add(scoredSymbol{kind: symbolCommodity, name: name})
 	}
 	for _, name := range an.PayeeNames {
-		add(symbolPayee, name)
+		add(scoredSymbol{kind: symbolPayee, name: name})
 	}
 	for _, name := range an.TagNames {
-		add(symbolTag, name)
+		add(scoredSymbol{kind: symbolTag, name: name})
+	}
+	for _, tx := range an.Transactions {
+		add(scoredSymbol{kind: symbolTransaction, name: transactionName(tx), tnxEntry: tx})
+	}
+	for _, tx := range an.PeriodicTransactions {
+		add(scoredSymbol{kind: symbolTransaction, name: transactionName(tx), tnxEntry: tx})
+	}
+	for _, tx := range an.AutomatedTransactions {
+		add(scoredSymbol{kind: symbolTransaction, name: transactionName(tx), tnxEntry: tx})
 	}
 
 	sortScoredSymbols(scored)
@@ -71,7 +83,7 @@ func searchSymbols(an *analyzer.Analysis, query string) []protocol.WorkspaceSymb
 
 	symbols := make([]protocol.WorkspaceSymbol, 0, len(scored))
 	for _, s := range scored {
-		loc := definitionLocation(an, s.kind, s.name)
+		loc := definitionLocation(an, s)
 		if loc == nil {
 			continue
 		}
@@ -86,24 +98,67 @@ func searchSymbols(an *analyzer.Analysis, query string) []protocol.WorkspaceSymb
 	return symbols
 }
 
-func definitionLocation(an *analyzer.Analysis, kind symbolKind, name string) *protocol.Location {
-	switch kind {
+func definitionLocation(an *analyzer.Analysis, s scoredSymbol) *protocol.Location {
+	switch s.kind {
 	case symbolAccount:
-		return findAccountDefinition(an, name)
+		return findAccountDefinition(an, s.name)
+	case symbolTransaction:
+		return findTransactionDefinition(an, s.tnxEntry)
 	case symbolCommodity:
-		return findCommodityDefinition(an, name)
+		return findCommodityDefinition(an, s.name)
 	case symbolPayee:
-		return findPayeeDefinition(an, name)
+		return findPayeeDefinition(an, s.name)
 	case symbolTag:
-		return findTagDefinition(an, name)
+		return findTagDefinition(an, s.name)
 	}
 	return nil
+}
+
+func transactionName(e ast.Entry) string {
+	var b strings.Builder
+	switch e := e.(type) {
+	case *ast.Transaction:
+		b.Grow(24)
+		b.WriteString(e.Date.String())
+		if s := e.Status.Value.String(); s != "" {
+			b.WriteByte(' ')
+			b.WriteString(s)
+		}
+		if e.Payee != nil {
+			b.WriteByte(' ')
+			b.WriteString(e.Payee.Name)
+		}
+		if e.Note != nil {
+			b.WriteString(" | ")
+			b.WriteString(e.Note.Value)
+		}
+	case *ast.PeriodicTransaction:
+		b.WriteByte('~')
+		if s := e.Status.Value.String(); s != "" {
+			b.WriteByte(' ')
+			b.WriteString(s)
+		}
+		b.WriteByte(' ')
+		b.WriteString(e.Period.Raw)
+		if e.Description != nil {
+			b.WriteString(" | ")
+			b.WriteString(e.Description.Value)
+		}
+	case *ast.AutomatedTransaction:
+		b.WriteByte('=')
+		b.WriteByte(' ')
+		b.WriteString(e.Expr.Value)
+	}
+	return b.String()
 }
 
 func sortScoredSymbols(scored []scoredSymbol) {
 	sort.Slice(scored, func(i, j int) bool {
 		if scored[i].score != scored[j].score {
 			return scored[i].score > scored[j].score
+		}
+		if len(scored[i].name) != len(scored[j].name) {
+			return len(scored[i].name) < len(scored[j].name)
 		}
 		return scored[i].name < scored[j].name
 	})

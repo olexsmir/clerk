@@ -16,13 +16,15 @@ import (
 
 func TestSortScoredSymbols(t *testing.T) {
 	scored := []scoredSymbol{
-		{symbolAccount, "zz:zz", 0.5},
-		{symbolTag, "aa", 1.0},
-		{symbolPayee, "bb", 0.5},
+		{symbolAccount, "zz:zz", 0.5, nil},
+		{symbolTag, "aa", 1.0, nil},
+		{symbolPayee, "bb", 0.5, nil},
+		{symbolTag, "ccc", 0.5, nil},
+		{symbolPayee, "bb", 0.5, nil},
 	}
 	sortScoredSymbols(scored)
 
-	want := []string{"aa", "bb", "zz:zz"}
+	want := []string{"aa", "bb", "bb", "ccc", "zz:zz"}
 	for i, s := range scored {
 		if s.name != want[i] {
 			t.Errorf("pos %d = %q, want %q", i, s.name, want[i])
@@ -94,6 +96,7 @@ func BenchmarkSymbols(b *testing.B) {
 	}{
 		"account prefix": {"1:2", true},
 		"all payees":     {"transaction", true},
+		"txn dates":      {"2000", true},
 		"mixed kinds":    {"B", true},
 		"no match":       {"xyz", false},
 	} {
@@ -135,6 +138,8 @@ func symbolKindName(k protocol.SymbolKind) string {
 		return "object"
 	case protocol.SymbolKindProperty:
 		return "property"
+	case protocol.SymbolKindEvent:
+		return "event"
 	}
 	return "other"
 }

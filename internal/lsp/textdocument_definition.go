@@ -67,6 +67,25 @@ func findAccountDefinition(an *analyzer.Analysis, name string) *protocol.Locatio
 	return nil
 }
 
+func findTransactionDefinition(an *analyzer.Analysis, e ast.Entry) *protocol.Location {
+	fileIdx := fileIndexForEntry(an, e)
+	if fileIdx < 0 {
+		return nil
+	}
+	var span token.Span
+	switch e := e.(type) {
+	case *ast.Transaction:
+		span = e.Date.Span
+	case *ast.PeriodicTransaction:
+		span = e.Period.Span
+	case *ast.AutomatedTransaction:
+		span = e.Expr.Span
+	default:
+		return nil
+	}
+	return locationFor(an, fileIdx, span)
+}
+
 func findCommodityDefinition(an *analyzer.Analysis, symbol string) *protocol.Location {
 	info := an.Commodities[symbol]
 	if info == nil {
