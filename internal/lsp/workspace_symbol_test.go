@@ -46,6 +46,24 @@ func TestServer_Symbols_EmptyQuery(t *testing.T) {
 	}
 }
 
+func TestServer_Symbols_SearchAllOpenDocs(t *testing.T) {
+	srv := NewServer("test")
+	srv.server.openDoc(uri.URI("file:///a.journal"), "account assets:only\n", 1, "journal")
+	srv.server.openDoc(uri.URI("file:///b.journal"), "2024-01-15 Grocery Store\n    expenses:food  $50\n    assets:cash  $-50\n", 1, "journal")
+
+	res, err := srv.server.Symbols(t.Context(), &protocol.WorkspaceSymbolParams{Query: "2024"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	list, ok := res.(protocol.WorkspaceSymbolSlice)
+	if !ok {
+		t.Fatalf("Symbols returned %T, want WorkspaceSymbolSlice", res)
+	}
+	if len(list) != 1 || list[0].Name != "2024-01-15 Grocery Store" {
+		t.Errorf("got %v, want the transaction from the second doc", list)
+	}
+}
+
 func TestGolden_Symbols(t *testing.T) {
 	ar := golden.Read(t, "workspace-symbol")
 	t.Run("workspace-symbol", func(t *testing.T) {
@@ -119,10 +137,11 @@ func BenchmarkSymbols(b *testing.B) {
 				}
 			}
 
-			// guard: a whole-file re-parse per request (~13ms) would blow past
-			// this and must be caught
-			if avg := b.Elapsed() / time.Duration(b.N); avg > 5*time.Millisecond {
-				b.Fatalf("symbols %v/op: reparse regression", avg)
+			// guard: each request deliberately rebuilds the workspace analysis
+			// (~7ms of [analyzer.Build] per 1k transactions); a cost beyond that
+			// (e.g. a lost loader parse cache) must be caught
+			if avg := b.Elapsed() / time.Duration(b.N); avg > 20*time.Millisecond {
+				b.Fatalf("symbols %v/op: regression beyond the per-request rebuild", avg)
 			}
 		})
 	}

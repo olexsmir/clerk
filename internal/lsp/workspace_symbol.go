@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"go.lsp.dev/protocol"
-	"go.lsp.dev/uri"
 
 	"olexsmir.xyz/clerk/internal/analyzer"
 	"olexsmir.xyz/clerk/internal/lsp/fuzzy"
@@ -19,16 +18,16 @@ func (s *server) Symbols(_ context.Context, params *protocol.WorkspaceSymbolPara
 	}
 
 	s.mu.Lock()
-	var u uri.URI
-	for u = range s.openDocs {
-		break
+	paths := make([]string, 0, len(s.openDocs))
+	for u := range s.openDocs {
+		paths = append(paths, u.Path())
 	}
 	s.mu.Unlock()
-	an := s.analysisFor(u)
-	if an == nil {
+	if len(paths) == 0 {
 		return nil, nil
 	}
 
+	an := analyzer.Build(s.loader.ResolveFiles(paths))
 	symbols := searchSymbols(an, params.Query)
 	if len(symbols) == 0 {
 		return nil, nil

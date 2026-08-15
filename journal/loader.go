@@ -100,6 +100,21 @@ func (l *Loader) ResolveBytes(fpath string, src []byte) *ResolvedJournal {
 	return rj
 }
 
+// ResolveFiles resolves multiple entry files into one flat view.
+func (l *Loader) ResolveFiles(paths []string) *ResolvedJournal {
+	rj := &ResolvedJournal{
+		ByPath: make(map[string][]*ParsedFile),
+	}
+	for _, p := range paths {
+		src, err := l.readContent(p)
+		if err != nil {
+			continue
+		}
+		l.resolveOccurrence(rj, nil, p, src, 0, nil)
+	}
+	return rj
+}
+
 // ResolveFS loads a journal from [fs.FS] via temp dir.
 func (l *Loader) ResolveFS(fsys fs.FS, fpath string) (*ResolvedJournal, error) {
 	dir, err := os.MkdirTemp("", "clerk-loadfs-*")

@@ -28,6 +28,13 @@ tag client
 = expenses:food
  expenses:food  $-1
 
+include inc.journal
+
+-- inc.journal --
+2024-02-01 Farmer's Market
+    expenses:food  $15
+    assets:cash  $-15
+
 -- queries --
 food
 cash
@@ -39,6 +46,7 @@ cappuccino
 monthly
 2024
 expenses:food
+farmer
 
 -- expect --
 "food" class expenses:food in.journal 0:8-0:21
@@ -52,7 +60,10 @@ expenses:food
 "cappuccino" event 2024-01-16 * Coffee Shop | cappuccino in.journal 8:0-8:10
 "monthly" event ~ monthly in.journal 23:2-23:9
 "2024" event 2024-01-15 Grocery Store in.journal 4:0-4:10
+"2024" event 2024-02-01 Farmer's Market inc.journal 0:0-0:10
 "2024" event 2024-01-16 * Coffee Shop | cappuccino in.journal 8:0-8:10
 "expenses:food" class expenses:food in.journal 0:8-0:21
 "expenses:food" event = expenses:food in.journal 26:2-26:15
+"farmer" object Farmer's Market inc.journal 0:11-0:26
+"farmer" event 2024-02-01 Farmer's Market inc.journal 0:0-0:10
 "" <none>
