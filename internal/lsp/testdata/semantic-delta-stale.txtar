@@ -1,0 +1,16 @@
+-- in.journal --
+2024-01-15 test
+    expenses:food  $50
+    assets:cash
+
+-- prev-id --
+bogus
+
+-- expect --
+full resultId 2
+0:0+10 class
+0:11+4 property
+1:4+13 namespace
+1:19+1 type
+1:20+2 number
+2:4+11 namespace

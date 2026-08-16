@@ -78,6 +78,13 @@ func (s *server) Initialize(ctx context.Context, params *protocol.InitializePara
 	}
 
 	s.applySettings(params.InitializationOptions)
+	full := protocol.SemanticTokensOptionsFull(protocol.Boolean(true))
+	if td := params.Capabilities.TextDocument; td != nil {
+		if fd, ok := td.SemanticTokens.Requests.Full.(*protocol.ClientSemanticTokensRequestFullDelta); ok && fd.Delta != nil && *fd.Delta {
+			full = &protocol.SemanticTokensFullDelta{Delta: new(true)}
+		}
+	}
+
 	return &protocol.InitializeResult{
 		ServerInfo: protocol.ServerInfo{
 			Name:    s.name,
@@ -103,7 +110,7 @@ func (s *server) Initialize(ctx context.Context, params *protocol.InitializePara
 			SemanticTokensProvider: &protocol.SemanticTokensOptions{
 				Legend: getSemanticTokensLegend(),
 				Range:  protocol.Boolean(true),
-				Full:   protocol.Boolean(true),
+				Full:   full,
 			},
 		},
 	}, nil

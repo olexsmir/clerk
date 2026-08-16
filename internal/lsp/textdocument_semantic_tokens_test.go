@@ -59,36 +59,6 @@ func TestEncodeSemTokens(t *testing.T) {
 	}
 }
 
-func TestServer_Semantic_SimpleTransaction(t *testing.T) {
-	content := `2024-01-15 test
-    expenses:food  $50
-    assets:cash
-`
-
-	srv := NewServer("test")
-	srv.server.openDoc(uri.URI("file:///test.journal"), content, 1, "journal")
-
-	result, err := srv.server.SemanticTokensFull(t.Context(), &protocol.SemanticTokensParams{
-		TextDocument: protocol.TextDocumentIdentifier{URI: uri.URI("file:///test.journal")},
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if result == nil {
-		t.Fatal("result is nil")
-	}
-	if len(result.Data) == 0 {
-		t.Fatal("expected non-empty token data")
-	}
-	if len(result.Data)%5 != 0 {
-		t.Fatalf("token data length %d is not a multiple of 5", len(result.Data))
-	}
-	// first token is the transaction date at line 0, col 0: deltas are 0, 0
-	if result.Data[0] != 0 || result.Data[1] != 0 {
-		t.Errorf("first token deltas = %d,%d, want 0,0", result.Data[0], result.Data[1])
-	}
-}
-
 func TestServer_Semantic_EmptyDocument(t *testing.T) {
 	srv := NewServer("test")
 	srv.server.openDoc(uri.URI("file:///empty.journal"), "", 1, "journal")
@@ -159,7 +129,41 @@ func TestServer_Semantic_Range(t *testing.T) {
 	}
 }
 
-// Golden
+func TestSemanticTokensEdits(t *testing.T) {
+	tests := map[string]struct{ old, new []uint32 }{
+		"identical":      {[]uint32{1, 2, 3}, []uint32{1, 2, 3}},
+		"both empty":     {},
+		"empty to non":   {nil, []uint32{1, 2}},
+		"non to empty":   {[]uint32{1, 2}, nil},
+		"pure insert":    {[]uint32{1, 2}, []uint32{1, 2, 3, 4}},
+		"pure delete":    {[]uint32{1, 2, 3, 4}, []uint32{1, 2}},
+		"replace middle": {[]uint32{1, 2, 3, 4, 5}, []uint32{1, 2, 9, 4, 5}},
+		"replace all":    {[]uint32{1, 2}, []uint32{3, 4}},
+		"replace tail":   {[]uint32{1, 2, 3, 4, 5}, []uint32{1, 2, 3, 4, 6}},
+	}
+	for tname, tt := range tests {
+		t.Run(tname, func(t *testing.T) {
+			edits := semanticTokensEdits(tt.old, tt.new)
+			if got := applySemEdits(tt.old, edits); !slices.Equal(got, tt.new) {
+				t.Errorf("apply(%v, %v) = %v, want %v", tt.old, edits, got, tt.new)
+			}
+			for _, e := range edits {
+				if e.Start+e.DeleteCount > uint32(len(tt.old)) {
+					t.Errorf("edit %+v out of bounds for old length %d", e, len(tt.old))
+				}
+			}
+		})
+	}
+}
+
+// applySemEdits applies LSP semantic token edits to a client-side copy of data.
+func applySemEdits(data []uint32, edits []protocol.SemanticTokensEdit) []uint32 {
+	out := slices.Clone(data)
+	for _, e := range edits {
+		out = append(append(out[:e.Start], e.Data...), out[e.Start+e.DeleteCount:]...)
+	}
+	return out
+}
 
 func TestGolden_SemanticTokens(t *testing.T) {
 	for _, tt := range []string{"semantic-empty", "semantic-journal", "semantic-directives", "semantic-unparseable", "semantic-with-errors"} {
@@ -171,26 +175,107 @@ func TestGolden_SemanticTokens(t *testing.T) {
 		})
 
 		t.Run(tt+"_no-overlap", func(t *testing.T) {
-			toks := tokSem(ar.Get("in.journal"))
-			slices.SortFunc(toks, func(a, b semanticToken) int {
-				if a.line != b.line {
-					return int(a.line) - int(b.line)
-				}
-				return int(a.col) - int(b.col)
-			})
-
-			for i := 1; i < len(toks); i++ {
-				prev, cur := toks[i-1], toks[i]
-				if prev.line != cur.line {
-					continue
-				}
-				if cur.col < prev.col+prev.length {
-					t.Errorf("%s: overlapping tokens on line %d: %s@%d+%d then %s@%d+%d",
-						tt, prev.line, tokenTypeStrings[prev.tokenType], prev.col, prev.length,
-						tokenTypeStrings[cur.tokenType], cur.col, cur.length)
-				}
-			}
+			assertGoldenNoOverlap(t, tt, ar)
 		})
+	}
+}
+
+func TestGolden_SemanticTokensDelta(t *testing.T) {
+	for _, tt := range []string{"semantic-delta-edit", "semantic-delta-nochange", "semantic-delta-stale"} {
+		ar := golden.Read(t, tt)
+
+		t.Run(tt+"_no-overlap", func(t *testing.T) {
+			assertGoldenNoOverlap(t, tt, ar)
+		})
+
+		t.Run(tt, func(t *testing.T) {
+			in := ar.Get("in.journal")
+
+			u := uri.URI("file:///test.journal")
+			srv := NewServer("test")
+			srv.server.openDoc(u, string(in), 1, "journal")
+
+			full, err := srv.server.SemanticTokensFull(t.Context(), &protocol.SemanticTokensParams{
+				TextDocument: protocol.TextDocumentIdentifier{URI: u},
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if full.ResultID == nil || *full.ResultID == "" {
+				t.Fatal("expected a resultId on the full result")
+			}
+
+			finalText := in
+			if ed := ar.Get("edited.journal"); ed != nil {
+				srv.server.updateDoc(u, 2, []protocol.TextDocumentContentChangeEvent{
+					&protocol.TextDocumentContentChangeWholeDocument{Text: string(ed)},
+				})
+				finalText = ed
+			}
+			prev := *full.ResultID
+			if p := ar.Get("prev-id"); p != nil {
+				prev = strings.TrimSpace(string(p))
+			}
+
+			res, err := srv.server.SemanticTokensFullDelta(t.Context(), &protocol.SemanticTokensDeltaParams{
+				TextDocument:     protocol.TextDocumentIdentifier{URI: u},
+				PreviousResultID: prev,
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			var client []uint32
+			var out strings.Builder
+			switch r := res.(type) {
+			case *protocol.SemanticTokensDelta:
+				fmt.Fprintf(&out, "delta resultId %s\n", *r.ResultID)
+				client = applySemEdits(full.Data, r.Edits)
+			case *protocol.SemanticTokens:
+				fmt.Fprintf(&out, "full resultId %s\n", *r.ResultID)
+				client = r.Data
+			default:
+				t.Fatalf("unexpected result type %T", res)
+			}
+
+			// The client's token state must equal the final text's tokens: an
+			// independent reference that keeps the golden from capturing bugs.
+			if want := encodeSemTokens(tokSem(finalText)); !slices.Equal(client, want) {
+				t.Errorf("delta flow produced %d elems, want %d", len(client), len(want))
+			}
+			out.WriteString(renderSemanticTokens(tokSem(finalText)))
+			golden.Assert(t, ar, out.String())
+		})
+	}
+}
+
+func assertGoldenNoOverlap(t *testing.T, tt string, ar *golden.Archive) {
+	t.Helper()
+	for _, f := range ar.Files {
+		if strings.HasSuffix(f.Name, ".journal") {
+			assertNoOverlap(t, tt, tokSem(f.Data))
+		}
+	}
+}
+
+func assertNoOverlap(t *testing.T, tt string, toks []semanticToken) {
+	t.Helper()
+	slices.SortFunc(toks, func(a, b semanticToken) int {
+		if a.line != b.line {
+			return int(a.line) - int(b.line)
+		}
+		return int(a.col) - int(b.col)
+	})
+	for i := 1; i < len(toks); i++ {
+		prev, cur := toks[i-1], toks[i]
+		if prev.line != cur.line {
+			continue
+		}
+		if cur.col < prev.col+prev.length {
+			t.Errorf("%s: overlapping tokens on line %d: %s@%d+%d then %s@%d+%d",
+				tt, prev.line, tokenTypeStrings[prev.tokenType], prev.col, prev.length,
+				tokenTypeStrings[cur.tokenType], cur.col, cur.length)
+		}
 	}
 }
 
@@ -229,6 +314,35 @@ func BenchmarkSemanticTokens(b *testing.B) {
 	for b.Loop() {
 		tokens := tokenizeForSemantics(content, parseJournalStr(content))
 		_ = encodeSemTokens(tokens)
+	}
+}
+
+// BenchmarkSemanticTokensDelta measures the cost of one dela response after an edit.
+func BenchmarkSemanticTokensDelta(b *testing.B) {
+	content := openJournal(b, "../../journal/testdata/journals/actual-1ktxns-100accts.journal")
+	prev := encodeSemTokens(tokenizeForSemantics(content, parseJournalStr(content)))
+	edited := content + "\n2000-06-15 transaction 2501\n  expenses:new  1 C\n  assets:cash\n"
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for b.Loop() {
+		data := encodeSemTokens(tokenizeForSemantics(edited, parseJournalStr(edited)))
+		_ = semanticTokensEdits(prev, data)
+	}
+}
+
+func BenchmarkSemanticTokensEdits(b *testing.B) {
+	content := openJournal(b, "../../journal/testdata/journals/actual-1ktxns-100accts.journal")
+	old := encodeSemTokens(tokenizeForSemantics(content, parseJournalStr(content)))
+	new := encodeSemTokens(tokenizeForSemantics(
+		content+"\n2000-06-15 transaction 2501\n  expenses:new  1 C\n  assets:cash\n",
+		parseJournalStr(content+"\n2000-06-15 transaction 2501\n  expenses:new  1 C\n  assets:cash\n"),
+	))
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for b.Loop() {
+		_ = semanticTokensEdits(old, new)
 	}
 }
 

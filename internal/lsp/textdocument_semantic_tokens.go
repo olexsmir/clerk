@@ -18,12 +18,36 @@ func (s *server) SemanticTokensFull(ctx context.Context, params *protocol.Semant
 	if !s.semanticHighlightingEnabled() {
 		return &protocol.SemanticTokens{}, nil
 	}
+	return s.semanticTokensFullResult(params.TextDocument.URI), nil
+}
 
-	tokens, ok := s.tokensForDoc(params.TextDocument.URI)
+func (s *server) SemanticTokensFullDelta(ctx context.Context, params *protocol.SemanticTokensDeltaParams) (protocol.SemanticTokensDeltaResult, error) {
+	if !s.semanticHighlightingEnabled() {
+		return &protocol.SemanticTokens{}, nil
+	}
+
+	u := params.TextDocument.URI
+	s.mu.RLock()
+	st, ok := s.openDocs[u]
+	s.mu.RUnlock()
+	if !ok || st.semGen == 0 || params.PreviousResultID != st.resultID() {
+		return s.semanticTokensFullResult(u), nil
+	}
+
+	data, ok := s.semanticTokensData(u)
 	if !ok {
 		return &protocol.SemanticTokens{}, nil
 	}
-	return &protocol.SemanticTokens{Data: encodeSemTokens(tokens)}, nil
+	edits := semanticTokensEdits(st.semBaseline, data)
+	if len(edits) == 0 {
+		return &protocol.SemanticTokensDelta{ResultID: new(st.resultID()), Edits: []protocol.SemanticTokensEdit{}}, nil
+	}
+
+	rid, ok := s.storeSemResult(u, data)
+	if !ok {
+		return &protocol.SemanticTokens{Data: data}, nil
+	}
+	return &protocol.SemanticTokensDelta{ResultID: &rid, Edits: edits}, nil
 }
 
 func (s *server) SemanticTokensRange(ctx context.Context, params *protocol.SemanticTokensRangeParams) (*protocol.SemanticTokens, error) {
@@ -44,6 +68,39 @@ func (s *server) SemanticTokensRange(ctx context.Context, params *protocol.Seman
 		}
 	}
 	return &protocol.SemanticTokens{Data: encodeSemTokens(filtered)}, nil
+}
+
+func (s *server) semanticTokensFullResult(u uri.URI) *protocol.SemanticTokens {
+	data, ok := s.semanticTokensData(u)
+	if !ok {
+		return &protocol.SemanticTokens{}
+	}
+	res := &protocol.SemanticTokens{Data: data}
+	if rid, ok := s.storeSemResult(u, data); ok {
+		res.ResultID = &rid
+	}
+	return res
+}
+
+func (s *server) semanticTokensData(u uri.URI) ([]uint32, bool) {
+	tokens, ok := s.tokensForDoc(u)
+	if !ok {
+		return nil, false
+	}
+	return encodeSemTokens(tokens), true
+}
+
+func (s *server) storeSemResult(u uri.URI, data []uint32) (string, bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	st, ok := s.openDocs[u]
+	if !ok {
+		return "", false
+	}
+	rid := st.nextResultID()
+	st.semBaseline = data
+	s.openDocs[u] = st
+	return rid, true
 }
 
 func (s *server) tokensForDoc(doc uri.URI) ([]semanticToken, bool) {
@@ -71,8 +128,6 @@ func (s *server) tokensForDoc(doc uri.URI) ([]semanticToken, bool) {
 	}
 	return tokens, true
 }
-
-// Implementation
 
 const (
 	semDirective uint32 = iota
@@ -649,6 +704,29 @@ func isLineStartToken(t token.Type) bool {
 		return true
 	}
 	return false
+}
+
+// semanticTokensEdits returns the single edit turning old into new, or nil when
+// identical. Relative delta encoding keeps the common prefix and suffix unchanged.
+func semanticTokensEdits(old, new []uint32) []protocol.SemanticTokensEdit {
+	p := 0
+	for p < len(old) && p < len(new) && old[p] == new[p] {
+		p++
+	}
+	s := 0
+	for s < len(old)-p && s < len(new)-p && old[len(old)-1-s] == new[len(new)-1-s] {
+		s++
+	}
+	delCount := len(old) - p - s
+	ins := new[p : len(new)-s]
+	if delCount == 0 && len(ins) == 0 {
+		return nil
+	}
+	return []protocol.SemanticTokensEdit{{
+		Start:       uint32(p),
+		DeleteCount: uint32(delCount),
+		Data:        ins,
+	}}
 }
 
 // encodeSemTokens encodes tokens into LSP delta form. Input must be sorted by

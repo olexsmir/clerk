@@ -2,6 +2,7 @@ package lsp
 
 import (
 	"context"
+	"strconv"
 
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
@@ -53,11 +54,21 @@ type docState struct {
 	text       string
 	version    int32
 	languageID protocol.LanguageKind
-	semTokens  []semanticToken    // cached semantic tokens
-	lineIdx    *lsputil.LineIndex // cached line index for the text
-	analysis   *analyzer.Analysis // cached analysis, nil until first build
 	paths      map[string]bool    // canonical paths of every file in the cached analysis
-	dirty      bool               // true while the cached analysis may not reflect the current text
+	lineIdx    *lsputil.LineIndex // cached line index for the text
+
+	analysis *analyzer.Analysis // cached analysis, nil until first build
+	dirty    bool               // true while the cached analysis may not reflect the current text
+
+	semTokens   []semanticToken // cached tokens for the current text
+	semBaseline []uint32        // encoded data of the last response; diff baseline for the next delta request
+	semGen      uint64          // semantic token generation, increments per response; 0 before the first
+}
+
+func (d *docState) resultID() string { return strconv.FormatUint(d.semGen, 10) }
+func (d *docState) nextResultID() string {
+	d.semGen++
+	return d.resultID()
 }
 
 func (s *server) openDoc(u uri.URI, text string, version int32, langID protocol.LanguageKind) {
