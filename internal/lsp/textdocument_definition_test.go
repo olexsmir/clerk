@@ -32,8 +32,8 @@ func TestServer_Definition_DocumentNotFound(t *testing.T) {
 
 func TestGolden_Definition(t *testing.T) {
 	for _, tt := range []string{"definition-journal", "definition-include"} {
-		ar := golden.Read(t, tt)
 		t.Run(tt, func(t *testing.T) {
+			ar := golden.Read(t, tt)
 			h := newTxtarHarness(t, ar)
 
 			var b strings.Builder

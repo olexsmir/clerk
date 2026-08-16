@@ -66,38 +66,36 @@ func TestServer_Symbols_SearchAllOpenDocs(t *testing.T) {
 
 func TestGolden_Symbols(t *testing.T) {
 	ar := golden.Read(t, "workspace-symbol")
-	t.Run("workspace-symbol", func(t *testing.T) {
-		h := newTxtarHarness(t, ar)
+	h := newTxtarHarness(t, ar)
 
-		// One query per line; a trailing blank line is the empty-query case.
-		queries := strings.Split(strings.TrimSuffix(string(ar.Get("queries")), "\n"), "\n")
-		var b strings.Builder
-		for _, q := range queries {
-			res, err := h.srv.Symbols(t.Context(), &protocol.WorkspaceSymbolParams{Query: q})
-			if err != nil {
-				t.Fatal(err)
-			}
-			if res == nil {
-				fmt.Fprintf(&b, "%q <none>\n", q)
-				continue
-			}
-			list, ok := res.(protocol.WorkspaceSymbolSlice)
-			if !ok {
-				t.Fatalf("Symbols returned %T, want WorkspaceSymbolSlice", res)
-			}
-			for _, sym := range list {
-				loc, ok := sym.Location.(*protocol.Location)
-				if !ok {
-					t.Fatalf("Symbol %q location is %T, want *Location", sym.Name, sym.Location)
-				}
-				r := loc.Range
-				fmt.Fprintf(&b, "%q %s %s %s %d:%d-%d:%d\n", q, symbolKindName(sym.Kind), sym.Name,
-					filepath.Base(loc.URI.Path()),
-					r.Start.Line, r.Start.Character, r.End.Line, r.End.Character)
-			}
+	// One query per line; a trailing blank line is the empty-query case.
+	queries := strings.Split(strings.TrimSuffix(string(ar.Get("queries")), "\n"), "\n")
+	var b strings.Builder
+	for _, q := range queries {
+		res, err := h.srv.Symbols(t.Context(), &protocol.WorkspaceSymbolParams{Query: q})
+		if err != nil {
+			t.Fatal(err)
 		}
-		golden.Assert(t, ar, b.String())
-	})
+		if res == nil {
+			fmt.Fprintf(&b, "%q <none>\n", q)
+			continue
+		}
+		list, ok := res.(protocol.WorkspaceSymbolSlice)
+		if !ok {
+			t.Fatalf("Symbols returned %T, want WorkspaceSymbolSlice", res)
+		}
+		for _, sym := range list {
+			loc, ok := sym.Location.(*protocol.Location)
+			if !ok {
+				t.Fatalf("Symbol %q location is %T, want *Location", sym.Name, sym.Location)
+			}
+			r := loc.Range
+			fmt.Fprintf(&b, "%q %s %s %s %d:%d-%d:%d\n", q, symbolKindName(sym.Kind), sym.Name,
+				filepath.Base(loc.URI.Path()),
+				r.Start.Line, r.Start.Character, r.End.Line, r.End.Character)
+		}
+	}
+	golden.Assert(t, ar, b.String())
 }
 
 func BenchmarkSymbols(b *testing.B) {

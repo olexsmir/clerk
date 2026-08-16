@@ -33,8 +33,8 @@ func TestServer_References_DocumentNotFound(t *testing.T) {
 
 func TestGolden_References(t *testing.T) {
 	for _, tt := range []string{"references-journal", "references-include"} {
-		ar := golden.Read(t, tt)
 		t.Run(tt, func(t *testing.T) {
+			ar := golden.Read(t, tt)
 			h := newTxtarHarness(t, ar)
 
 			var b strings.Builder

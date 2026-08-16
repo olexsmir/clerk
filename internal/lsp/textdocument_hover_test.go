@@ -63,8 +63,8 @@ func TestServer_Hover_DocumentNotFound(t *testing.T) {
 
 func TestGolden_Hover(t *testing.T) {
 	for _, tt := range []string{"hover-journal", "hover-include"} {
-		ar := golden.Read(t, tt)
 		t.Run(tt, func(t *testing.T) {
+			ar := golden.Read(t, tt)
 			h := newTxtarHarness(t, ar)
 
 			var b strings.Builder

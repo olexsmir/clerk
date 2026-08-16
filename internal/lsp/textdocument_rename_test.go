@@ -72,8 +72,8 @@ func TestAccountMatches(t *testing.T) {
 
 func TestGolden_Rename(t *testing.T) {
 	for _, tt := range []string{"rename-account", "rename-commodity", "rename-payee", "rename-tag"} {
-		ar := golden.Read(t, tt)
 		t.Run(tt, func(t *testing.T) {
+			ar := golden.Read(t, tt)
 			h := newTxtarHarness(t, ar)
 
 			newNames := strings.Split(strings.TrimRight(string(ar.Get("rename")), "\n"), "\n")

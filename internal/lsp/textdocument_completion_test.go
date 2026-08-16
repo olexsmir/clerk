@@ -27,9 +27,8 @@ func TestDetectCompletion_NoJournal(t *testing.T) {
 
 func TestGolden_Completion(t *testing.T) {
 	for _, tt := range []string{"completion-contexts", "completion-journal", "completion-no-transactions"} {
-		ar := golden.Read(t, tt)
-
 		t.Run(tt, func(t *testing.T) {
+			ar := golden.Read(t, tt)
 			h := newTxtarHarness(t, ar)
 
 			var b strings.Builder
