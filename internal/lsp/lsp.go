@@ -61,8 +61,8 @@ func (s *Server) Run(ctx context.Context, stdin io.ReadCloser, stdout io.WriteCl
 // bufferContent returns the open buffer text for a path, if any.
 // called by the loader during include resolution; must NOT hold the loader lock.
 func (s *server) bufferContent(path string) ([]byte, bool) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 	st, ok := s.openDocs[uri.File(path)]
 	return []byte(st.text), ok
 }

@@ -35,7 +35,7 @@ func (c *Config) merge(v protocol.LSPAny) error {
 }
 
 func (s *server) semanticHighlightingEnabled() bool {
-	s.cfgMu.RLock()
-	defer s.cfgMu.RUnlock()
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 	return s.config.SemanticHighlighting
 }

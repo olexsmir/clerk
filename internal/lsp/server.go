@@ -26,31 +26,29 @@ type server struct {
 	loader  *journal.Loader
 	printer *printer.Config
 
-	mu                          sync.Mutex
-	openDocs                    map[uri.URI]docState
-	diagCancel                  context.CancelFunc
-	supportsDynamicFileWatchers bool
-
-	cfgMu  sync.RWMutex
-	config Config
+	mu            sync.RWMutex
+	config        Config
+	openDocs      map[uri.URI]docState
+	diagCancel    context.CancelFunc
+	dynFileWather bool
 }
 
 // analysisFor returns the cached analysis for an open doc, rebuilds when the doc or a file it inclues changed.
 func (s *server) analysisFor(u uri.URI) *analyzer.Analysis {
-	s.mu.Lock()
+	s.mu.RLock()
 	state, ok := s.openDocs[u]
 	if !ok {
-		s.mu.Unlock()
+		s.mu.RUnlock()
 		return nil
 	}
 	if !state.dirty {
 		an := state.analysis
-		s.mu.Unlock()
+		s.mu.RUnlock()
 		return an
 	}
 	text := state.text
 	version := state.version
-	s.mu.Unlock()
+	s.mu.RUnlock()
 
 	an := analyzer.Build(s.loader.ResolveBytes(u.Path(), []byte(text)))
 
@@ -75,7 +73,7 @@ func (s *server) analysisFor(u uri.URI) *analyzer.Analysis {
 func (s *server) Initialize(ctx context.Context, params *protocol.InitializeParams) (*protocol.InitializeResult, error) {
 	if w := params.Capabilities.Workspace; w != nil {
 		if wf := w.DidChangeWatchedFiles; wf != nil {
-			s.supportsDynamicFileWatchers = wf.DynamicRegistration != nil && *wf.DynamicRegistration
+			s.dynFileWather = wf.DynamicRegistration != nil && *wf.DynamicRegistration
 		}
 	}
 
@@ -112,7 +110,7 @@ func (s *server) Initialize(ctx context.Context, params *protocol.InitializePara
 }
 
 func (s *server) Initialized(ctx context.Context, params *protocol.InitializedParams) error {
-	if s.supportsDynamicFileWatchers {
+	if s.dynFileWather {
 		go s.registerFileWatchers(context.Background())
 	}
 	s.scheduleDiagnostics(ctx)
@@ -173,9 +171,9 @@ func (s *server) registerFileWatchers(ctx context.Context) {
 }
 
 func (s *server) applySettings(v protocol.LSPAny) {
-	s.cfgMu.Lock()
+	s.mu.Lock()
 	if err := s.config.merge(v); err != nil {
 		s.log.Error("failed to merge config", "err", err)
 	}
-	s.cfgMu.Unlock()
+	s.mu.Unlock()
 }

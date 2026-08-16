@@ -17,12 +17,12 @@ func (s *server) Symbols(_ context.Context, params *protocol.WorkspaceSymbolPara
 		return nil, nil
 	}
 
-	s.mu.Lock()
+	s.mu.RLock()
 	paths := make([]string, 0, len(s.openDocs))
 	for u := range s.openDocs {
 		paths = append(paths, u.Path())
 	}
-	s.mu.Unlock()
+	s.mu.RUnlock()
 	if len(paths) == 0 {
 		return nil, nil
 	}

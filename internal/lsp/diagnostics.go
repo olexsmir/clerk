@@ -40,14 +40,14 @@ func (s *server) publishDiagnostics(ctx context.Context) {
 		return
 	}
 
-	s.mu.Lock()
+	s.mu.RLock()
 	var dirtyURIs []uri.URI
 	for u, state := range s.openDocs {
 		if state.dirty {
 			dirtyURIs = append(dirtyURIs, u)
 		}
 	}
-	s.mu.Unlock()
+	s.mu.RUnlock()
 	if len(dirtyURIs) == 0 {
 		s.log.Debug("no dirty files")
 		return

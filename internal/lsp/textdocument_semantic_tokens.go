@@ -47,9 +47,9 @@ func (s *server) SemanticTokensRange(ctx context.Context, params *protocol.Seman
 }
 
 func (s *server) tokensForDoc(doc uri.URI) ([]semanticToken, bool) {
-	s.mu.Lock()
+	s.mu.RLock()
 	st, ok := s.openDocs[doc]
-	s.mu.Unlock()
+	s.mu.RUnlock()
 	if !ok {
 		return nil, false
 	}

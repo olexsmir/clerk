@@ -113,9 +113,9 @@ func (s *server) markDependentsDirty(u uri.URI) {
 }
 
 func (s *server) getDocState(u uri.URI) (docState, bool) {
-	s.mu.Lock()
+	s.mu.RLock()
 	state, ok := s.openDocs[u]
-	s.mu.Unlock()
+	s.mu.RUnlock()
 	return state, ok
 }
 
