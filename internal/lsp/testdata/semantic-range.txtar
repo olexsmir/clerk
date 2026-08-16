@@ -1,0 +1,53 @@
+-- in.journal --
+2024-01-15 test
+    expenses:food  $50
+
+2024-01-16 other
+  expenses:drinks  $20
+
+2024-01-17 done
+  a  $1 = $100
+  b
+
+-- ranges.txt --
+first-txn 0 1
+second-txn 3 4
+blank-only 2 2
+whole-doc 0 8
+inverted 4 2
+
+-- expect --
+== first-txn ==
+0:0+10 class
+0:11+4 property
+1:4+13 namespace
+1:19+1 type
+1:20+2 number
+== second-txn ==
+3:0+10 class
+3:11+5 property
+4:2+15 namespace
+4:19+1 type
+4:20+2 number
+== blank-only ==
+== whole-doc ==
+0:0+10 class
+0:11+4 property
+1:4+13 namespace
+1:19+1 type
+1:20+2 number
+3:0+10 class
+3:11+5 property
+4:2+15 namespace
+4:19+1 type
+4:20+2 number
+6:0+10 class
+6:11+4 property
+7:2+1 namespace
+7:5+1 type
+7:6+1 number
+7:8+1 operator
+7:10+1 type
+7:11+3 number
+8:2+1 namespace
+== inverted ==

@@ -59,76 +59,6 @@ func TestEncodeSemTokens(t *testing.T) {
 	}
 }
 
-func TestServer_Semantic_EmptyDocument(t *testing.T) {
-	srv := NewServer("test")
-	srv.server.openDoc(uri.URI("file:///empty.journal"), "", 1, "journal")
-
-	result, err := srv.server.SemanticTokensFull(t.Context(), &protocol.SemanticTokensParams{
-		TextDocument: protocol.TextDocumentIdentifier{URI: uri.URI("file:///empty.journal")},
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(result.Data) != 0 {
-		t.Errorf("expected empty data for empty doc, got %d values", len(result.Data))
-	}
-}
-
-func TestServer_Semantic_DocumentNotFound(t *testing.T) {
-	result, err := NewServer("test").server.SemanticTokensFull(t.Context(), &protocol.SemanticTokensParams{
-		TextDocument: protocol.TextDocumentIdentifier{URI: uri.URI("file:///unknown.journal")},
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if result == nil {
-		t.Fatal("result is nil")
-	}
-	if result.Data != nil {
-		t.Errorf("expected nil Data for unknown doc, got %v", result.Data)
-	}
-}
-
-func TestServer_Semantic_Range(t *testing.T) {
-	content := `2024-01-15 test
-    expenses:food  $50
-
-2024-01-16 other
-  expenses:drinks  $20
-`
-
-	srv := NewServer("test")
-	srv.server.openDoc(uri.URI("file:///test.journal"), content, 1, "journal")
-
-	result, err := srv.server.SemanticTokensRange(t.Context(), &protocol.SemanticTokensRangeParams{
-		TextDocument: protocol.TextDocumentIdentifier{URI: uri.URI("file:///test.journal")},
-		Range: protocol.Range{
-			Start: protocol.Position{Line: 0, Character: 0},
-			End:   protocol.Position{Line: 1, Character: 50},
-		},
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if result == nil || len(result.Data) == 0 {
-		t.Fatal("expected non-empty tokens for range")
-	}
-
-	// decode and assert every token is inside the requested line range
-	line, col := 0, 0
-	for i := 0; i+4 < len(result.Data); i += 5 {
-		dl, dc := result.Data[i], result.Data[i+1]
-		if dl > 0 {
-			col = 0
-		}
-		line += int(dl)
-		col += int(dc)
-		if line > 1 {
-			t.Fatalf("token at line %d outside requested range [0,1]", line)
-		}
-	}
-}
-
 func TestSemanticTokensEdits(t *testing.T) {
 	tests := map[string]struct{ old, new []uint32 }{
 		"identical":      {[]uint32{1, 2, 3}, []uint32{1, 2, 3}},
@@ -156,13 +86,33 @@ func TestSemanticTokensEdits(t *testing.T) {
 	}
 }
 
-// applySemEdits applies LSP semantic token edits to a client-side copy of data.
-func applySemEdits(data []uint32, edits []protocol.SemanticTokensEdit) []uint32 {
-	out := slices.Clone(data)
-	for _, e := range edits {
-		out = append(append(out[:e.Start], e.Data...), out[e.Start+e.DeleteCount:]...)
+func TestServer_Semantic_EmptyDocument(t *testing.T) {
+	srv := NewServer("test")
+	srv.server.openDoc(uri.URI("file:///empty.journal"), "", 1, "journal")
+	result, err := srv.server.SemanticTokensFull(t.Context(), &protocol.SemanticTokensParams{
+		TextDocument: protocol.TextDocumentIdentifier{URI: uri.URI("file:///empty.journal")},
+	})
+	if err != nil {
+		t.Fatal(err)
 	}
-	return out
+	if len(result.Data) != 0 {
+		t.Errorf("expected empty data for empty doc, got %d values", len(result.Data))
+	}
+}
+
+func TestServer_Semantic_DocumentNotFound(t *testing.T) {
+	result, err := NewServer("test").server.SemanticTokensFull(t.Context(), &protocol.SemanticTokensParams{
+		TextDocument: protocol.TextDocumentIdentifier{URI: uri.URI("file:///unknown.journal")},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result == nil {
+		t.Fatal("result is nil")
+	}
+	if result.Data != nil {
+		t.Errorf("expected nil Data for unknown doc, got %v", result.Data)
+	}
 }
 
 func TestGolden_SemanticTokens(t *testing.T) {
@@ -178,6 +128,53 @@ func TestGolden_SemanticTokens(t *testing.T) {
 			assertGoldenNoOverlap(t, tt, ar)
 		})
 	}
+}
+
+func TestGolden_SemanticTokensRange(t *testing.T) {
+	ar := golden.Read(t, "semantic-range")
+	in := ar.Get("in.journal")
+
+	t.Run("no-overlap", func(t *testing.T) {
+		assertGoldenNoOverlap(t, "semantic-range", ar)
+	})
+
+	t.Run("golden", func(t *testing.T) {
+		u := uri.URI("file:///test.journal")
+		srv := NewServer("test")
+		srv.server.openDoc(u, string(in), 1, "journal")
+
+		var out strings.Builder
+		for line := range strings.SplitSeq(string(ar.Get("ranges.txt")), "\n") {
+			if line == "" {
+				continue
+			}
+			var name string
+			var start, end uint32
+			if _, err := fmt.Sscanf(line, "%s %d %d", &name, &start, &end); err != nil {
+				t.Fatalf("ranges.txt: %q: %v", line, err)
+			}
+
+			res, err := srv.server.SemanticTokensRange(t.Context(), &protocol.SemanticTokensRangeParams{
+				TextDocument: protocol.TextDocumentIdentifier{URI: u},
+				Range: protocol.Range{
+					Start: protocol.Position{Line: start},
+					End:   protocol.Position{Line: end},
+				},
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+			tokens := decodeSemTokens(res.Data)
+			for _, tok := range tokens {
+				if tok.line < start || tok.line > end {
+					t.Fatalf("%s: token %d:%d outside range lines [%d,%d]", name, tok.line, tok.col, start, end)
+				}
+			}
+			fmt.Fprintf(&out, "== %s ==\n", name)
+			out.WriteString(renderSemanticTokens(tokens))
+		}
+		golden.Assert(t, ar, out.String())
+	})
 }
 
 func TestGolden_SemanticTokensDelta(t *testing.T) {
@@ -243,6 +240,7 @@ func TestGolden_SemanticTokensDelta(t *testing.T) {
 			if want := encodeSemTokens(tokSem(finalText)); !slices.Equal(client, want) {
 				t.Errorf("delta flow produced %d elems, want %d", len(client), len(want))
 			}
+
 			out.WriteString(renderSemanticTokens(tokSem(finalText)))
 			golden.Assert(t, ar, out.String())
 		})
@@ -300,6 +298,27 @@ func renderSemanticTokens(tokens []semanticToken) string {
 	return b.String()
 }
 
+func decodeSemTokens(data []uint32) []semanticToken {
+	var out []semanticToken
+	line, col := 0, 0
+	for i := 0; i+4 < len(data); i += 5 {
+		if data[i] > 0 {
+			line += int(data[i])
+			col = int(data[i+1])
+		} else {
+			col += int(data[i+1])
+		}
+		out = append(out, semanticToken{
+			line:      uint32(line),
+			col:       uint32(col),
+			length:    data[i+2],
+			tokenType: data[i+3],
+			modifiers: data[i+4],
+		})
+	}
+	return out
+}
+
 func tokSem(content []byte) []semanticToken {
 	c := string(content)
 	return tokenizeForSemantics(c, parseJournalStr(c))
@@ -344,6 +363,14 @@ func BenchmarkSemanticTokensEdits(b *testing.B) {
 	for b.Loop() {
 		_ = semanticTokensEdits(old, new)
 	}
+}
+
+func applySemEdits(data []uint32, edits []protocol.SemanticTokensEdit) []uint32 {
+	out := slices.Clone(data)
+	for _, e := range edits {
+		out = append(append(out[:e.Start], e.Data...), out[e.Start+e.DeleteCount:]...)
+	}
+	return out
 }
 
 func openJournal(t testing.TB, path string) string {
