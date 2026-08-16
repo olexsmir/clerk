@@ -11,12 +11,34 @@ type AccountDirective struct {
 
 func (AccountDirective) entryNode() {}
 
+type AccountSubdirectiveKind uint8
+
+const (
+	SubdirectiveComment AccountSubdirectiveKind = iota
+	SubdirectiveAlias
+	SubdirectiveType
+	SubdirectiveNote
+)
+
+func (k AccountSubdirectiveKind) String() string {
+	switch k {
+	case SubdirectiveAlias:
+		return "alias"
+	case SubdirectiveType:
+		return "type"
+	case SubdirectiveNote:
+		return "note"
+	default:
+		panic("unreachable")
+	}
+}
+
 type AccountSubdirective struct {
-	Name      string     // "alias" / "type" / "note" / "" for comment lines
-	NameSpan  token.Span // keyword span; for comment lines, the marker span
-	Value     string     // text after the keyword; "" for comment lines
-	ValueSpan token.Span // value span; zero for comment lines and empty values
-	Comment   *Comment   // inline comment after the value; for comment lines, the line itself
+	Kind      AccountSubdirectiveKind // keyword; SubdirectiveComment for comment lines
+	NameSpan  token.Span              // keyword span; for comment lines, the marker span
+	Value     string                  // text after the keyword; "" for comment lines
+	ValueSpan token.Span              // value span; zero for comment lines and empty values
+	Comment   *Comment                // inline comment after the value; for comment lines, the line itself
 }
 
 type CommodityDirective struct {

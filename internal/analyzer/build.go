@@ -117,7 +117,7 @@ func (a *Analysis) addAccountDirective(ad *ast.AccountDirective) {
 	}
 	info.Directives = append(info.Directives, ad)
 	for _, sd := range ad.Subdirectives {
-		if sd.Name == "alias" {
+		if sd.Kind == ast.SubdirectiveAlias {
 			a.AccountAliases[sd.Value] = aname
 		}
 	}

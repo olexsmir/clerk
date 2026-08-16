@@ -321,14 +321,14 @@ func dumpAccountDirective(b *strings.Builder, a *AccountDirective, depth int) {
 	fmt.Fprintf(b, "AccountDirective %s\n", a.Span)
 	dumpAccount(b, a.Account, depth+1)
 	for _, sd := range a.Subdirectives {
-		if sd.Name == "" {
+		if sd.Kind == SubdirectiveComment {
 			dumpComment(b, sd.Comment, depth+1)
 			continue
 		}
 		indent(b, depth+1)
 		fmt.Fprintf(b, "Subdirective\n")
 		indent(b, depth+2)
-		fmt.Fprintf(b, "Name: %q %s\n", sd.Name, sd.NameSpan)
+		fmt.Fprintf(b, "Name: %q %s\n", sd.Kind.String(), sd.NameSpan)
 		indent(b, depth+2)
 		fmt.Fprintf(b, "Value: %q %s\n", sd.Value, sd.ValueSpan)
 		dumpOptComment(b, sd.Comment, depth+2)

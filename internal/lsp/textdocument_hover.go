@@ -118,7 +118,7 @@ func hoverInEntry(content string, e ast.Entry, cursor int) *hoverElement {
 			return &hoverElement{kind: hoverAccount, span: e.Account.Span, name: e.Account.String()}
 		}
 		for _, sd := range e.Subdirectives {
-			if sd.Name == "alias" && spanContains(content, sd.ValueSpan, cursor) {
+			if sd.Kind == ast.SubdirectiveAlias && spanContains(content, sd.ValueSpan, cursor) {
 				return &hoverElement{kind: hoverAccount, span: sd.ValueSpan, name: sd.Value}
 			}
 		}

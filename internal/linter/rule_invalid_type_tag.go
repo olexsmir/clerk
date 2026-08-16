@@ -37,7 +37,7 @@ func (i *InvalidTypeTag) CheckJournal(an *analyzer.Analysis) []Find {
 			}
 		}
 		for _, sd := range ad.Subdirectives {
-			if sd.Name != "type" || sd.Value == "" {
+			if sd.Kind != ast.SubdirectiveType || sd.Value == "" {
 				// empty values are flagged by the parser
 				continue
 			}

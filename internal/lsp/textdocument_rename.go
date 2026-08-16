@@ -130,7 +130,7 @@ func symbolInEntry(content string, e ast.Entry, cursor int) *symbolRef {
 			return &symbolRef{symbolAccount, e.Account.String(), e.Account.Span}
 		}
 		for _, sd := range e.Subdirectives {
-			if sd.Name == "alias" && spanContains(content, sd.ValueSpan, cursor) {
+			if sd.Kind == ast.SubdirectiveAlias && spanContains(content, sd.ValueSpan, cursor) {
 				return &symbolRef{symbolAccount, sd.Value, sd.ValueSpan}
 			}
 		}
@@ -304,7 +304,7 @@ func renameAccountEdits(an *analyzer.Analysis, ref *symbolRef, newName string, a
 				add(fileIdx, d.Account.Span, newName+strings.TrimPrefix(d.Account.String(), ref.name))
 			}
 			for _, sd := range d.Subdirectives {
-				if sd.Name == "alias" && accountMatches(sd.Value, ref.name) {
+				if sd.Kind == ast.SubdirectiveAlias && accountMatches(sd.Value, ref.name) {
 					add(fileIdx, sd.ValueSpan, newName+strings.TrimPrefix(sd.Value, ref.name))
 				}
 			}

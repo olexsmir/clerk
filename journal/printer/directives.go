@@ -20,11 +20,11 @@ func (p *printer) writeAccountDirective(a *ast.AccountDirective) {
 	for _, sd := range a.Subdirectives {
 		p.buf.WriteByte('\n')
 		p.buf.WriteString(p.indent)
-		if sd.Name == "" {
+		if sd.Kind == ast.SubdirectiveComment {
 			p.writeComment(sd.Comment)
 			continue
 		}
-		p.buf.WriteString(sd.Name)
+		p.buf.WriteString(sd.Kind.String())
 		p.buf.WriteByte(' ')
 		p.buf.WriteString(sd.Value)
 		p.writeInlineComment(sd.Comment)

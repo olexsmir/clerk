@@ -215,15 +215,15 @@ func visitEntry(content string, e ast.Entry, emit semEmitFunc) {
 		emit(directiveKeyword(e.Span, "account"), semDirective, 0)
 		emit(e.Account.Span, semAccount, 0)
 		for _, sd := range e.Subdirectives {
-			if sd.Name == "" {
+			if sd.Kind == ast.SubdirectiveComment {
 				emitComment(sd.Comment, emit)
 				continue
 			}
 			emit(sd.NameSpan, semDirective, 0)
-			switch sd.Name {
-			case "alias":
+			switch sd.Kind {
+			case ast.SubdirectiveAlias:
 				emit(sd.ValueSpan, semAccount, 0)
-			case "type", "note":
+			case ast.SubdirectiveType, ast.SubdirectiveNote:
 				emit(sd.ValueSpan, semProperty, 0)
 			}
 			emitComment(sd.Comment, emit)

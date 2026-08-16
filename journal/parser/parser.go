@@ -357,14 +357,15 @@ func (p *Parser) parseAccountDirective() *ast.AccountDirective {
 			s := p.cur.Span
 			c := p.parseCommentRest(s)
 			p.expectNewline()
-			subs = append(subs, ast.AccountSubdirective{NameSpan: s, Comment: c})
+			subs = append(subs, ast.AccountSubdirective{Kind: ast.SubdirectiveComment, NameSpan: s, Comment: c})
 		case p.got(token.TEXT) && isCommentMarker(p.cur.Literal):
 			// '#', '%' and '*' lex as TEXT in directive mode; treat them as comment lines
 			c := p.parseTextComment()
-			subs = append(subs, ast.AccountSubdirective{NameSpan: c.Span, Comment: c})
+			subs = append(subs, ast.AccountSubdirective{Kind: ast.SubdirectiveComment, NameSpan: c.Span, Comment: c})
 		case p.got(token.TEXT):
 			name := p.cur.Literal
-			if !isAccountSubdirective(name) {
+			kind, ok := accountSubdirectiveKind(name)
+			if !ok {
 				p.errorf("unknown subdirective %q", name)
 				p.skipToNewline()
 				continue
@@ -378,7 +379,7 @@ func (p *Parser) parseAccountDirective() *ast.AccountDirective {
 			c := p.parseOptInlineComment()
 			p.expectNewline()
 			subs = append(subs, ast.AccountSubdirective{
-				Name:      name,
+				Kind:      kind,
 				NameSpan:  kw,
 				Value:     value,
 				ValueSpan: vspan,
@@ -1274,12 +1275,16 @@ func (p *Parser) errorfAt(pos token.Pos, format string, args ...any) {
 	})
 }
 
-func isAccountSubdirective(name string) bool {
+func accountSubdirectiveKind(name string) (ast.AccountSubdirectiveKind, bool) {
 	switch name {
-	case "alias", "type", "note":
-		return true
+	case "alias":
+		return ast.SubdirectiveAlias, true
+	case "type":
+		return ast.SubdirectiveType, true
+	case "note":
+		return ast.SubdirectiveNote, true
 	}
-	return false
+	return 0, false
 }
 
 func isCommentMarker(s string) bool {
