@@ -29,10 +29,10 @@ type Analysis struct {
 	TagNames  []string // unique tag names, sorted
 	TagValues []string // unique non-empty tag values across all tags, sorted
 
-	Dates       []ast.Date // unique transaction dats in sorted order
-	DateStrings []string   // same order as Dates, "YYYY-MM-DD"
+	Dates       []ast.Date // unique transaction dates, sorted
+	DateStrings []string   // same order as Dates, rendered as written
 
-	TransactionsCountByDate map[string]int                // counts transactions per date, keyed by [formatDate]
+	TransactionsCountByDate map[string]int                // counts transactions per date, keyed by [Date.String]
 	TransactionsByKey       map[string][]*ast.Transaction // groups transactions by [TxDuplicateKey] signature
 }
 

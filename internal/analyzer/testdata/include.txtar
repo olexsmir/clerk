@@ -59,7 +59,7 @@ directives (1):
   account expenses:food
 
 transaction keys (1):
-  2024-01-01|test|expenses:food,assets:checking,
+  2024/01/01|test|expenses:food,assets:checking,
 
 payee templates (1):
   test

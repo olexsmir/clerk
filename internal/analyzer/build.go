@@ -264,13 +264,15 @@ func (a *Analysis) collectDates() {
 		if s != "" && !seen[s] {
 			seen[s] = true
 			a.Dates = append(a.Dates, tx.Date)
-			a.DateStrings = append(a.DateStrings, s)
 		}
 	}
 	sort.Slice(a.Dates, func(i, j int) bool {
 		return a.Dates[i].Compare(a.Dates[j]) < 0
 	})
-	sort.Strings(a.DateStrings)
+	a.DateStrings = make([]string, len(a.Dates))
+	for i, d := range a.Dates {
+		a.DateStrings[i] = d.String()
+	}
 }
 
 func (a *Analysis) collectTags() {

@@ -134,9 +134,9 @@ directives (6):
   commodity EUR
 
 transaction keys (3):
-  2024-01-01|groceries|expenses:food,assets:checking,
-  2024-01-02|lunch|expenses:food,assets:cash,
-  2024-01-04|aws|expenses:food,assets:cash,
+  2024/01/01|groceries|expenses:food,assets:checking,
+  2024/01/02|lunch|expenses:food,assets:cash,
+  2024/01/04|aws|expenses:food,assets:cash,
 
 payee templates (3):
   aws

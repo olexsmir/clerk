@@ -6,6 +6,7 @@ import (
 	"math"
 	"sort"
 	"strings"
+	"time"
 
 	"go.lsp.dev/protocol"
 
@@ -49,6 +50,7 @@ const (
 	cmplAccount
 	cmplPayee
 	cmplCommodity
+	cmplDate
 	cmplTagName
 	cmplTagValue
 	cmplDirective
@@ -62,12 +64,11 @@ var directiveKeywords = []string{
 func detectCompletionCtx(content string, cursor int) (cmplCtx, int) {
 	toks := lexLine(content, cursor)
 	lineStart, _ := lineBounds(content, cursor)
-
+	if len(toks) == 0 {
+		return cmplDate, lineStart
+	}
 	if m := commentMarker(toks, cursor); m != -1 {
 		return cmplTagContext(content, toks[m].Span.End.Offset, cursor)
-	}
-	if len(toks) == 0 {
-		return cmplDirective, lineStart
 	}
 
 	switch toks[0].Type {
@@ -75,12 +76,19 @@ func detectCompletionCtx(content string, cursor int) (cmplCtx, int) {
 		return cmplPostingCtx(content, cursor, toks)
 	case token.DATE:
 		return cmplHeaderCtx(content, cursor, toks)
+	case token.ILLEGAL:
+		// a digit that is not lexed yet, as a date: 20, 2026-0
+		if len(toks[0].Literal) > 0 && isDigitByte(toks[0].Literal[0]) {
+			return cmplHeaderCtx(content, cursor, toks)
+		}
+		return cmplNone, cursor
 	case token.ACCOUNT, token.COMMODITY, token.PAYEE, token.TAG:
 		return cmplDirectiveContext(cursor, lineStart, toks)
 	case token.TEXT:
 		return cmplDirective, lineStart // half-typed keyword or unparseable line
+	default:
+		return cmplNone, cursor
 	}
-	return cmplNone, cursor
 }
 
 func cmplPostingCtx(content string, cursor int, toks []token.Token) (cmplCtx, int) {
@@ -126,6 +134,11 @@ run:
 }
 
 func cmplHeaderCtx(content string, cursor int, toks []token.Token) (cmplCtx, int) {
+	// cursor inside date token
+	if cursor >= toks[0].Span.Start.Offset && cursor <= toks[0].Span.End.Offset {
+		return cmplDate, toks[0].Span.Start.Offset
+	}
+
 	// skip date, status, code, and whitespace - where the payee beginds
 	fieldStart := toks[0].Span.End.Offset
 	fieldEnd := fieldStart
@@ -159,8 +172,7 @@ func cmplHeaderCtx(content string, cursor int, toks []token.Token) (cmplCtx, int
 				seen = true
 			}
 			fieldEnd = t.Span.End.Offset
-		default:
-			// PIPE, SEMICOLON, ...
+		default: // PIPE, SEMICOLON, ...
 			return payeeAt(cursor, fieldStart, fieldEnd)
 		}
 	}
@@ -295,6 +307,7 @@ type cmplCand struct {
 	score        float64
 	count        int
 	lastUsedDays int64 // days since 1970-01-01; 0 when unset
+	rank         int   // lower sorts first among equal scores; 0 except for date completions
 }
 
 // cmplItems ranks candidates for the content against typed pattern
@@ -342,6 +355,30 @@ func cmplItems(a *analyzer.Analysis, ctx cmplCtx, content string, li *lsputil.Li
 		for _, name := range directiveKeywords {
 			cands = append(cands, cmplCand{label: name})
 		}
+	case cmplDate:
+		kind = protocol.CompletionItemKindConstant
+		now := time.Now()
+		sep, hasYear := dateStyle(a.DateStrings)
+		today := renderDate(now, sep, hasYear)
+		yesterday := renderDate(now.AddDate(0, 0, -1), sep, hasYear)
+		twoDaysAgo := renderDate(now.AddDate(0, 0, -2), sep, hasYear)
+		cands = append(cands,
+			cmplCand{label: today, rank: 0},
+			cmplCand{label: yesterday, rank: 1},
+			cmplCand{label: twoDaysAgo, rank: 2})
+
+		seen := map[string]bool{today: true, yesterday: true, twoDaysAgo: true}
+		for i, d := range a.Dates {
+			if !datePatternMatch(pattern, a.DateStrings[i]) {
+				continue
+			}
+			label := a.DateStrings[i]
+			if seen[label] {
+				continue
+			}
+			seen[label] = true
+			cands = append(cands, cmplCand{label: label, rank: 3, lastUsedDays: dateToDays(d)})
+		}
 	default:
 		return nil
 	}
@@ -370,6 +407,9 @@ func cmplItems(a *analyzer.Analysis, ctx cmplCtx, content string, li *lsputil.Li
 		if ranked[i].score != ranked[j].score {
 			return ranked[i].score > ranked[j].score
 		}
+		if ranked[i].rank != ranked[j].rank {
+			return ranked[i].rank < ranked[j].rank
+		}
 		if ranked[i].lastUsedDays != ranked[j].lastUsedDays {
 			return ranked[i].lastUsedDays > ranked[j].lastUsedDays
 		}
@@ -379,9 +419,9 @@ func cmplItems(a *analyzer.Analysis, ctx cmplCtx, content string, li *lsputil.Li
 		ranked = ranked[:maxCompletionItems]
 	}
 
-	replace := protocol.Range{
-		Start: li.Position(start),
-		End:   li.Position(cursor),
+	end := cursor
+	if ctx == cmplDate {
+		end = dateTokenEnd(content, start)
 	}
 	items := make([]protocol.CompletionItem, len(ranked))
 	for i, r := range ranked {
@@ -391,7 +431,10 @@ func cmplItems(a *analyzer.Analysis, ctx cmplCtx, content string, li *lsputil.Li
 			SortText:   protocol.NewOptional(fmt.Sprintf("%04d", i)),
 			FilterText: protocol.NewOptional(r.label),
 			TextEdit: &protocol.TextEdit{
-				Range:   replace,
+				Range: protocol.Range{
+					Start: li.Position(start),
+					End:   li.Position(end),
+				},
 				NewText: r.label,
 			},
 		}
@@ -423,6 +466,50 @@ func daysFromCivil(y, m, d int) int64 {
 	doy := (153*mp+2)/5 + d - 1
 	doe := yoe*365 + yoe/4 - yoe/100 + doy
 	return int64(era)*146097 + int64(doe) - 719468
+}
+
+// dateStyle returns reparator and yesr-ness of the most recent history date.
+// Defualts to '-'/true when history is empty.
+func dateStyle(history []string) (sep byte, hasYear bool) {
+	sep, hasYear = '-', true
+	if n := len(history); n > 0 {
+		if i := strings.IndexAny(history[n-1], "-/."); i >= 0 {
+			return history[n-1][i], i == 4
+		}
+	}
+	return
+}
+
+func renderDate(t time.Time, sep byte, hasYear bool) string {
+	d := ast.Date{Month: int(t.Month()), Day: t.Day(), Sep: sep}
+	if hasYear {
+		d.Year = t.Year()
+	}
+	return d.String()
+}
+
+func datePatternMatch(pattern, canonical string) bool {
+	pi, ci := 0, 0
+	for pi < len(pattern) && ci < len(canonical) {
+		if pattern[pi] != canonical[ci] {
+			ci++
+			continue
+		}
+		pi++
+		ci++
+	}
+	return pi == len(pattern)
+}
+
+func isDateSepByte(b byte) bool { return b == '-' || b == '/' || b == '.' }
+func isDigitByte(b byte) bool   { return b >= '0' && b <= '9' }
+
+func dateTokenEnd(content string, start int) int {
+	i := start
+	for i < len(content) && (isDigitByte(content[i]) || isDateSepByte(content[i])) {
+		i++
+	}
+	return i
 }
 
 // lineBounds returns the byte offsets of the line containing cursor
