@@ -123,6 +123,67 @@ func TestServer_Diagnostics(t *testing.T) {
 	}
 }
 
+func TestServer_DidChangeWatchedFiles_SkipsOpenDocuments(t *testing.T) {
+	dir := t.TempDir()
+	base := filepath.Join(dir, "base.journal")
+	testutil.WriteFile(t, base, []byte("2024-01-01 t\n    expenses:food  $10\n    assets:cash\n"))
+
+	srv := NewServer("test")
+	uBase := uri.File(base)
+	srv.server.openDoc(uBase, "2024-01-01 t\n    expenses:food  $10\n    assets:cash\n", 1, "journal")
+
+	a1 := srv.server.analysisFor(uBase)
+
+	testutil.WriteFile(t, base, []byte("2024-01-01 t\n    expenses:food  $10\n    assets:bank\n"))
+	if err := srv.server.DidChangeWatchedFiles(context.Background(), &protocol.DidChangeWatchedFilesParams{
+		Changes: []protocol.FileEvent{{URI: uBase, Type: protocol.FileChangeTypeChanged}},
+	}); err != nil {
+		t.Fatalf("didChangeWatchedFiles: %v", err)
+	}
+
+	if a2 := srv.server.analysisFor(uBase); a2 != a1 {
+		t.Error("open document rebuilt from disk; buffer is authoritative")
+	}
+}
+
+func TestServer_DidChangeWatchedFiles_DiskChangeDirtiesDependents(t *testing.T) {
+	dir := t.TempDir()
+	base := filepath.Join(dir, "base.journal")
+	main := filepath.Join(dir, "main.journal")
+	testutil.WriteFile(t, base, []byte("2024-01-01 t\n    expenses:food  $10\n    assets:cash\n"))
+	testutil.WriteFile(t, main, []byte("include base.journal\n"))
+
+	srv := NewServer("test")
+	srv.server.client = &captureClient{}
+	uMain := uri.File(main)
+	if err := srv.server.DidOpen(context.Background(), &protocol.DidOpenTextDocumentParams{
+		TextDocument: protocol.TextDocumentItem{URI: uMain, LanguageID: "journal", Version: 1, Text: "include base.journal\n"},
+	}); err != nil {
+		t.Fatalf("didOpen: %v", err)
+	}
+
+	a1 := srv.server.analysisFor(uMain)
+	if !slices.Contains(a1.AccountNames, "assets:cash") {
+		t.Fatalf("initial analysis missing included account: %v", a1.AccountNames)
+	}
+
+	// base changes on disk, outside the editor
+	testutil.WriteFile(t, base, []byte("2024-01-01 t\n    expenses:food  $10\n    assets:bank\n"))
+	if err := srv.server.DidChangeWatchedFiles(context.Background(), &protocol.DidChangeWatchedFilesParams{
+		Changes: []protocol.FileEvent{{URI: uri.File(base), Type: protocol.FileChangeTypeChanged}},
+	}); err != nil {
+		t.Fatalf("didChangeWatchedFiles: %v", err)
+	}
+
+	a2 := srv.server.analysisFor(uMain)
+	if a2 == a1 {
+		t.Error("disk change did not rebuild the dependent analysis")
+	}
+	if !slices.Contains(a2.AccountNames, "assets:bank") {
+		t.Errorf("stale included content after disk change: %v", a2.AccountNames)
+	}
+}
+
 type captureClient struct {
 	protocol.Client
 	mu   sync.Mutex
