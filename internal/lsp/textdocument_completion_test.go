@@ -176,10 +176,12 @@ func BenchmarkCompletion(b *testing.B) {
 	srv.server.analysisFor(uri.URI("file:///test.journal")) // warm the per-doc cache
 
 	for tname, tt := range map[string]int{
-		"1k txns, account":     strings.Index(content, "\n  1:2:3 ") + len("\n  ") + 2,
-		"1k txns, empty payee": strings.Index(content, "transaction 1") + len("transaction "),
-		"1k txns, commodity":   strings.Index(content, "2 B @@") + len("2 B"),
-		"1k txns, date":        strings.Index(content, "2000-01-0") + len("2000-01-0"),
+		"1k txns, account":        strings.Index(content, "\n  1:2:3 ") + len("\n  ") + 2,
+		"1k txns, empty payee":    strings.Index(content, "transaction 1") + len("transaction "),
+		"1k txns, commodity":      strings.Index(content, "2 B @@") + len("2 B"),
+		"1k txns, date":           strings.Index(content, "2000-01-0") + len("2000-01-0"),
+		"1k txns, price date":     strings.Index(content, "P 2000-01-0") + len("P 2000-01-0"),
+		"1k txns, price quantity": strings.Index(content, "P 2000-01-01 A  0.70") + len("P 2000-01-01 A  0.70"),
 	} {
 		b.Run(tname, func(b *testing.B) {
 			line, col := lsputil.LineCol(content, tt)

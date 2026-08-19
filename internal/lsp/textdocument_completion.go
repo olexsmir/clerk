@@ -84,6 +84,8 @@ func detectCompletionCtx(content string, cursor int) (cmplCtx, int) {
 		return cmplNone, cursor
 	case token.ACCOUNT, token.COMMODITY, token.PAYEE, token.TAG:
 		return cmplDirectiveContext(cursor, lineStart, toks)
+	case token.P:
+		return cmplPriceContext(cursor, toks)
 	case token.TEXT:
 		return cmplDirective, lineStart // half-typed keyword or unparseable line
 	default:
@@ -143,8 +145,7 @@ func cmplHeaderCtx(content string, cursor int, toks []token.Token) (cmplCtx, int
 	fieldStart := toks[0].Span.End.Offset
 	fieldEnd := fieldStart
 	seen := false
-	for i := 1; i < len(toks); i++ {
-		t := toks[i]
+	for _, t := range toks[1:] {
 		switch t.Type {
 		case token.WHITESPACE, token.STAR, token.BANG, token.DATE, token.TIME,
 			token.EQ, token.EQEQ, token.EQEQEQ:
@@ -224,6 +225,68 @@ func cmplDirectiveContext(cursor, lineStart int, toks []token.Token) (cmplCtx, i
 		return cmplTagName, start
 	}
 	return cmplNone, cursor
+}
+
+func cmplPriceContext(cursor int, toks []token.Token) (cmplCtx, int) {
+	kwEnd := toks[0].Span.End.Offset
+	if cursor > toks[0].Span.Start.Offset && cursor < kwEnd {
+		return cmplNone, cursor // on the P keyword
+	}
+
+	dateStart := kwEnd           // start of the date field, for replacing partials whole
+	dateDone := false            // a DATE, TIME, or symbol has ended the date field
+	for _, t := range toks[1:] { // skip the P keyword
+		if t.Type == token.WHITESPACE {
+			continue
+		}
+		if !dateDone && dateStart == kwEnd {
+			dateStart = t.Span.Start.Offset
+		}
+		if cursor > t.Span.End.Offset {
+			switch t.Type {
+			case token.DATE, token.TIME, token.COMMODITYMARK, token.STRING:
+				dateDone = true
+			}
+			continue
+		}
+		if cursor < t.Span.Start.Offset {
+			if (t.Type == token.INT || t.Type == token.DECIMAL) && !dateDone {
+				return cmplDate, dateStart // partial date fragments ahead
+			}
+			if t.Type == token.DATE || t.Type == token.TIME {
+				return cmplNone, cursor
+			}
+			return cmplCommodity, cursor // symbol or price-commodity slot
+		}
+
+		switch t.Type {
+		case token.DATE:
+			return cmplDate, t.Span.Start.Offset
+		case token.COMMODITYMARK:
+			return cmplCommodity, t.Span.Start.Offset
+		case token.STRING:
+			return cmplCommodity, min(t.Span.Start.Offset+1, cursor) // skip the opening quote
+		case token.TIME:
+			return cmplNone, cursor
+		case token.INT, token.DECIMAL: // a partial date fragment, or the amount quantity
+			if !dateDone {
+				return cmplDate, dateStart
+			}
+			if cursor == t.Span.End.Offset {
+				return cmplCommodity, cursor // suffix price-commodity slot
+			}
+			return cmplNone, cursor
+		}
+	}
+	// the cursor sits in whitespace after the last token, or only after the keyword
+	if !dateDone {
+		start := dateStart
+		if start == kwEnd {
+			start = cursor // `P `: the date comes next
+		}
+		return cmplDate, start
+	}
+	return cmplCommodity, cursor
 }
 
 // commentStart completes tag names before ':' of the current tag and tag values after it
