@@ -16,7 +16,7 @@ func TestConfig_Merge(t *testing.T) {
 		"nil settings keep defaults":  {"", DefaultConfig, Config{SemanticHighlighting: true}},
 
 		"disables provided option": {`{"semanticHighlighting": false}`, DefaultConfig, Config{SemanticHighlighting: false}},
-		"snake_case key":           {`{"semantic_highlighting": false}`, DefaultConfig, Config{SemanticHighlighting: false}},
+		"snake_case key":           {`{"latin_to_cyrillic_completion": true}`, DefaultConfig, Config{LatinToCyrillicCompletion: true, SemanticHighlighting: true}},
 		"kebab-case key":           {`{"semantic-highlighting": false}`, DefaultConfig, Config{SemanticHighlighting: false}},
 
 		"malformed settings ignored":  {`{`, DefaultConfig, DefaultConfig},

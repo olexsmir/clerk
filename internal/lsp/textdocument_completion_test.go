@@ -96,6 +96,7 @@ func TestGolden_Completion(t *testing.T) {
 		t.Run(tt, func(t *testing.T) {
 			ar := golden.Read(t, tt)
 			h := newTxtarHarness(t, ar)
+			h.srv.applySettings([]byte(`{"latin_to_cyrillic_completion": true}`))
 
 			var b strings.Builder
 			for i, c := range h.cursors {
@@ -209,5 +210,49 @@ func BenchmarkCompletion(b *testing.B) {
 				b.Fatalf("completion %v/op: whole-file relex regression", avg)
 			}
 		})
+	}
+}
+
+func BenchmarkCompletionTransliteration(b *testing.B) {
+	tails := []string{"а", "б", "в", "г", "д", "е", "є", "ж", "з", "и", "і", "ї", "й", "к", "л", "м", "н", "о", "п", "р"}
+	var sb strings.Builder
+	for _, n := range []string{"Витрати", "Доходи", "Активи", "Капітал", "Зобовязання"} {
+		for _, t := range tails {
+			fmt.Fprintf(&sb, "account %s:%s%s\n", n, n, t)
+		}
+	}
+	sb.WriteString("account vyt")
+	content := sb.String()
+
+	srv := NewServer("test")
+	srv.server.openDoc(uri.URI("file:///test.journal"), content, 1, "journal")
+	srv.server.analysisFor(uri.URI("file:///test.journal")) // warm the per-doc cache
+	srv.server.applySettings([]byte(`{"latin_to_cyrillic_completion": true}`))
+
+	line, col := lsputil.LineCol(content, len(content))
+	params := &protocol.CompletionParams{
+		TextDocumentPositionParams: protocol.TextDocumentPositionParams{
+			TextDocument: protocol.TextDocumentIdentifier{URI: uri.URI("file:///test.journal")},
+			Position:     protocol.Position{Line: uint32(line), Character: uint32(col)},
+		},
+	}
+
+	warm, err := srv.server.Completion(b.Context(), params)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	// Guard: the Cyrillic corpus completes only through the transliterated
+	// pattern; without it the list collapses to the latin "vyt" placeholder.
+	if got := len(warm.(*protocol.CompletionList).Items); got <= 1 {
+		b.Fatalf("transliteration matching did not engage (items: %d)", got)
+	}
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for b.Loop() {
+		if _, err := srv.server.Completion(b.Context(), params); err != nil {
+			b.Fatal(err)
+		}
 	}
 }

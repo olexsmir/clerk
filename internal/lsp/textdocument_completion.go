@@ -37,7 +37,7 @@ func (s *server) Completion(ctx context.Context, params *protocol.CompletionPara
 	}
 	return &protocol.CompletionList{
 		IsIncomplete: true,
-		Items:        cmplItems(an, detectedCtx, state.text, state.lineIdx, start, cursor),
+		Items:        cmplItems(an, detectedCtx, state.text, state.lineIdx, start, cursor, s.latinToCyrillicCompletionEnabled()),
 	}, nil
 }
 
@@ -374,7 +374,15 @@ type cmplCand struct {
 }
 
 // cmplItems ranks candidates for the content against typed pattern
-func cmplItems(a *analyzer.Analysis, ctx cmplCtx, content string, li *lsputil.LineIndex, start, cursor int) []protocol.CompletionItem {
+func cmplItems(
+	a *analyzer.Analysis,
+	ctx cmplCtx,
+	content string,
+	li *lsputil.LineIndex,
+	start,
+	cursor int,
+	transliterate bool,
+) []protocol.CompletionItem {
 	pattern := content[start:cursor]
 
 	var kind protocol.CompletionItemKind
@@ -450,10 +458,20 @@ func cmplItems(a *analyzer.Analysis, ctx cmplCtx, content string, li *lsputil.Li
 	if n := len(a.Dates); n > 0 {
 		newest = dateToDays(a.Dates[n-1])
 	}
-	m := fuzzy.Compile(pattern)
+
+	matcher := fuzzy.Compile(pattern)
+	translMatcher, hasTransl := fuzzy.Matcher{}, false
+	if transliterate {
+		if t := latinToCyrillic(pattern); t != pattern {
+			translMatcher, hasTransl = fuzzy.Compile(t), true
+		}
+	}
 	ranked := cands[:0]
 	for i := range cands {
-		sc := m.Score(cands[i].label)
+		sc := matcher.Score(cands[i].label)
+		if hasTransl {
+			sc = max(sc, translMatcher.Score(cands[i].label))
+		}
 		if sc != 0 {
 			sc *= 1 + math.Log1p(float64(cands[i].count))
 			if cands[i].count > 0 && cands[i].lastUsedDays != 0 && newest != 0 {
@@ -488,11 +506,16 @@ func cmplItems(a *analyzer.Analysis, ctx cmplCtx, content string, li *lsputil.Li
 	}
 	items := make([]protocol.CompletionItem, len(ranked))
 	for i, r := range ranked {
+		// nvim re-filters against the typed prefix, which a transliterated label never starts with; present the typed pattern as filterText.
+		filterText := r.label
+		if hasTransl && translMatcher.Score(r.label) > 0 {
+			filterText = pattern
+		}
 		it := protocol.CompletionItem{
 			Label:      r.label,
 			Kind:       kind,
 			SortText:   protocol.NewOptional(fmt.Sprintf("%04d", i)),
-			FilterText: protocol.NewOptional(r.label),
+			FilterText: protocol.NewOptional(filterText),
 			TextEdit: &protocol.TextEdit{
 				Range: protocol.Range{
 					Start: li.Position(start),
