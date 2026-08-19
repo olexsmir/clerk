@@ -185,14 +185,14 @@ func (p *Parser) parsePayee() *ast.Payee {
 
 	// keep spaces/tags between text tokens; stop before trailing whitespace
 	var name strings.Builder
-	for payeeWord(p.cur.Type) || (payeeWord(p.peek.Type) && p.got(token.WHITESPACE)) {
+	for isPayeeWord(p.cur.Type) || (isPayeeWord(p.peek.Type) && p.got(token.WHITESPACE)) {
 		_, _ = name.WriteString(p.cur.Literal)
 		p.advance()
 	}
 	return &ast.Payee{Name: unquote(name.String()), Span: p.span(s)}
 }
 
-func payeeWord(t token.Type) bool {
+func isPayeeWord(t token.Type) bool {
 	switch t {
 	case token.TEXT, token.INT, token.DECIMAL, token.COMMODITYMARK:
 		return true
@@ -354,10 +354,10 @@ func (p *Parser) parseAccountDirective() *ast.AccountDirective {
 		switch {
 		case p.got(token.SEMICOLON):
 			// comment line: directive mode lexes only ';' as a comment marker
-			s := p.cur.Span
-			c := p.parseCommentRest(s)
+			ns := p.cur.Span
+			c := p.parseCommentRest(ns)
 			p.expectNewline()
-			subs = append(subs, ast.AccountSubdirective{Kind: ast.SubdirectiveComment, NameSpan: s, Comment: c})
+			subs = append(subs, ast.AccountSubdirective{Kind: ast.SubdirectiveComment, NameSpan: ns, Comment: c})
 		case p.got(token.TEXT) && isCommentMarker(p.cur.Literal):
 			// '#', '%' and '*' lex as TEXT in directive mode; treat them as comment lines
 			c := p.parseTextComment()
@@ -1299,10 +1299,6 @@ func (p *Parser) skipToNewline() {
 	p.expectNewline()
 }
 
-// parseSubdirectiveValue consumes the tokens after a subdirective keyword up
-// to an inline comment or the end of the line, returning the raw text and its
-// span (trimmed of surrounding whitespace). Single-token values return the
-// lexer's literal, sharing the source backing without a copy.
 func (p *Parser) parseSubdirectiveValue() (string, token.Span) {
 	var b strings.Builder
 	var first, last token.Span
@@ -1342,9 +1338,6 @@ func (p *Parser) parseSubdirectiveValue() (string, token.Span) {
 	return strings.TrimSpace(b.String()), token.Span{Start: first.Start, End: last.End}
 }
 
-// parseTextComment consumes a comment line whose marker ('#', '%' or '*')
-// lexed as TEXT inside a directive block, building the comment from token
-// literals. Tags are not extracted; the comment is one line.
 func (p *Parser) parseTextComment() *ast.Comment {
 	s := p.cur.Span
 	marker := p.cur.Literal[0]
