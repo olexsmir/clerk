@@ -138,7 +138,7 @@ func (p *printer) writeMarketPriceDirective(m *ast.MarketPriceDirective) {
 	p.writeDate(m.DateTime.Date)
 	p.writeTime(m.DateTime.Time)
 	p.buf.WriteByte(' ')
-	p.buf.WriteString(m.Commodity)
+	p.buf.WriteString(quoteString(m.Commodity))
 	p.buf.WriteByte(' ')
 	p.writeAmount(&m.Amount)
 	p.writeInlineComment(m.Comment)
@@ -177,7 +177,7 @@ func (p *printer) writeEndDirective(e *ast.EndDirective) {
 
 func (p *printer) writeIgnoredDirective(e *ast.IgnoredDirective) {
 	p.buf.WriteString("N ")
-	p.buf.WriteString(e.Text)
+	p.buf.WriteString(quoteString(e.Text))
 	p.writeInlineComment(e.Comment)
 }
 

@@ -663,8 +663,8 @@ func (p *Parser) parseIgnoredDirective() *ast.IgnoredDirective {
 	p.skipWhitespace()
 
 	id := &ast.IgnoredDirective{}
-	if p.got(token.TEXT) || p.got(token.COMMODITYMARK) {
-		id.Text = p.cur.Literal
+	if p.got(token.TEXT) || p.got(token.COMMODITYMARK) || p.got(token.STRING) {
+		id.Text = unquote(p.cur.Literal)
 		p.advance()
 	}
 	id.Comment = p.parseOptInlineComment()
@@ -688,8 +688,12 @@ func (p *Parser) parseMarketPriceDirective() *ast.MarketPriceDirective {
 		p.skipWhitespace()
 	}
 
-	tok, _ := p.expect(token.COMMODITYMARK)
-	mp.Commodity = tok.Literal
+	if p.got(token.COMMODITYMARK) || p.got(token.STRING) {
+		mp.Commodity = unquote(p.cur.Literal)
+		p.advance()
+	} else {
+		p.errorf("expected commodity symbol, got %s", p.cur.Type)
+	}
 	p.skipWhitespace()
 
 	mp.Amount = *p.parseAmount()

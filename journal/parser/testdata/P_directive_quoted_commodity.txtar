@@ -1,0 +1,15 @@
+-- input --
+P 2024-01-01 "my fund" $100
+
+-- expect --
+Journal
+  MarketPriceDirective j:1:1-3:0
+    Date: 2024-01-01
+    Commodity: "my fund"
+    Amount j:1:24-2:0
+      Quantity: 100
+      Commodity: "$" j:1:24-1:25
+      CommodityPos: Before
+      HasSpace: false
+      Precision: 0
+  BlankLine j:3:0-3:1
