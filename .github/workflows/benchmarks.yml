@@ -28,33 +28,30 @@ jobs:
           go install golang.org/x/perf/cmd/benchstat@latest
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
 
+      - name: Checkout base
+        if: github.event_name == 'pull_request'
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: __base
+
+      - name: Run base benchmarks
+        if: github.event_name == 'pull_request'
+        working-directory: __base
+        run: go test -bench . -benchmem -run '^$' -count=10 -benchtime=200x ./... > ../bench-base.txt 2>&1
+
       - name: Run benchmarks
         run: go test -bench . -benchmem -run '^$' -count=10 -benchtime=200x ./... > bench.txt 2>&1
 
       - name: Print benchmark numbers
         run: benchstat bench.txt
 
-      - name: Restore baseline
-        id: baseline
-        uses: actions/cache/restore@v5
-        with:
-          path: bench-baseline.txt
-          key: bench-${{ runner.os }}-${{ github.sha }}
-          restore-keys: bench-${{ runner.os }}-
-
       - name: Print comparison
-        if: steps.baseline.outputs.cache-hit == 'true'
-        run: benchstat bench-baseline.txt bench.txt
+        if: github.event_name == 'pull_request'
+        run: benchstat bench-base.txt bench.txt
 
       - name: Check for regressions
-        if: steps.baseline.outputs.cache-hit == 'true'
+        if: github.event_name == 'pull_request'
         run: |
-          benchstat -format csv bench-baseline.txt bench.txt 2>/dev/null | \
+          benchstat -format csv bench-base.txt bench.txt 2>/dev/null | \
             python3 .github/scripts/check-bench-regression.py
-
-      - name: Save baseline
-        if: github.ref == 'refs/heads/master'
-        uses: actions/cache/save@v5
-        with:
-          path: bench.txt
-          key: bench-${{ runner.os }}-${{ github.sha }}
