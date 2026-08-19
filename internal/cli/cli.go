@@ -24,8 +24,13 @@ func (c *Cli) Run(ctx context.Context, args []string) error {
 		EnableShellCompletion: true,
 		Commands: []*cli.Command{
 			{
+				Name:   "lsp",
+				Usage:  "Run LSP server, to be used by editors",
+				Action: c.lspAction,
+			},
+			{
 				Name:                   "format",
-				Usage:                  "reformat journal files",
+				Usage:                  "Format journal files",
 				Action:                 c.formatAction,
 				UseShortOptionHandling: true,
 				Arguments: []cli.Argument{&cli.StringArgs{
@@ -58,13 +63,8 @@ func (c *Cli) Run(ctx context.Context, args []string) error {
 				},
 			},
 			{
-				Name:   "lsp",
-				Usage:  "lsp server",
-				Action: c.lspAction,
-			},
-			{
 				Name:   "lint",
-				Usage:  "lint journal files for common mistakes",
+				Usage:  "Lint journal files",
 				Action: c.lintAction,
 				Flags: []cli.Flag{
 					&cli.StringFlag{
