@@ -187,10 +187,8 @@ func BenchmarkCompletion(b *testing.B) {
 		b.Run(tname, func(b *testing.B) {
 			line, col := lsputil.LineCol(content, tt)
 			params := &protocol.CompletionParams{
-				TextDocumentPositionParams: protocol.TextDocumentPositionParams{
-					TextDocument: protocol.TextDocumentIdentifier{URI: uri.URI("file:///test.journal")},
-					Position:     protocol.Position{Line: uint32(line), Character: uint32(col)},
-				},
+				TextDocument: protocol.TextDocumentIdentifier{URI: uri.URI("file:///test.journal")},
+				Position:     protocol.Position{Line: uint32(line), Character: uint32(col)},
 			}
 
 			// warm up
@@ -231,10 +229,8 @@ func BenchmarkCompletionTransliteration(b *testing.B) {
 
 	line, col := lsputil.LineCol(content, len(content))
 	params := &protocol.CompletionParams{
-		TextDocumentPositionParams: protocol.TextDocumentPositionParams{
-			TextDocument: protocol.TextDocumentIdentifier{URI: uri.URI("file:///test.journal")},
-			Position:     protocol.Position{Line: uint32(line), Character: uint32(col)},
-		},
+		TextDocument: protocol.TextDocumentIdentifier{URI: uri.URI("file:///test.journal")},
+		Position:     protocol.Position{Line: uint32(line), Character: uint32(col)},
 	}
 
 	warm, err := srv.server.Completion(b.Context(), params)

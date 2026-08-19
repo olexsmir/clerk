@@ -154,11 +154,9 @@ func BenchmarkRename(b *testing.B) {
 		b.Run(tname, func(b *testing.B) {
 			line, col := lsputil.LineCol(content, tt.pos)
 			params := &protocol.RenameParams{
-				TextDocumentPositionParams: protocol.TextDocumentPositionParams{
-					TextDocument: protocol.TextDocumentIdentifier{URI: u},
-					Position:     protocol.Position{Line: uint32(line), Character: uint32(col)},
-				},
-				NewName: tt.newName,
+				TextDocument: protocol.TextDocumentIdentifier{URI: u},
+				Position:     protocol.Position{Line: uint32(line), Character: uint32(col)},
+				NewName:      tt.newName,
 			}
 			// warm up: first request generates the workspace edits; assert it found one
 			edit, err := srv.server.Rename(b.Context(), params)

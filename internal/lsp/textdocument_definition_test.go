@@ -17,10 +17,8 @@ import (
 func TestServer_Definition_DocumentNotFound(t *testing.T) {
 	srv := NewServer("test")
 	res, err := srv.server.Definition(t.Context(), &protocol.DefinitionParams{
-		TextDocumentPositionParams: protocol.TextDocumentPositionParams{
-			TextDocument: protocol.TextDocumentIdentifier{URI: uri.URI("file:///nonexistent.journal")},
-			Position:     protocol.Position{Line: 0, Character: 0},
-		},
+		TextDocument: protocol.TextDocumentIdentifier{URI: uri.URI("file:///nonexistent.journal")},
+		Position:     protocol.Position{Line: 0, Character: 0},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -85,10 +83,8 @@ func BenchmarkDefinition(b *testing.B) {
 		b.Run(tname, func(b *testing.B) {
 			line, col := lsputil.LineCol(content, tt)
 			params := &protocol.DefinitionParams{
-				TextDocumentPositionParams: protocol.TextDocumentPositionParams{
-					TextDocument: protocol.TextDocumentIdentifier{URI: u},
-					Position:     protocol.Position{Line: uint32(line), Character: uint32(col)},
-				},
+				TextDocument: protocol.TextDocumentIdentifier{URI: u},
+				Position:     protocol.Position{Line: uint32(line), Character: uint32(col)},
 			}
 			// warm up: first request resolves the symbol lazily; assert it found one
 			res, err := srv.server.Definition(b.Context(), params)

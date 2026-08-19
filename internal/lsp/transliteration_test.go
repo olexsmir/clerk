@@ -34,4 +34,3 @@ func TestLatinToCyrillic(t *testing.T) {
 		})
 	}
 }
-

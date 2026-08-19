@@ -87,10 +87,8 @@ func searchSymbols(an *analyzer.Analysis, query string) []protocol.WorkspaceSymb
 			continue
 		}
 		symbols = append(symbols, protocol.WorkspaceSymbol{
-			BaseSymbolInformation: protocol.BaseSymbolInformation{
-				Name: s.name,
-				Kind: s.kind.ToProtocol(),
-			},
+			Name:     s.name,
+			Kind:     s.kind.ToProtocol(),
 			Location: loc,
 		})
 	}

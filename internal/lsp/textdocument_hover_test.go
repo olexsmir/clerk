@@ -46,10 +46,8 @@ func TestTagValueSpan(t *testing.T) {
 func TestServer_Hover_DocumentNotFound(t *testing.T) {
 	srv := NewServer("test")
 	res, err := srv.server.Hover(context.Background(), &protocol.HoverParams{
-		TextDocumentPositionParams: protocol.TextDocumentPositionParams{
-			TextDocument: protocol.TextDocumentIdentifier{URI: uri.URI("file:///nonexistent.journal")},
-			Position:     protocol.Position{Line: 0, Character: 0},
-		},
+		TextDocument: protocol.TextDocumentIdentifier{URI: uri.URI("file:///nonexistent.journal")},
+		Position:     protocol.Position{Line: 0, Character: 0},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -111,10 +109,8 @@ func BenchmarkHover(b *testing.B) {
 		b.Run(tname, func(b *testing.B) {
 			line, col := lsputil.LineCol(content, tt)
 			params := &protocol.HoverParams{
-				TextDocumentPositionParams: protocol.TextDocumentPositionParams{
-					TextDocument: protocol.TextDocumentIdentifier{URI: uri.URI("file:///test.journal")},
-					Position:     protocol.Position{Line: uint32(line), Character: uint32(col)},
-				},
+				TextDocument: protocol.TextDocumentIdentifier{URI: uri.URI("file:///test.journal")},
+				Position:     protocol.Position{Line: uint32(line), Character: uint32(col)},
 			}
 
 			// warm up: assert the cursor resolved to a hover

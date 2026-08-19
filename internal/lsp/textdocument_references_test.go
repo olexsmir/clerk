@@ -18,10 +18,8 @@ import (
 func TestServer_References_DocumentNotFound(t *testing.T) {
 	srv := NewServer("test")
 	res, err := srv.server.References(context.Background(), &protocol.ReferenceParams{
-		TextDocumentPositionParams: protocol.TextDocumentPositionParams{
-			TextDocument: protocol.TextDocumentIdentifier{URI: uri.URI("file:///nonexistent.journal")},
-			Position:     protocol.Position{Line: 0, Character: 0},
-		},
+		TextDocument: protocol.TextDocumentIdentifier{URI: uri.URI("file:///nonexistent.journal")},
+		Position:     protocol.Position{Line: 0, Character: 0},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -83,11 +81,9 @@ func BenchmarkReferences(b *testing.B) {
 		b.Run(tname, func(b *testing.B) {
 			line, col := lsputil.LineCol(content, tt)
 			params := &protocol.ReferenceParams{
-				Context: protocol.ReferenceContext{IncludeDeclaration: true},
-				TextDocumentPositionParams: protocol.TextDocumentPositionParams{
-					TextDocument: protocol.TextDocumentIdentifier{URI: u},
-					Position:     protocol.Position{Line: uint32(line), Character: uint32(col)},
-				},
+				Context:      protocol.ReferenceContext{IncludeDeclaration: true},
+				TextDocument: protocol.TextDocumentIdentifier{URI: u},
+				Position:     protocol.Position{Line: uint32(line), Character: uint32(col)},
 			}
 
 			// warm up: first request resolves the symbol lazily; assert it found references
