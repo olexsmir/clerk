@@ -17,7 +17,7 @@ import (
 
 type ParsedFile struct {
 	Path       string
-	Src        []byte
+	Src        []byte // file content; token literals in Ast alias it, must NOT be mutated after parsing
 	Ast        *ast.Journal
 	FileErrors []*ast.FileError
 	Errors     []*ast.ParseError

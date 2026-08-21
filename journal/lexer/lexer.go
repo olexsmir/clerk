@@ -4,6 +4,7 @@ import (
 	"strings"
 	"unicode"
 	"unicode/utf8"
+	"unsafe"
 
 	"olexsmir.xyz/clerk/journal/token"
 )
@@ -163,7 +164,7 @@ func (l *Lexer) lexDefault() token.Token {
 	default:
 		s := l.save()
 		l.advance()
-		return token.Token{Type: token.ILLEGAL, Literal: string(l.input[s.offset:l.pos]), Span: l.span(s)}
+		return token.Token{Type: token.ILLEGAL, Literal: l.lit(s), Span: l.span(s)}
 	}
 }
 
@@ -194,7 +195,7 @@ func (l *Lexer) lexComment() token.Token {
 	for l.ch != '\n' && l.ch != '\r' && l.ch != 0 {
 		l.advance()
 	}
-	return token.Token{Type: token.TEXT, Literal: string(l.input[s.offset:l.pos]), Span: l.span(s)}
+	return token.Token{Type: token.TEXT, Literal: l.lit(s), Span: l.span(s)}
 }
 
 func (l *Lexer) lexTransaction() token.Token {
@@ -261,7 +262,7 @@ func (l *Lexer) lexNote() token.Token {
 	for l.ch != 0 && l.ch != '\n' && l.ch != '\r' && l.ch != ';' {
 		l.advance()
 	}
-	lit := string(l.input[s.offset:l.pos])
+	lit := l.lit(s)
 	for len(lit) > 0 && (lit[len(lit)-1] == ' ' || lit[len(lit)-1] == '\t') {
 		lit = lit[:len(lit)-1]
 	}
@@ -428,7 +429,7 @@ func (l *Lexer) lexPath() token.Token {
 	}
 	return token.Token{
 		Type:    token.TEXT,
-		Literal: string(l.input[s.offset:l.pos]),
+		Literal: l.lit(s),
 		Span:    l.span(s),
 	}
 }
@@ -438,7 +439,7 @@ func (l *Lexer) lexSingle(kind token.Type) token.Token {
 	l.advance()
 	return token.Token{
 		Type:    kind,
-		Literal: string(l.input[s.offset:l.pos]),
+		Literal: l.lit(s),
 		Span:    l.span(s),
 	}
 }
@@ -455,8 +456,7 @@ func (l *Lexer) lexWhitespace() token.Token {
 	for l.ch == ' ' || l.ch == '\t' {
 		l.advance()
 	}
-	lit := string(l.input[s.offset:l.pos])
-	return token.Token{Type: token.WHITESPACE, Literal: lit, Span: l.span(s)}
+	return token.Token{Type: token.WHITESPACE, Literal: l.lit(s), Span: l.span(s)}
 }
 
 func (l *Lexer) lexIndent() token.Token {
@@ -464,8 +464,7 @@ func (l *Lexer) lexIndent() token.Token {
 	for l.ch == ' ' || l.ch == '\t' {
 		l.advance()
 	}
-	lit := string(l.input[s.offset:l.pos])
-	return token.Token{Type: token.INDENT, Literal: lit, Span: l.span(s)}
+	return token.Token{Type: token.INDENT, Literal: l.lit(s), Span: l.span(s)}
 }
 
 func (l *Lexer) lexEquals() token.Token {
@@ -518,8 +517,7 @@ func (l *Lexer) lexAccountNameDirective() token.Token {
 	for l.ch != '\n' && l.ch != '\r' && l.ch != ';' && l.ch != 0 && l.ch != ')' && l.ch != ']' && l.ch != ':' && l.ch != ' ' && l.ch != '\t' {
 		l.advance()
 	}
-	lit := string(l.input[s.offset:l.pos])
-	return token.Token{Type: token.TEXT, Literal: lit, Span: l.span(s)}
+	return token.Token{Type: token.TEXT, Literal: l.lit(s), Span: l.span(s)}
 }
 
 // lexAccountNamePosting reads an account name in posting context.
@@ -535,8 +533,7 @@ func (l *Lexer) lexAccountNamePosting() token.Token {
 	if l.ch != ':' {
 		l.postingExpectAccount = false
 	}
-	lit := string(l.input[s.offset:l.pos])
-	return token.Token{Type: token.TEXT, Literal: lit, Span: l.span(s)}
+	return token.Token{Type: token.TEXT, Literal: l.lit(s), Span: l.span(s)}
 }
 
 func (l *Lexer) lexParenExpr() token.Token {
@@ -554,8 +551,7 @@ func (l *Lexer) lexParenExpr() token.Token {
 		}
 		l.advance()
 	}
-	lit := string(l.input[s.offset:l.pos])
-	return token.Token{Type: token.PARENEXPR, Literal: lit, Span: l.span(s)}
+	return token.Token{Type: token.PARENEXPR, Literal: l.lit(s), Span: l.span(s)}
 }
 
 func (l *Lexer) lexNumber() token.Token {
@@ -585,7 +581,7 @@ func (l *Lexer) lexNumber() token.Token {
 			break
 		}
 	}
-	lit := string(l.input[s.offset:l.pos])
+	lit := l.lit(s)
 	kind := token.INT
 	if strings.ContainsAny(lit, "., eE") {
 		kind = token.DECIMAL
@@ -598,7 +594,7 @@ func (l *Lexer) lexKeyword() token.Token {
 	for l.ch != 0 && l.ch != '\n' && l.ch != '\r' && l.ch != ' ' && l.ch != '\t' && l.ch != ';' {
 		l.advance()
 	}
-	lit := string(l.input[s.offset:l.pos])
+	lit := l.lit(s)
 	kind := l.keyword(lit)
 	if kind == token.ILLEGAL { // todo: report an error ??
 		kind = token.TEXT
@@ -615,7 +611,7 @@ func (l *Lexer) lexDate() token.Token {
 	for l.isDigit() || (l.isDateSep() && l.peekIsDigit()) {
 		l.advance()
 	}
-	return token.Token{Type: token.DATE, Literal: string(l.input[s.offset:l.pos]), Span: l.span(s)}
+	return token.Token{Type: token.DATE, Literal: l.lit(s), Span: l.span(s)}
 }
 
 func isSymbolChar(r rune) bool {
@@ -632,7 +628,7 @@ func (l *Lexer) lexString() token.Token {
 	if l.ch == quote {
 		l.advance()
 	}
-	return token.Token{Type: token.STRING, Literal: string(l.input[s.offset:l.pos]), Span: l.span(s)}
+	return token.Token{Type: token.STRING, Literal: l.lit(s), Span: l.span(s)}
 }
 
 func (l *Lexer) lexCommodityMark() token.Token {
@@ -646,25 +642,25 @@ func (l *Lexer) lexCommodityMark() token.Token {
 		if l.ch == '"' {
 			l.advance()
 		}
-		return token.Token{Type: token.COMMODITYMARK, Literal: string(l.input[s.offset:l.pos]), Span: l.span(s)}
+		return token.Token{Type: token.COMMODITYMARK, Literal: l.lit(s), Span: l.span(s)}
 	}
 
 	if unicode.IsLetter(l.ch) {
 		for unicode.IsLetter(l.ch) {
 			l.advance()
 		}
-		return token.Token{Type: token.COMMODITYMARK, Literal: string(l.input[s.offset:l.pos]), Span: l.span(s)}
+		return token.Token{Type: token.COMMODITYMARK, Literal: l.lit(s), Span: l.span(s)}
 	}
 
 	if isSymbolChar(l.ch) {
 		for isSymbolChar(l.ch) {
 			l.advance()
 		}
-		return token.Token{Type: token.COMMODITYMARK, Literal: string(l.input[s.offset:l.pos]), Span: l.span(s)}
+		return token.Token{Type: token.COMMODITYMARK, Literal: l.lit(s), Span: l.span(s)}
 	}
 
 	l.advance()
-	return token.Token{Type: token.COMMODITYMARK, Literal: string(l.input[s.offset:l.pos]), Span: l.span(s)}
+	return token.Token{Type: token.COMMODITYMARK, Literal: l.lit(s), Span: l.span(s)}
 }
 
 func (l *Lexer) lexLBrace() token.Token {
@@ -691,10 +687,11 @@ func (l *Lexer) advance() {
 	if l.rpos >= len(l.input) {
 		l.ch = 0
 		l.chSize = 0
+	} else if b := l.input[l.rpos]; b < utf8.RuneSelf { // ASCII fast path
+		l.ch = rune(b)
+		l.chSize = 1
 	} else {
-		r, size := utf8.DecodeRune(l.input[l.rpos:])
-		l.ch = r
-		l.chSize = size
+		l.ch, l.chSize = utf8.DecodeRune(l.input[l.rpos:])
 	}
 	l.pos = l.rpos
 	l.rpos += l.chSize
@@ -798,7 +795,7 @@ func (l *Lexer) lexTime() token.Token {
 	for l.isDigit() || l.ch == ':' {
 		l.advance()
 	}
-	return token.Token{Type: token.TIME, Literal: string(l.input[s.offset:l.pos]), Span: l.span(s)}
+	return token.Token{Type: token.TIME, Literal: l.lit(s), Span: l.span(s)}
 }
 
 type savedPos struct{ offset, line, col int }
@@ -817,6 +814,10 @@ func (l *Lexer) span(s savedPos) token.Span {
 func (l *Lexer) token(kind token.Type, literal string) token.Token {
 	s := savedPos{l.pos, l.line, l.col}
 	return token.Token{Type: kind, Literal: literal, Span: l.span(s)}
+}
+
+func (l *Lexer) lit(s savedPos) string {
+	return unsafe.String(&l.input[s.offset], l.pos-s.offset)
 }
 
 func (l *Lexer) keyword(s string) token.Type {
