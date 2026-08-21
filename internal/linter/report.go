@@ -19,8 +19,48 @@ const (
 	PathRelative                  // relative to current directory
 )
 
-// Fprint writes finds in text format: file:line:col code: message.
-func Fprint(w io.Writer, style PathStyle, finds []Find) {
+// Reporter collects lint findings across files and flushes them in the desired format.
+type Reporter struct {
+	w     io.Writer
+	finds []Find
+	style PathStyle
+	cfg   Config
+}
+
+func NewReporter(w io.Writer, style PathStyle, cfg Config) *Reporter {
+	return &Reporter{w: w, style: style, cfg: cfg}
+}
+
+func (r *Reporter) Collect(finds []Find) {
+	for i := range finds {
+		finds[i].Severity = r.cfg.SeverityFor(finds[i].Code)
+	}
+	r.finds = append(r.finds, finds...)
+}
+
+func (r *Reporter) HasFailures() bool {
+	for i := range r.finds {
+		if r.finds[i].Severity <= SeverityWarning {
+			return true
+		}
+	}
+	return false
+}
+
+func (r *Reporter) Flush(format string) error {
+	switch format {
+	case "json":
+		return fprintJSON(r.w, r.style, r.finds)
+	case "text":
+		fprint(r.w, r.style, r.finds)
+		return nil
+	default:
+		return errors.New("unsupported format")
+	}
+}
+
+// fprint writes finds in text format: file:line:col code: message.
+func fprint(w io.Writer, style PathStyle, finds []Find) {
 	sortFinds(finds)
 	for _, find := range finds {
 		_, _ = fmt.Fprintf(w, "%s:%d:%d: %s: %s\n",
@@ -30,7 +70,7 @@ func Fprint(w io.Writer, style PathStyle, finds []Find) {
 	}
 }
 
-type FindJSON struct {
+type findJSON struct {
 	Message  string `json:"message"`
 	Severity string `json:"severity"`
 	Code     string `json:"code"`
@@ -39,14 +79,14 @@ type FindJSON struct {
 	Column   int    `json:"column"`
 }
 
-// FprintJSON writes finds as [FindJSON] array.
-func FprintJSON(w io.Writer, style PathStyle, finds []Find) error {
+// fprintJSON writes finds as [findJSON] array.
+func fprintJSON(w io.Writer, style PathStyle, finds []Find) error {
 	sortFinds(finds)
-	jsonFinds := make([]FindJSON, len(finds))
+	jsonFinds := make([]findJSON, len(finds))
 	for i, find := range finds {
-		jsonFinds[i] = FindJSON{
+		jsonFinds[i] = findJSON{
 			Message:  find.Message,
-			Severity: find.Severity.String(),
+			Severity: find.Severity.String(), // TODO: it's unset
 			Code:     string(find.Code),
 			File:     formatPath(style, find.Span.Start.File),
 			Line:     find.Span.Start.Line,
@@ -54,37 +94,6 @@ func FprintJSON(w io.Writer, style PathStyle, finds []Find) error {
 		}
 	}
 	return json.NewEncoder(w).Encode(jsonFinds)
-}
-
-// Reporter collects lint findings across files and flushes them in the desired format.
-type Reporter struct {
-	w     io.Writer
-	finds []Find
-	style PathStyle
-}
-
-func NewReporter(w io.Writer, style PathStyle) *Reporter {
-	return &Reporter{w: w, style: style}
-}
-
-func (r *Reporter) Collect(finds []Find) {
-	r.finds = append(r.finds, finds...)
-}
-
-func (r *Reporter) HasIssues() bool {
-	return len(r.finds) > 0
-}
-
-func (r *Reporter) Flush(format string) error {
-	switch format {
-	case "json":
-		return FprintJSON(r.w, r.style, r.finds)
-	case "text":
-		Fprint(r.w, r.style, r.finds)
-		return nil
-	default:
-		return errors.New("unsupported format")
-	}
 }
 
 func formatPath(style PathStyle, p string) string {
