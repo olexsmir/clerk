@@ -2,6 +2,8 @@ package cli
 
 import (
 	"context"
+	"fmt"
+	"os"
 
 	"github.com/urfave/cli/v3"
 )
@@ -21,6 +23,7 @@ func (c *Cli) Run(ctx context.Context, args []string) error {
 		Name:                  "clerk",
 		Usage:                 "missing pta tooling",
 		Version:               c.version,
+		HideVersion:           true,
 		EnableShellCompletion: true,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
@@ -91,6 +94,19 @@ func (c *Cli) Run(ctx context.Context, args []string) error {
 					Min:       0,
 					Max:       -1,
 				}},
+			},
+			{
+				Name:   "help",
+				Usage:  "Show help",
+				Action: func(ctx context.Context, cmd *cli.Command) error { return cli.ShowAppHelp(cmd) },
+			},
+			{
+				Name:  "version",
+				Usage: "Print clerk version",
+				Action: func(ctx context.Context, cmd *cli.Command) error {
+					fmt.Fprintf(os.Stdout, "clerk version %s", c.version)
+					return nil
+				},
 			},
 		},
 	}
