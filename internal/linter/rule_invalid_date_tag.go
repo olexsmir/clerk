@@ -7,11 +7,12 @@ import (
 	"olexsmir.xyz/clerk/journal/parser"
 )
 
+const InvalidDateTagID RuleID = "invalid-date-tag"
+
 // InvalidDateTag flags date: and date2: tag values that are not valid dates.
 type InvalidDateTag struct{}
 
-func (InvalidDateTag) ID() RuleID         { return "invalid-date-tag" }
-func (InvalidDateTag) Severity() Severity { return SeverityError }
+func (InvalidDateTag) ID() RuleID { return InvalidDateTagID }
 func (i *InvalidDateTag) CheckJournal(an *analyzer.Analysis) []Find {
 	var finds []Find
 	for _, name := range []string{"date", "date2"} {
@@ -22,10 +23,9 @@ func (i *InvalidDateTag) CheckJournal(an *analyzer.Analysis) []Find {
 		for _, usage := range info.Usage {
 			if _, _, _, _, err := parser.ParseDateLiteral(usage.Tag.Value); err != nil {
 				finds = append(finds, Find{
-					Code:     i.ID(),
-					Severity: i.Severity(),
-					Span:     usage.Tag.Span,
-					Message:  fmt.Sprintf("invalid %s: tag value %q", name, usage.Tag.Value),
+					Code:    i.ID(),
+					Span:    usage.Tag.Span,
+					Message: fmt.Sprintf("invalid %s: tag value %q", name, usage.Tag.Value),
 				})
 			}
 		}
