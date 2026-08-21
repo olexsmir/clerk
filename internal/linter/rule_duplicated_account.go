@@ -6,11 +6,12 @@ import (
 	"olexsmir.xyz/clerk/internal/analyzer"
 )
 
+const DuplicatedAccountID RuleID = "duplicated-account"
+
 // DuplicatedAccount flags account declarations that appear more than once.
 type DuplicatedAccount struct{}
 
-func (DuplicatedAccount) ID() RuleID         { return "duplicated-account" }
-func (DuplicatedAccount) Severity() Severity { return SeverityWarning }
+func (DuplicatedAccount) ID() RuleID { return DuplicatedAccountID }
 func (d *DuplicatedAccount) CheckJournal(an *analyzer.Analysis) []Find {
 	var finds []Find
 	for _, info := range an.Accounts {
@@ -19,10 +20,9 @@ func (d *DuplicatedAccount) CheckJournal(an *analyzer.Analysis) []Find {
 		}
 		for _, ad := range info.Directives {
 			finds = append(finds, Find{
-				Code:     d.ID(),
-				Severity: d.Severity(),
-				Message:  fmt.Sprintf("duplicated account declaration: %s", ad.Account.String()),
-				Span:     ad.Account.Span,
+				Code:    d.ID(),
+				Message: fmt.Sprintf("duplicated account declaration: %s", ad.Account.String()),
+				Span:    ad.Account.Span,
 			})
 		}
 	}

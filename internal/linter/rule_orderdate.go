@@ -7,11 +7,12 @@ import (
 	"olexsmir.xyz/clerk/journal/ast"
 )
 
+const OrderDateID RuleID = "orderdate"
+
 // OrderDate checks that transactions are in chronological order by date.
 type OrderDate struct{}
 
-func (OrderDate) ID() RuleID         { return "orderdate" }
-func (OrderDate) Severity() Severity { return SeverityWarning }
+func (OrderDate) ID() RuleID { return OrderDateID }
 func (o *OrderDate) CheckJournal(an *analyzer.Analysis) []Find {
 	var finds []Find
 	var anchor *ast.Date
@@ -23,10 +24,9 @@ func (o *OrderDate) CheckJournal(an *analyzer.Analysis) []Find {
 			}
 			if anchor != nil && txn.Date.Compare(*anchor) < 0 {
 				finds = append(finds, Find{
-					Code:     o.ID(),
-					Severity: o.Severity(),
-					Message:  fmt.Sprintf("transaction is out of chronological order (date %s before %s)", txn.Date, *anchor),
-					Span:     txn.Date.Span,
+					Code:    o.ID(),
+					Message: fmt.Sprintf("transaction is out of chronological order (date %s before %s)", txn.Date, *anchor),
+					Span:    txn.Date.Span,
 				})
 				continue
 			}

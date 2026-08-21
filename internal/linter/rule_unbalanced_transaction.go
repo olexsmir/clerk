@@ -9,11 +9,12 @@ import (
 	"olexsmir.xyz/clerk/journal/token"
 )
 
+const UnbalancedTransactionID RuleID = "unbalanced-transaction"
+
 // UnbalancedTransaction flags transactions whose postings don't balance to zero.
 type UnbalancedTransaction struct{}
 
-func (UnbalancedTransaction) ID() RuleID         { return "unbalanced-transaction" }
-func (UnbalancedTransaction) Severity() Severity { return SeverityError }
+func (UnbalancedTransaction) ID() RuleID { return UnbalancedTransactionID }
 func (u *UnbalancedTransaction) CheckJournal(an *analyzer.Analysis) []Find {
 	var finds []Find
 	for _, txn := range an.Transactions {
@@ -75,10 +76,9 @@ func (u *UnbalancedTransaction) check(postings []*ast.Posting, span token.Span) 
 				msg = fmt.Sprintf("transaction is unbalanced; net balance is %s", sum.String())
 			}
 			finds = append(finds, Find{
-				Code:     u.ID(),
-				Severity: u.Severity(),
-				Span:     span,
-				Message:  msg,
+				Code:    u.ID(),
+				Span:    span,
+				Message: msg,
 			})
 		}
 	}

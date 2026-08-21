@@ -1,14 +1,13 @@
 package linter
 
-import (
-	"olexsmir.xyz/clerk/internal/analyzer"
-)
+import "olexsmir.xyz/clerk/internal/analyzer"
+
+const UndeclaredCommodityID RuleID = "undeclared-commodity"
 
 // UndeclaredCommodity flags amounts that reference a commodity not declared via `commodity` directive.
 type UndeclaredCommodity struct{}
 
-func (UndeclaredCommodity) ID() RuleID         { return "undeclared-commodity" }
-func (UndeclaredCommodity) Severity() Severity { return SeverityWarning }
+func (UndeclaredCommodity) ID() RuleID { return UndeclaredCommodityID }
 func (u *UndeclaredCommodity) CheckJournal(an *analyzer.Analysis) []Find {
 	var finds []Find
 	for name, info := range an.Commodities {
@@ -17,10 +16,9 @@ func (u *UndeclaredCommodity) CheckJournal(an *analyzer.Analysis) []Find {
 		}
 		for _, usage := range info.Usages {
 			finds = append(finds, Find{
-				Code:     u.ID(),
-				Severity: u.Severity(),
-				Span:     usage.Amount.Span,
-				Message:  "undeclared commodity: " + name,
+				Code:    u.ID(),
+				Span:    usage.Amount.Span,
+				Message: "undeclared commodity: " + name,
 			})
 		}
 	}
