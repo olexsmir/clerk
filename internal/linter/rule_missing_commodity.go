@@ -5,11 +5,12 @@ import (
 	"olexsmir.xyz/clerk/journal/ast"
 )
 
+const MissingCommodityID RuleID = "missing-commodity"
+
 // MissingCommodity flags amounts with a missing commodity.
 type MissingCommodity struct{}
 
-func (MissingCommodity) ID() RuleID         { return "missing-commodity" }
-func (MissingCommodity) Severity() Severity { return SeverityWarning }
+func (MissingCommodity) ID() RuleID { return MissingCommodityID }
 func (m *MissingCommodity) CheckJournal(an *analyzer.Analysis) []Find {
 	var finds []Find
 
@@ -63,10 +64,9 @@ func (m *MissingCommodity) checkPostings(finds *[]Find, postings []*ast.Posting)
 func (m *MissingCommodity) check(finds *[]Find, am ast.Amount) {
 	if am.Commodity == "" {
 		*finds = append(*finds, Find{
-			Code:     m.ID(),
-			Severity: m.Severity(),
-			Message:  "amount missing commodity",
-			Span:     am.Span,
+			Code:    m.ID(),
+			Message: "amount missing commodity",
+			Span:    am.Span,
 		})
 	}
 }

@@ -2,11 +2,12 @@ package linter
 
 import "olexsmir.xyz/clerk/internal/analyzer"
 
+const OmittedPrecisionID RuleID = "omitted-precision"
+
 // OmittedPrecision flags amounts with insufficient decimal precision (<2 digits).
 type OmittedPrecision struct{}
 
-func (OmittedPrecision) ID() RuleID         { return "omitted-precision" }
-func (OmittedPrecision) Severity() Severity { return SeverityWarning }
+func (OmittedPrecision) ID() RuleID { return OmittedPrecisionID }
 func (o *OmittedPrecision) CheckJournal(an *analyzer.Analysis) []Find {
 	var finds []Find
 	for _, txn := range an.Transactions {
@@ -16,10 +17,9 @@ func (o *OmittedPrecision) CheckJournal(an *analyzer.Analysis) []Find {
 			}
 			if posting.Amount.QuantityFmt.Precision < 2 {
 				finds = append(finds, Find{
-					Code:     o.ID(),
-					Severity: o.Severity(),
-					Message:  "amount has insufficient precision",
-					Span:     posting.Amount.Span,
+					Code:    o.ID(),
+					Message: "amount has insufficient precision",
+					Span:    posting.Amount.Span,
 				})
 			}
 		}

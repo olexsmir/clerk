@@ -8,9 +8,23 @@ import (
 // A Find represents a single lint finding.
 type Find struct {
 	Code     RuleID
-	Severity Severity
+	Severity Severity // set during reporting
 	Message  string
 	Span     token.Span
+}
+
+// Config configures linter.
+type Config struct {
+	Rules map[RuleID]RuleConfig
+}
+
+// SeverityFor returns the severity for a rule. Returns config override if set,
+// otherwise the rule's default from [Rules]
+func (c Config) SeverityFor(rule RuleID) Severity {
+	if rs, ok := c.Rules[rule]; ok && rs.Severity != SeverityNone {
+		return rs.Severity
+	}
+	return Rules[rule].Severity
 }
 
 // Linter runs lint rules against a parsed journal.
@@ -36,10 +50,11 @@ func (l *Linter) Run(a *analyzer.Analysis) []Find {
 type Severity int
 
 const (
-	SeverityError   Severity = 1
-	SeverityWarning Severity = 2
-	SeverityInfo    Severity = 3
-	SeverityHint    Severity = 4
+	SeverityNone Severity = iota
+	SeverityError
+	SeverityWarning
+	SeverityInfo
+	SeverityHint
 )
 
 func (s Severity) String() string {

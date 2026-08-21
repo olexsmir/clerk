@@ -1,19 +1,22 @@
 package linter
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 
 	"olexsmir.xyz/clerk/internal/analyzer"
 	"olexsmir.xyz/clerk/journal/ast"
 )
 
+const AccountDepthLimitID = "account-depth"
+
 // AccountDepthLimit checks that account names don't exceed MaxDepth
 type AccountDepthLimit struct {
-	MaxDepth int
+	MaxDepth int `json:"max-depth"`
 }
 
-func (AccountDepthLimit) ID() RuleID         { return "account-depth" }
-func (AccountDepthLimit) Severity() Severity { return SeverityWarning }
+func (AccountDepthLimit) ID() RuleID { return AccountDepthLimitID }
 func (a *AccountDepthLimit) CheckJournal(an *analyzer.Analysis) []Find {
 	var finds []Find
 
@@ -46,11 +49,17 @@ func (a *AccountDepthLimit) CheckJournal(an *analyzer.Analysis) []Find {
 	return finds
 }
 
+func (a *AccountDepthLimit) Clone() Rule { cpy := *a; return &cpy }
+func (a *AccountDepthLimit) UnmarshalOptions(data json.RawMessage) error {
+	d := json.NewDecoder(bytes.NewReader(data))
+	d.DisallowUnknownFields()
+	return d.Decode(a)
+}
+
 func (a *AccountDepthLimit) check(finds *[]Find, acc ast.Account) {
 	if depth := len(acc.Name); depth > a.MaxDepth {
 		*finds = append(*finds, Find{
-			Code:     a.ID(),
-			Severity: a.Severity(),
+			Code: a.ID(),
 			Message: fmt.Sprintf("account %q depth (%d) exceeds max allowed depth (%d)",
 				acc.String(), depth, a.MaxDepth),
 			Span: acc.Span,

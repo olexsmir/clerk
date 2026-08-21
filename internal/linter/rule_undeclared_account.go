@@ -1,14 +1,13 @@
 package linter
 
-import (
-	"olexsmir.xyz/clerk/internal/analyzer"
-)
+import "olexsmir.xyz/clerk/internal/analyzer"
+
+const UndeclaredAccountID RuleID = "undeclared-account"
 
 // UndeclaredAccount flags postings that reference an account not declared via `account` directive.
 type UndeclaredAccount struct{}
 
-func (UndeclaredAccount) ID() RuleID         { return "undeclared-account" }
-func (UndeclaredAccount) Severity() Severity { return SeverityWarning }
+func (UndeclaredAccount) ID() RuleID { return UndeclaredAccountID }
 func (u *UndeclaredAccount) CheckJournal(an *analyzer.Analysis) []Find {
 	var finds []Find
 	for name, info := range an.Accounts {
@@ -20,10 +19,9 @@ func (u *UndeclaredAccount) CheckJournal(an *analyzer.Analysis) []Find {
 		}
 		for _, usage := range info.Usages {
 			finds = append(finds, Find{
-				Code:     u.ID(),
-				Severity: u.Severity(),
-				Span:     usage.Posting.Account.Span,
-				Message:  "undeclared account: " + name,
+				Code:    u.ID(),
+				Span:    usage.Posting.Account.Span,
+				Message: "undeclared account: " + name,
 			})
 		}
 	}

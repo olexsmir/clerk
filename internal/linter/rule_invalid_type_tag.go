@@ -8,12 +8,13 @@ import (
 	"olexsmir.xyz/clerk/journal/ast"
 )
 
+const InvalidTypeTagID RuleID = "invalid-type-tag"
+
 // InvalidTypeTag flags account type declarations (the type: tag and the type
 // subdirective) whose value is not a valid account type code.
 type InvalidTypeTag struct{}
 
-func (InvalidTypeTag) ID() RuleID         { return "invalid-type-tag" }
-func (InvalidTypeTag) Severity() Severity { return SeverityError }
+func (InvalidTypeTag) ID() RuleID { return InvalidTypeTagID }
 func (i *InvalidTypeTag) CheckJournal(an *analyzer.Analysis) []Find {
 	var finds []Find
 	for _, entry := range an.Directives {
@@ -28,10 +29,9 @@ func (i *InvalidTypeTag) CheckJournal(an *analyzer.Analysis) []Find {
 				}
 				if err := i.parseAccountTypeCode(tag.Value); err != nil {
 					finds = append(finds, Find{
-						Code:     i.ID(),
-						Severity: i.Severity(),
-						Span:     tag.Span,
-						Message:  fmt.Sprintf("invalid type: tag value %q", tag.Value),
+						Code:    i.ID(),
+						Span:    tag.Span,
+						Message: fmt.Sprintf("invalid type: tag value %q", tag.Value),
 					})
 				}
 			}
@@ -43,10 +43,9 @@ func (i *InvalidTypeTag) CheckJournal(an *analyzer.Analysis) []Find {
 			}
 			if err := i.parseAccountTypeCode(sd.Value); err != nil {
 				finds = append(finds, Find{
-					Code:     i.ID(),
-					Severity: i.Severity(),
-					Span:     sd.ValueSpan,
-					Message:  fmt.Sprintf("invalid type subdirective value %q", sd.Value),
+					Code:    i.ID(),
+					Span:    sd.ValueSpan,
+					Message: fmt.Sprintf("invalid type subdirective value %q", sd.Value),
 				})
 			}
 		}
