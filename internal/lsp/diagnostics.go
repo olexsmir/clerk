@@ -72,6 +72,9 @@ func (s *server) publishDiagnostics(ctx context.Context) {
 		return
 	}
 
+	for i := range finds { // LSP has no [Reporter]; default severities until settings land
+		finds[i].Severity = linter.Rules[finds[i].Code].Severity
+	}
 	diagsByFile := s.groupFindsByFile(dedupFinds(finds))
 	for fpath := range paths {
 		if ctx.Err() != nil {

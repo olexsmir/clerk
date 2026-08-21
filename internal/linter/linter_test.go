@@ -1,6 +1,8 @@
 package linter
 
 import (
+	"encoding/json"
+	"slices"
 	"strings"
 	"testing"
 
@@ -10,7 +12,7 @@ import (
 )
 
 var tests = map[string][]Rule{
-	"correct":                  Rules,
+	"correct":                  allRules(),
 	"invalid-include":          {&InvalidInclude{}},
 	"empty-postings":           {&EmptyPostings{}},
 	"parse-error":              {&ParseError{}},
@@ -52,10 +54,10 @@ func TestLinter(t *testing.T) {
 			}
 
 			ctx := analyzer.Build(rj)
-			finds := NewLinter(trules).Run(ctx)
+			finds := (&Linter{rules: trules}).Run(ctx)
 
 			var b strings.Builder
-			Fprint(&b, PathBasename, finds)
+			fprint(&b, PathBasename, finds)
 			golden.Assert(t, a, b.String())
 		})
 	}
@@ -69,11 +71,115 @@ func BenchmarkLinter(b *testing.B) {
 	}
 
 	ctx := analyzer.Build(rj)
-	l := NewLinter(Rules)
+	l, err := NewLinter(Config{})
+	if err != nil {
+		b.Fatal(err)
+	}
 
 	b.ResetTimer()
 	b.ReportAllocs()
 	for b.Loop() {
 		l.Run(ctx)
 	}
+}
+
+func allRules() []Rule {
+	out := make([]Rule, 0, len(Rules))
+	for _, b := range Rules {
+		out = append(out, b.Rule)
+	}
+	return out
+}
+
+func TestNewLinter(t *testing.T) {
+	t.Run("all-default", func(t *testing.T) {
+		l, err := NewLinter(Config{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		var got []RuleID
+		for _, r := range l.rules {
+			got = append(got, r.ID())
+		}
+		if !slices.Equal(got, builtinIDs()) {
+			t.Errorf("got %v, want %v", got, builtinIDs())
+		}
+	})
+
+	t.Run("disabled-omitted", func(t *testing.T) {
+		l, err := NewLinter(Config{Rules: map[RuleID]RuleConfig{
+			OrderDateID:    {Disabled: true},
+			MissingPayeeID: {Disabled: true},
+		}})
+		if err != nil {
+			t.Fatal(err)
+		}
+		var got []RuleID
+		for _, r := range l.rules {
+			got = append(got, r.ID())
+		}
+		want := without(builtinIDs(), OrderDateID, MissingPayeeID)
+		if !slices.Equal(got, want) {
+			t.Errorf("got %v, want %v", got, want)
+		}
+	})
+
+	t.Run("options-applied", func(t *testing.T) {
+		l, err := NewLinter(Config{Rules: map[RuleID]RuleConfig{
+			AccountDepthLimitID: {Options: json.RawMessage(`{"max-depth": 2}`)},
+		}})
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, r := range l.rules {
+			if r.ID() != AccountDepthLimitID {
+				continue
+			}
+			if got := r.(*AccountDepthLimit).MaxDepth; got != 2 {
+				t.Errorf("MaxDepth = %d, want 2", got)
+			}
+			if def := Rules[AccountDepthLimitID].Rule.(*AccountDepthLimit).MaxDepth; def != 4 {
+				t.Errorf("shared built-in mutated: MaxDepth = %d, want 4", def)
+			}
+			return
+		}
+		t.Error("account-depth rule not found")
+	})
+
+	t.Run("options-on-non-optionable-rule", func(t *testing.T) {
+		cfg := Config{Rules: map[RuleID]RuleConfig{
+			ParseErrorID: {Options: json.RawMessage(`{"x":1}`)},
+		}}
+		if _, err := NewLinter(cfg); err == nil {
+			t.Error("expected error")
+		}
+	})
+
+	t.Run("unknown-option-key", func(t *testing.T) {
+		cfg := Config{Rules: map[RuleID]RuleConfig{
+			AccountDepthLimitID: {Options: json.RawMessage(`{"nope": 1}`)},
+		}}
+		if _, err := NewLinter(cfg); err == nil {
+			t.Error("expected error")
+		}
+	})
+}
+
+func builtinIDs() []RuleID {
+	ids := make([]RuleID, 0, len(Rules))
+	for id := range Rules {
+		ids = append(ids, id)
+	}
+	slices.Sort(ids)
+	return ids
+}
+
+func without(ids []RuleID, drop ...RuleID) []RuleID {
+	out := ids[:0:0]
+	for _, id := range ids {
+		if !slices.Contains(drop, id) {
+			out = append(out, id)
+		}
+	}
+	return out
 }
