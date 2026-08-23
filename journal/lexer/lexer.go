@@ -818,6 +818,9 @@ func (l *Lexer) token(kind token.Type, literal string) token.Token {
 }
 
 func (l *Lexer) lit(s savedPos) string {
+	if s.offset == l.pos {
+		return ""
+	}
 	return unsafe.String(&l.input[s.offset], l.pos-s.offset)
 }
 
