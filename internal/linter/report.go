@@ -24,7 +24,7 @@ func Fprint(w io.Writer, style PathStyle, finds []Find) {
 	sortFinds(finds)
 	for _, find := range finds {
 		_, _ = fmt.Fprintf(w, "%s:%d:%d: %s: %s\n",
-			formatPath(style, find.Span.Start.File),
+			formatPath(style, find.Span.File),
 			find.Span.Start.Line, find.Span.Start.Col,
 			find.Code, find.Message)
 	}
@@ -48,7 +48,7 @@ func FprintJSON(w io.Writer, style PathStyle, finds []Find) error {
 			Message:  find.Message,
 			Severity: find.Severity.String(),
 			Code:     string(find.Code),
-			File:     formatPath(style, find.Span.Start.File),
+			File:     formatPath(style, find.Span.File),
 			Line:     find.Span.Start.Line,
 			Column:   find.Span.Start.Col,
 		}

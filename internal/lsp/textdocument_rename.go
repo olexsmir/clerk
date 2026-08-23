@@ -390,7 +390,7 @@ func tagDirectiveSpan(content string, d *ast.TagDirective) (token.Span, bool) {
 	if d.Comment != nil {
 		end = d.Comment.Span.Start.Offset
 	}
-	return betweenSpan(content, d.Span.Start.File, d.Span.Start.Offset+len("tag"), end)
+	return betweenSpan(content, d.Span.File, d.Span.Start.Offset+len("tag"), end)
 }
 
 func tagKeySpan(content string, t *ast.Tag) token.Span {
@@ -404,7 +404,7 @@ func tagKeySpan(content string, t *ast.Tag) token.Span {
 	for end > t.Span.Start.Offset && (content[end-1] == ' ' || content[end-1] == '\t') {
 		end--
 	}
-	return token.Span{Start: t.Span.Start, End: offsetPos(t.Span.Start.File, end)}
+	return token.Span{File: t.Span.File, Start: t.Span.Start, End: token.Pos{Offset: end}}
 }
 
 func sortAndDedup(changes map[uri.URI][]protocol.TextEdit) {

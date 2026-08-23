@@ -93,8 +93,8 @@ func (s *server) groupFindsByFile(finds []linter.Find) map[string][]protocol.Dia
 	// findings is the dominant allocation in the diagnostics path
 	counts := make(map[string]int, len(finds))
 	for _, find := range finds {
-		if find.Span.Start.File != "" {
-			counts[find.Span.Start.File]++
+		if find.Span.File != "" {
+			counts[find.Span.File]++
 		}
 	}
 	diags := make(map[string][]protocol.Diagnostic, len(counts))
@@ -102,7 +102,7 @@ func (s *server) groupFindsByFile(finds []linter.Find) map[string][]protocol.Dia
 		diags[fpath] = make([]protocol.Diagnostic, 0, n)
 	}
 	for _, find := range finds {
-		file := find.Span.Start.File
+		file := find.Span.File
 		if file == "" {
 			continue
 		}
@@ -125,7 +125,7 @@ func dedupFinds(finds []linter.Find) []linter.Find {
 	seen := make(map[findKey]bool, len(finds))
 	dedup := make([]linter.Find, 0, len(finds))
 	for _, f := range finds {
-		k := findKey{f.Span.Start.File, f.Span.Start.Line, f.Span.Start.Col, f.Code}
+		k := findKey{f.Span.File, f.Span.Start.Line, f.Span.Start.Col, f.Code}
 		if seen[k] {
 			continue
 		}

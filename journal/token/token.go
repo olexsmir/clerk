@@ -10,11 +10,14 @@ type Token struct {
 	Span    Span
 }
 
-type Span struct{ Start, End Pos }
+type Span struct {
+	File       string // absolute path, "" for unknown
+	Start, End Pos
+}
 
 func (s Span) String() string {
-	if s.Start.File != "" {
-		return fmt.Sprintf("%s:%d:%d-%d:%d", s.Start.File,
+	if s.File != "" {
+		return fmt.Sprintf("%s:%d:%d-%d:%d", s.File,
 			s.Start.Line, s.Start.Col,
 			s.End.Line, s.End.Col)
 	}
@@ -24,7 +27,6 @@ func (s Span) String() string {
 }
 
 type Pos struct {
-	File   string // absolute path, "" for unknow
 	Offset int
 	Line   int
 	Col    int

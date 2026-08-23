@@ -320,8 +320,9 @@ func periodDateSpan(period ast.Period, text, dateStr string, searchFrom int) tok
 	off := strings.Index(text[searchFrom:], dateStr)
 	abs := period.Span.Start.Offset + searchFrom + off
 	return token.Span{
-		Start: token.Pos{File: period.Span.Start.File, Offset: abs},
-		End:   token.Pos{File: period.Span.Start.File, Offset: abs + len(dateStr)},
+		File:  period.Span.File,
+		Start: token.Pos{Offset: abs},
+		End:   token.Pos{Offset: abs + len(dateStr)},
 	}
 }
 
@@ -413,7 +414,7 @@ func (p *Parser) parseCommodityDirective() *ast.CommodityDirective {
 		cs := p.cur.Span
 		commodity = unquote(p.cur.Literal)
 		p.advance()
-		commoditySpan = token.Span{Start: cs.Start, End: p.cur.Span.Start}
+		commoditySpan = token.Span{File: cs.File, Start: cs.Start, End: p.cur.Span.Start}
 		hadSpace := p.got(token.WHITESPACE)
 		p.skipWhitespace()
 		if p.got(token.INT) || p.got(token.DECIMAL) || p.got(token.TEXT) {
@@ -439,7 +440,7 @@ func (p *Parser) parseCommodityDirective() *ast.CommodityDirective {
 
 	// hledger parity: an inline format amount must include a decimal mark
 	if format != nil && format.Amount.QuantityFmt.Decimal == 0 {
-		p.errorfAt(format.Amount.Span.Start, "Please include a decimal point or decimal comma in commodity directives, to help us parse correctly. It may be followed by zero or more decimal digits.")
+		p.errorfAt(format.Amount.Span, "Please include a decimal point or decimal comma in commodity directives, to help us parse correctly. It may be followed by zero or more decimal digits.")
 	}
 
 	comment := p.parseOptInlineComment()
@@ -464,9 +465,9 @@ func (p *Parser) parseCommodityDirective() *ast.CommodityDirective {
 			// and the amount must include a decimal mark; the node is kept either
 			// way so the printer can round-trip the input.
 			if amt.Commodity != commodity {
-				p.errorfAt(amt.Span.Start, "commodity directive symbol %q and format directive symbol %q should be the same", commodity, amt.Commodity)
+				p.errorfAt(amt.Span, "commodity directive symbol %q and format directive symbol %q should be the same", commodity, amt.Commodity)
 			} else if amt.QuantityFmt.Decimal == 0 {
-				p.errorfAt(amt.Span.Start, "Please include a decimal point or decimal comma in commodity directives, to help us parse correctly. It may be followed by zero or more decimal digits.")
+				p.errorfAt(amt.Span, "Please include a decimal point or decimal comma in commodity directives, to help us parse correctly. It may be followed by zero or more decimal digits.")
 			}
 			c := p.parseOptInlineComment()
 			p.expectNewline()
@@ -866,7 +867,7 @@ func (p *Parser) parseAmount() *ast.Amount {
 		amt.Commodity = unquote(p.cur.Literal)
 		amt.CommodityPos = ast.CommodityBefore
 		p.advance()
-		amt.CommoditySpan = token.Span{Start: cs.Start, End: p.cur.Span.Start}
+		amt.CommoditySpan = token.Span{File: cs.File, Start: cs.Start, End: p.cur.Span.Start}
 		if p.got(token.WHITESPACE) {
 			amt.HasSpace = true
 			p.skipWhitespace()
@@ -890,14 +891,14 @@ func (p *Parser) parseAmount() *ast.Amount {
 				amt.Commodity = unquote(p.cur.Literal)
 				amt.CommodityPos = ast.CommodityAfter
 				p.advance()
-				amt.CommoditySpan = token.Span{Start: cs.Start, End: p.cur.Span.Start}
+				amt.CommoditySpan = token.Span{File: cs.File, Start: cs.Start, End: p.cur.Span.Start}
 			}
 		case token.COMMODITYMARK, token.TEXT, token.STRING:
 			cs := p.cur.Span
 			amt.Commodity = unquote(p.cur.Literal)
 			amt.CommodityPos = ast.CommodityAfter
 			p.advance()
-			amt.CommoditySpan = token.Span{Start: cs.Start, End: p.cur.Span.Start}
+			amt.CommoditySpan = token.Span{File: cs.File, Start: cs.Start, End: p.cur.Span.Start}
 		}
 	}
 
@@ -1156,7 +1157,7 @@ func (p *Parser) parseCommentRest(s token.Span) *ast.Comment {
 	text := ""
 	if p.got(token.TEXT) {
 		text = p.cur.Literal
-		tags = parseCommentTags(text, p.cur.Span.Start)
+		tags = parseCommentTags(text, p.cur.Span)
 		p.advance()
 	}
 
@@ -1271,10 +1272,10 @@ func (p *Parser) errorf(format string, args ...any) {
 	})
 }
 
-// errorfAt records a parse error pointing at a single position.
-func (p *Parser) errorfAt(pos token.Pos, format string, args ...any) {
+// errorfAt records a parse error pointing at the start of span.
+func (p *Parser) errorfAt(span token.Span, format string, args ...any) {
 	p.errors = append(p.errors, &ast.ParseError{
-		Span:    token.Span{Start: pos, End: pos},
+		Span:    token.Span{File: span.File, Start: span.Start, End: span.Start},
 		Message: fmt.Sprintf(format, args...),
 	})
 }
@@ -1337,9 +1338,9 @@ func (p *Parser) parseSubdirectiveValue() (string, token.Span) {
 		return "", token.Span{}
 	}
 	if single != "" {
-		return single, token.Span{Start: first.Start, End: last.End}
+		return single, token.Span{File: first.File, Start: first.Start, End: last.End}
 	}
-	return strings.TrimSpace(b.String()), token.Span{Start: first.Start, End: last.End}
+	return strings.TrimSpace(b.String()), token.Span{File: first.File, Start: first.Start, End: last.End}
 }
 
 func (p *Parser) parseTextComment() *ast.Comment {
@@ -1401,7 +1402,7 @@ func (p *Parser) skipWhitespace() {
 }
 
 func (p *Parser) span(s token.Span) token.Span {
-	return token.Span{Start: s.Start, End: p.cur.Span.Start}
+	return token.Span{File: s.File, Start: s.Start, End: p.cur.Span.Start}
 }
 
 func normalizeLiteral(lit string, thousands, decimal byte) string {
@@ -1511,7 +1512,7 @@ func dateSeparator(lit string) byte {
 // parseCommentTags extacts tags from comment text.
 // A tag is a word immediately followed by a ':', with an optional value that ends at a comma or the end of a line.
 // https://hledger.org/1.52/hledger.html?highlight=tags#tags
-func parseCommentTags(text string, base token.Pos) []ast.Tag {
+func parseCommentTags(text string, base token.Span) []ast.Tag {
 	var tags []ast.Tag
 	for i := 0; i < len(text); {
 		colon := strings.IndexByte(text[i:], ':')
@@ -1544,8 +1545,9 @@ func parseCommentTags(text string, base token.Pos) []ast.Tag {
 			Key:   key,
 			Value: value,
 			Span: token.Span{
-				Start: tagPos(base, text, keyStart),
-				End:   tagPos(base, text, valueEnd),
+				File:  base.File,
+				Start: tagPos(base.Start, text, keyStart),
+				End:   tagPos(base.Start, text, valueEnd),
 			},
 		})
 		i = valueEnd
@@ -1559,7 +1561,6 @@ func parseCommentTags(text string, base token.Pos) []ast.Tag {
 
 func tagPos(base token.Pos, text string, off int) token.Pos {
 	return token.Pos{
-		File:   base.File,
 		Offset: base.Offset + off,
 		Line:   base.Line,
 		Col:    base.Col + utf8.RuneCountInString(text[:off]),

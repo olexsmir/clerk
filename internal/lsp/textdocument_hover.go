@@ -342,5 +342,5 @@ func tagValueSpan(content string, t *ast.Tag) token.Span {
 	for end > start && (content[end-1] == ' ' || content[end-1] == '\t') {
 		end--
 	}
-	return token.Span{Start: offsetPos(t.Span.Start.File, start), End: offsetPos(t.Span.Start.File, end)}
+	return token.Span{File: t.Span.File, Start: token.Pos{Offset: start}, End: token.Pos{Offset: end}}
 }

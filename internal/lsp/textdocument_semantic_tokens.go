@@ -306,7 +306,7 @@ func visitEntry(content string, e ast.Entry, emit semEmitFunc) {
 	case *ast.AliasDirective:
 		emit(directiveKeyword(e.Span, "alias"), semDirective, 0)
 		emit(e.From.Span, semAccount, 0)
-		if op, ok := betweenSpan(content, e.Span.Start.File, e.From.Span.End.Offset, e.To.Span.Start.Offset); ok {
+		if op, ok := betweenSpan(content, e.Span.File, e.From.Span.End.Offset, e.To.Span.Start.Offset); ok {
 			emit(op, semOperator, 0)
 		}
 		emit(e.To.Span, semAccount, 0)
@@ -334,7 +334,7 @@ func visitEntry(content string, e ast.Entry, emit semEmitFunc) {
 		if e.DateTime.Time != nil {
 			commStart = e.DateTime.Time.Span.End.Offset
 		}
-		if comm, ok := betweenSpan(content, e.Span.Start.File, commStart, e.Amount.Span.Start.Offset); ok {
+		if comm, ok := betweenSpan(content, e.Span.File, commStart, e.Amount.Span.Start.Offset); ok {
 			emit(comm, semCommodity, 0)
 		}
 		semEmitAmount(content, &e.Amount, emit)
@@ -343,7 +343,7 @@ func visitEntry(content string, e ast.Entry, emit semEmitFunc) {
 		emit(directiveKeyword(e.Span, "C"), semDirective, 0)
 		semEmitAmount(content, &e.From, emit)
 		// = operator: text between the two amounts
-		if op, ok := betweenSpan(content, e.Span.Start.File, e.From.Span.End.Offset, e.To.Span.Start.Offset); ok {
+		if op, ok := betweenSpan(content, e.Span.File, e.From.Span.End.Offset, e.To.Span.Start.Offset); ok {
 			emit(op, semOperator, 0)
 		}
 		semEmitAmount(content, &e.To, emit)
@@ -390,7 +390,7 @@ func visitTransaction(content string, t *ast.Transaction, emit semEmitFunc) {
 
 func visitPeriodicTransaction(content string, pt *ast.PeriodicTransaction, emit semEmitFunc) {
 	// ~ operator is at the start of the period span
-	emit(offsetSpan(pt.Span.Start.File, pt.Span.Start.Offset, pt.Span.Start.Offset+1), semOperator, 0)
+	emit(offsetSpan(pt.Span.File, pt.Span.Start.Offset, pt.Span.Start.Offset+1), semOperator, 0)
 
 	// The period span covers the whole expr, including any "from ... to ..." dates
 	if pt.Period.Span.End.Offset > pt.Period.Span.Start.Offset {
@@ -404,13 +404,13 @@ func visitPeriodicTransaction(content string, pt *ast.PeriodicTransaction, emit 
 		pos := pt.Period.Span.Start.Offset
 		for _, d := range dates {
 			if d.Span.Start.Offset > pos {
-				emit(offsetSpan(pt.Period.Span.Start.File, pos, d.Span.Start.Offset), semProperty, 0)
+				emit(offsetSpan(pt.Period.Span.File, pos, d.Span.Start.Offset), semProperty, 0)
 			}
 			emit(d.Span, semDate, 0)
 			pos = d.Span.End.Offset
 		}
 		if pos < pt.Period.Span.End.Offset {
-			emit(offsetSpan(pt.Period.Span.Start.File, pos, pt.Period.Span.End.Offset), semProperty, 0)
+			emit(offsetSpan(pt.Period.Span.File, pos, pt.Period.Span.End.Offset), semProperty, 0)
 		}
 	}
 	if pt.Description != nil {
@@ -427,7 +427,7 @@ func visitPeriodicTransaction(content string, pt *ast.PeriodicTransaction, emit 
 
 func visitAutomatedTransaction(content string, at *ast.AutomatedTransaction, emit semEmitFunc) {
 	// = operator is at the start of the expression span
-	emit(offsetSpan(at.Span.Start.File, at.Span.Start.Offset, at.Span.Start.Offset+1), semOperator, 0)
+	emit(offsetSpan(at.Span.File, at.Span.Start.Offset, at.Span.Start.Offset+1), semOperator, 0)
 
 	if at.Expr.Value != "" {
 		emit(at.Expr.Span, semString, 0)
@@ -451,16 +451,14 @@ func visitPosting(content string, p *ast.Posting, emit semEmitFunc) {
 		// opening bracket
 		for off := p.Span.Start.Offset; off < p.Account.Span.Start.Offset && off < p.Span.End.Offset; off++ {
 			if content[off] == '(' || content[off] == '[' {
-				brSpan := token.Span{Start: offsetPos(p.Span.Start.File, off), End: offsetPos(p.Span.Start.File, off+1)}
-				emit(brSpan, semOperator, modifierAbstract)
+				emit(offsetSpan(p.Span.File, off, off+1), semOperator, modifierAbstract)
 				break
 			}
 		}
 		// closing bracket
 		for off := p.Account.Span.End.Offset; off < p.Span.End.Offset; off++ {
 			if content[off] == ')' || content[off] == ']' {
-				brSpan := token.Span{Start: offsetPos(p.Span.Start.File, off), End: offsetPos(p.Span.Start.File, off+1)}
-				emit(brSpan, semOperator, modifierAbstract)
+				emit(offsetSpan(p.Span.File, off, off+1), semOperator, modifierAbstract)
 				break
 			}
 		}
@@ -485,7 +483,7 @@ func visitPosting(content string, p *ast.Posting, emit semEmitFunc) {
 
 // directiveKeyword returns the span of the leading keyword on a directive line.
 func directiveKeyword(e token.Span, kw string) token.Span {
-	return token.Span{Start: e.Start, End: offsetPos(e.Start.File, e.Start.Offset+len(kw))}
+	return token.Span{File: e.File, Start: e.Start, End: token.Pos{Offset: e.Start.Offset + len(kw)}}
 }
 
 // directiveValue returns the trimmed span of the text after the keyword end
@@ -495,7 +493,7 @@ func directiveValue(content string, e token.Span, comment *ast.Comment, kwEnd in
 	if comment != nil {
 		end = comment.Span.Start.Offset
 	}
-	return betweenSpan(content, e.Start.File, kwEnd, end)
+	return betweenSpan(content, e.File, kwEnd, end)
 }
 
 func semEmitAmount(content string, a *ast.Amount, emit semEmitFunc) {
@@ -523,7 +521,7 @@ func semEmitQuantity(content string, a *ast.Amount, emit semEmitFunc) {
 	if a.IsNegative {
 		mods |= modifierNegative
 	}
-	emit(offsetSpan(a.Span.Start.File, qStart, qEnd), semAmount, mods)
+	emit(offsetSpan(a.Span.File, qStart, qEnd), semAmount, mods)
 }
 
 func quantitySpan(content string, a *ast.Amount) (int, int) {
@@ -566,19 +564,19 @@ func emitComment(c *ast.Comment, emit semEmitFunc) {
 	pos := c.Span.Start.Offset
 	for _, t := range c.Tags {
 		if t.Span.Start.Offset > pos {
-			emit(offsetSpan(c.Span.Start.File, pos, t.Span.Start.Offset), semComment, 0)
+			emit(offsetSpan(c.Span.File, pos, t.Span.Start.Offset), semComment, 0)
 		}
 		emit(t.Span, semProperty, 0)
 		pos = t.Span.End.Offset
 	}
 	if pos < c.Span.End.Offset {
-		emit(offsetSpan(c.Span.Start.File, pos, c.Span.End.Offset), semComment, 0)
+		emit(offsetSpan(c.Span.File, pos, c.Span.End.Offset), semComment, 0)
 	}
 }
 
 func emitDirective(content string, e token.Span, kwLen int, valType uint32, comment *ast.Comment, emit semEmitFunc) {
 	kwEnd := e.Start.Offset + kwLen
-	emit(token.Span{Start: e.Start, End: offsetPos(e.Start.File, kwEnd)}, semDirective, 0)
+	emit(token.Span{File: e.File, Start: e.Start, End: token.Pos{Offset: kwEnd}}, semDirective, 0)
 	if v, ok := directiveValue(content, e, comment, kwEnd); ok {
 		emit(v, valType, 0)
 	}
@@ -587,9 +585,9 @@ func emitDirective(content string, e token.Span, kwLen int, valType uint32, comm
 
 func semEmitCost(content string, c *ast.Cost, emit semEmitFunc) {
 	if c.IsTotal {
-		emit(token.Span{Start: c.Span.Start, End: offsetPos(c.Span.Start.File, c.Span.Start.Offset+2)}, semOperator, 0)
+		emit(token.Span{File: c.Span.File, Start: c.Span.Start, End: token.Pos{Offset: c.Span.Start.Offset + 2}}, semOperator, 0)
 	} else {
-		emit(token.Span{Start: c.Span.Start, End: offsetPos(c.Span.Start.File, c.Span.Start.Offset+1)}, semOperator, 0)
+		emit(token.Span{File: c.Span.File, Start: c.Span.Start, End: token.Pos{Offset: c.Span.Start.Offset + 1}}, semOperator, 0)
 	}
 	semEmitAmount(content, &c.Amount, emit)
 }
@@ -605,7 +603,7 @@ func semEmitBalanceAssertion(content string, ba *ast.BalanceAssertion, emit semE
 	for opEnd < ba.Span.End.Offset && (content[opEnd] == '=' || content[opEnd] == ':' || content[opEnd] == '*') {
 		opEnd++
 	}
-	emit(token.Span{Start: offsetPos(ba.Span.Start.File, opStart), End: offsetPos(ba.Span.Start.File, opEnd)}, semOperator, 0)
+	emit(token.Span{File: ba.Span.File, Start: token.Pos{Offset: opStart}, End: token.Pos{Offset: opEnd}}, semOperator, 0)
 	semEmitAmount(content, &ba.Amount, emit)
 	if ba.Cost != nil {
 		semEmitCost(content, ba.Cost, emit)
@@ -634,13 +632,13 @@ func semLexerFallback(content string, base []rawSpan, emit semEmitFunc) {
 		tok := l.Next()
 		if tok.Type == token.EOF {
 			if commentStart > 0 {
-				take(token.Span{Start: offsetPos("", commentStart), End: offsetPos("", commentEnd)}, semComment, 0)
+				take(token.Span{Start: token.Pos{Offset: commentStart}, End: token.Pos{Offset: commentEnd}}, semComment, 0)
 			}
 			break
 		}
 		if tok.Type == token.NEWLINE {
 			if commentStart > 0 {
-				take(token.Span{Start: offsetPos("", commentStart), End: offsetPos("", commentEnd)}, semComment, 0)
+				take(token.Span{Start: token.Pos{Offset: commentStart}, End: token.Pos{Offset: commentEnd}}, semComment, 0)
 				commentStart, commentEnd = 0, 0
 			}
 			lineStart, skipLine = true, false
@@ -764,10 +762,9 @@ func betweenSpan(content, file string, start, end int) (token.Span, bool) {
 	if end <= start {
 		return token.Span{}, false
 	}
-	return token.Span{Start: offsetPos(file, start), End: offsetPos(file, end)}, true
+	return offsetSpan(file, start, end), true
 }
 
-func offsetPos(file string, offset int) token.Pos { return token.Pos{File: file, Offset: offset} }
 func offsetSpan(file string, start, end int) token.Span {
-	return token.Span{Start: offsetPos(file, start), End: offsetPos(file, end)}
+	return token.Span{File: file, Start: token.Pos{Offset: start}, End: token.Pos{Offset: end}}
 }

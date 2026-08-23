@@ -806,8 +806,9 @@ func (l *Lexer) save() savedPos {
 
 func (l *Lexer) span(s savedPos) token.Span {
 	return token.Span{
-		Start: token.Pos{File: l.file, Offset: s.offset, Line: s.line, Col: s.col},
-		End:   token.Pos{File: l.file, Offset: l.pos, Line: l.line, Col: l.col},
+		File:  l.file,
+		Start: token.Pos{Offset: s.offset, Line: s.line, Col: s.col},
+		End:   token.Pos{Offset: l.pos, Line: l.line, Col: l.col},
 	}
 }
 
