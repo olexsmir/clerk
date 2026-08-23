@@ -4,6 +4,9 @@
 Reads benchstat CSV comparison (old vs new) from stdin. benchstat only
 reports a numeric delta for statistically significant changes (p < 0.05);
 noisy comparisons are marked "~" and ignored.
+Only sec/op rows are judged; B/op and allocs/op deltas are informational
+(deliberate tradeoffs like buffering input shift memory without slowing
+down).
 """
 import csv
 import sys
@@ -30,8 +33,14 @@ def delta_pct(s):
 
 def main():
     regressions = []
+    unit = ""
     for row in csv.reader(sys.stdin):
-        if len(row) < 7 or row[0] in ("", "geomean"):
+        if row and row[0] == "":
+            unit = row[1] if len(row) > 1 else ""
+            continue
+        if len(row) < 7 or row[0] in ("geomean",):
+            continue
+        if unit != "sec/op":
             continue
         d = delta_pct(row[5])  # vs base column
         if d is not None and d > THRESHOLD:
