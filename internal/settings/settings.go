@@ -24,7 +24,8 @@ func Default() Settings {
 	return Settings{
 		SemanticHighlighting:      true,
 		LatinToCyrillicCompletion: false,
-		Format:                    *printer.DefaultConfig,
+		Format:                    printer.DefaultConfig,
+		Linter:                    linter.Config{},
 	}
 }
 

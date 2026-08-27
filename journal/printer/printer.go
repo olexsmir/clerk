@@ -34,7 +34,7 @@ type Config struct {
 	CommodityPos       CommodityPos // where to place commodity
 }
 
-var DefaultConfig = &Config{
+var DefaultConfig = Config{
 	TabIndent:          false,
 	IndentWidth:        2,
 	PreserveBlankLines: false,
@@ -67,9 +67,6 @@ func Fprint(w io.Writer, j *ast.Journal) error { return DefaultConfig.Fprint(w, 
 
 // Fprint formats a parsed journal.
 func (c *Config) Fprint(w io.Writer, j *ast.Journal) error {
-	if c == nil {
-		c = DefaultConfig
-	}
 	p := printer{cfg: c, indent: c.indent()}
 
 	for _, e := range j.Entries {
@@ -87,9 +84,6 @@ func FprintEntry(w io.Writer, e ast.Entry) error { return DefaultConfig.FprintEn
 
 // FprintEntry formats a single journal entry.
 func (c *Config) FprintEntry(w io.Writer, e ast.Entry) error {
-	if c == nil {
-		c = DefaultConfig
-	}
 	p := printer{cfg: c, indent: c.indent()}
 	p.formatEntry(e)
 	_, err := io.WriteString(w, p.buf.String())

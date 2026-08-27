@@ -179,8 +179,12 @@ func TestApplyLintTrueRejected(t *testing.T) {
 }
 
 func TestDefaultFormat(t *testing.T) {
-	if Default().Format != *printer.DefaultConfig {
-		t.Errorf("Default().Format = %+v, want %+v", Default().Format, *printer.DefaultConfig)
+	if Default().Format != printer.DefaultConfig {
+		t.Errorf("Default().Format = %+v, want %+v", Default().Format, printer.DefaultConfig)
+	}
+	// Empty Rules means every built-in rule runs at its default severity.
+	if _, err := linter.NewLinter(Default().Linter); err != nil {
+		t.Fatalf("default linter config invalid: %v", err)
 	}
 }
 
