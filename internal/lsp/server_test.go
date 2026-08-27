@@ -16,7 +16,7 @@ import (
 
 func TestAnalysisFor_CachedAndRebuilt(t *testing.T) {
 	u := uri.File(filepath.Join(t.TempDir(), "a.journal"))
-	srv := NewServer("test")
+	srv := newServer(t)
 	srv.server.openDoc(u, "2024-01-01 t\n    expenses:food  $10\n    assets:cash\n", 1, "journal")
 
 	a1 := srv.server.analysisFor(u)
@@ -46,7 +46,7 @@ func TestAnalysisFor_DependentDirty(t *testing.T) {
 	testutil.WriteFile(t, base, []byte("2024-01-01 t\n    expenses:food  $10\n    assets:cash\n"))
 	testutil.WriteFile(t, main, []byte("include base.journal\n"))
 
-	srv := NewServer("test")
+	srv := newServer(t)
 	uMain, uBase := uri.File(main), uri.File(base)
 	srv.server.openDoc(uMain, "include base.journal\n", 1, "journal")
 	srv.server.openDoc(uBase, "2024-01-01 t\n    expenses:food  $10\n    assets:cash\n", 1, "journal")
@@ -75,7 +75,7 @@ func TestServer_Diagnostics(t *testing.T) {
 	testutil.WriteFile(t, a.Path(), []byte(aContent))
 	testutil.WriteFile(t, b.Path(), []byte(bContent))
 
-	srv := NewServer("test")
+	srv := newServer(t)
 	capture := &captureClient{}
 	srv.server.client = capture
 
@@ -128,7 +128,7 @@ func TestServer_DidChangeWatchedFiles_SkipsOpenDocuments(t *testing.T) {
 	base := filepath.Join(dir, "base.journal")
 	testutil.WriteFile(t, base, []byte("2024-01-01 t\n    expenses:food  $10\n    assets:cash\n"))
 
-	srv := NewServer("test")
+	srv := newServer(t)
 	uBase := uri.File(base)
 	srv.server.openDoc(uBase, "2024-01-01 t\n    expenses:food  $10\n    assets:cash\n", 1, "journal")
 
@@ -153,7 +153,7 @@ func TestServer_DidChangeWatchedFiles_DiskChangeDirtiesDependents(t *testing.T) 
 	testutil.WriteFile(t, base, []byte("2024-01-01 t\n    expenses:food  $10\n    assets:cash\n"))
 	testutil.WriteFile(t, main, []byte("include base.journal\n"))
 
-	srv := NewServer("test")
+	srv := newServer(t)
 	srv.server.client = &captureClient{}
 	uMain := uri.File(main)
 	if err := srv.server.DidOpen(context.Background(), &protocol.DidOpenTextDocumentParams{
@@ -218,4 +218,13 @@ func waitFor(t *testing.T, what string, cond func() bool) {
 		time.Sleep(10 * time.Millisecond)
 	}
 	t.Fatalf("timed out waiting for %s", what)
+}
+
+func newServer(tb testing.TB) Server {
+	tb.Helper()
+	s, err := NewServer("test", "clerk.toml")
+	if err != nil {
+		tb.Fatal(err)
+	}
+	return s
 }

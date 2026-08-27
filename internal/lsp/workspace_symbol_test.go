@@ -33,7 +33,7 @@ func TestSortScoredSymbols(t *testing.T) {
 }
 
 func TestServer_Symbols_EmptyQuery(t *testing.T) {
-	srv := NewServer("test")
+	srv := newServer(t)
 	u := uri.URI("file:///test.journal")
 	srv.server.openDoc(u, "account expenses:food\n", 1, "journal")
 
@@ -47,7 +47,7 @@ func TestServer_Symbols_EmptyQuery(t *testing.T) {
 }
 
 func TestServer_Symbols_SearchAllOpenDocs(t *testing.T) {
-	srv := NewServer("test")
+	srv := newServer(t)
 	srv.server.openDoc(uri.URI("file:///a.journal"), "account assets:only\n", 1, "journal")
 	srv.server.openDoc(uri.URI("file:///b.journal"), "2024-01-15 Grocery Store\n    expenses:food  $50\n    assets:cash  $-50\n", 1, "journal")
 
@@ -101,7 +101,7 @@ func TestGolden_Symbols(t *testing.T) {
 func BenchmarkSymbols(b *testing.B) {
 	content := openJournal(b, "../../journal/testdata/journals/actual-1ktxns-100accts.journal")
 
-	srv := NewServer("test")
+	srv := newServer(b)
 	u := uri.URI("file:///test.journal")
 	srv.server.openDoc(u, content, 1, "journal")
 	srv.server.analysisFor(u) // warm the per-doc cache

@@ -2,6 +2,7 @@ package lsp
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"log/slog"
 	"os"
@@ -11,18 +12,25 @@ import (
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 
-	"olexsmir.xyz/clerk/internal/linter"
+	"olexsmir.xyz/clerk/internal/settings"
 	"olexsmir.xyz/clerk/internal/xdg"
 	"olexsmir.xyz/clerk/journal"
-	"olexsmir.xyz/clerk/journal/printer"
 )
 
 type Server struct{ server *server }
 
-func NewServer(version string) Server {
+func NewServer(version, configPath string) (Server, error) {
 	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
 	if logFile, err := openLogFile(); err == nil {
 		logger = slog.New(slog.NewTextHandler(logFile, nil))
+	}
+
+	s, warns, err := settings.Load(configPath)
+	if err != nil {
+		return Server{}, fmt.Errorf("load config %q: %w", configPath, err)
+	}
+	for _, w := range warns {
+		logger.Warn("config", "warning", w)
 	}
 
 	srv := &server{
@@ -31,16 +39,13 @@ func NewServer(version string) Server {
 
 		openDocs: make(map[uri.URI]docState),
 
-		config:  DefaultConfig,
-		loader:  journal.NewLoader(),
-		printer: printer.DefaultConfig,
+		settings: s,
+		loader:   journal.NewLoader(),
 
 		log: logger,
 	}
 	srv.loader.ContentProvider = srv.bufferContent
-	// Empty config enables all rules and sets no options, so this cannot fail.
-	srv.linter, _ = linter.NewLinter(linter.Config{})
-	return Server{srv}
+	return Server{srv}, nil
 }
 
 func (s *Server) Run(ctx context.Context, stdin io.ReadCloser, stdout io.WriteCloser) error {

@@ -22,6 +22,12 @@ func (c *Cli) Run(ctx context.Context, args []string) error {
 		Usage:                 "missing pta tooling",
 		Version:               c.version,
 		EnableShellCompletion: true,
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:  "config",
+				Usage: "path to config file (defaults to clerk.toml in the current directory)",
+			},
+		},
 		Commands: []*cli.Command{
 			{
 				Name:   "lsp",

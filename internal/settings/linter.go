@@ -34,21 +34,27 @@ func (s *Settings) setLint(v any) ([]string, error) {
 	if !ok {
 		return nil, fmt.Errorf("invalid value %v (want table)", v)
 	}
-	return applyMap(m, func(name string, rv any) ([]string, error) {
+	rules := make(map[linter.RuleID]linter.RuleConfig, len(s.Linter.Rules))
+	for id, rc := range s.Linter.Rules {
+		rules[id] = rc
+	}
+	warns, err := applyMap(m, func(name string, rv any) ([]string, error) {
 		id, ok := lintRuleID(normKey(name))
 		if !ok {
 			return []string{fmt.Sprintf("unknown lint rule %q", name)}, nil
 		}
-		rc := s.Linter.Rules[id]
+		rc := rules[id]
 		if err := setRule(&rc, rv); err != nil {
 			return nil, err
 		}
-		if s.Linter.Rules == nil {
-			s.Linter.Rules = make(map[linter.RuleID]linter.RuleConfig)
-		}
-		s.Linter.Rules[id] = rc
+		rules[id] = rc
 		return nil, nil
 	})
+	if err != nil {
+		return warns, err
+	}
+	s.Linter.Rules = rules
+	return warns, nil
 }
 
 func setRule(rc *linter.RuleConfig, v any) error {

@@ -172,7 +172,7 @@ func BenchmarkCompletion(b *testing.B) {
 	}
 	content := string(rj.Occurrences[0].Src)
 
-	srv := NewServer("test")
+	srv := newServer(b)
 	srv.server.openDoc(uri.URI("file:///test.journal"), content, 1, "journal")
 	srv.server.analysisFor(uri.URI("file:///test.journal")) // warm the per-doc cache
 
@@ -222,7 +222,7 @@ func BenchmarkCompletionTransliteration(b *testing.B) {
 	sb.WriteString("account vyt")
 	content := sb.String()
 
-	srv := NewServer("test")
+	srv := newServer(b)
 	srv.server.openDoc(uri.URI("file:///test.journal"), content, 1, "journal")
 	srv.server.analysisFor(uri.URI("file:///test.journal")) // warm the per-doc cache
 	srv.server.applySettings([]byte(`{"latin_to_cyrillic_completion": true}`))

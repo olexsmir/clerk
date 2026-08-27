@@ -5,13 +5,13 @@ import (
 	"log/slog"
 	"sync"
 
+	"github.com/go-json-experiment/json"
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 
 	"olexsmir.xyz/clerk/internal/analyzer"
-	"olexsmir.xyz/clerk/internal/linter"
+	"olexsmir.xyz/clerk/internal/settings"
 	"olexsmir.xyz/clerk/journal"
-	"olexsmir.xyz/clerk/journal/printer"
 )
 
 type server struct {
@@ -22,12 +22,10 @@ type server struct {
 
 	version, name string
 
-	linter  *linter.Linter
-	loader  *journal.Loader
-	printer *printer.Config
+	settings settings.Settings
+	loader   *journal.Loader
 
 	mu            sync.RWMutex
-	config        Config
 	openDocs      map[uri.URI]docState
 	diagCancel    context.CancelFunc
 	dynFileWather bool
@@ -178,9 +176,21 @@ func (s *server) registerFileWatchers(ctx context.Context) {
 }
 
 func (s *server) applySettings(v protocol.LSPAny) {
-	s.mu.Lock()
-	if err := s.config.merge(v); err != nil {
-		s.log.Error("failed to merge config", "err", err)
+	if len(v) == 0 {
+		return
 	}
+	var raw map[string]any
+	if err := json.Unmarshal(v, &raw); err != nil {
+		s.log.Error("invalid settings", "err", err)
+		return
+	}
+	s.mu.Lock()
+	warns, err := s.settings.ApplyLSP(raw)
 	s.mu.Unlock()
+	if err != nil {
+		s.log.Error("failed to apply settings", "err", err)
+	}
+	for _, w := range warns {
+		s.log.Warn("settings", "warning", w)
+	}
 }

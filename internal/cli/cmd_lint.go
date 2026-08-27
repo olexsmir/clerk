@@ -10,6 +10,7 @@ import (
 
 	"olexsmir.xyz/clerk/internal/analyzer"
 	"olexsmir.xyz/clerk/internal/linter"
+	"olexsmir.xyz/clerk/internal/settings"
 	"olexsmir.xyz/clerk/journal"
 )
 
@@ -17,7 +18,19 @@ func (c *Cli) lintAction(ctx context.Context, cmd *cli.Command) error {
 	format := cmd.String("format")
 	pathStyle := cmd.String("path-style")
 
-	cfg := linter.Config{}
+	configPath, err := resolveConfigPath(cmd)
+	if err != nil {
+		return err
+	}
+	set, warns, err := settings.Load(configPath)
+	if err != nil {
+		return err
+	}
+	for _, w := range warns {
+		fmt.Fprintln(os.Stderr, "warning:", w)
+	}
+
+	cfg := set.Linter
 	lint, err := linter.NewLinter(cfg)
 	if err != nil {
 		return err

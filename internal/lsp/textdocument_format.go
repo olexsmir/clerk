@@ -24,8 +24,12 @@ func (s *server) Formatting(ctx context.Context, params *protocol.DocumentFormat
 		return nil, fmt.Errorf("can't format file with errors: %v", jnrl.Errors[0].Message) // TODO: report all errors
 	}
 
+	s.mu.RLock()
+	cfg := s.settings.Format
+	s.mu.RUnlock()
+
 	var buf strings.Builder
-	if err := s.printer.Fprint(&buf, jnrl); err != nil {
+	if err := cfg.Fprint(&buf, jnrl); err != nil {
 		return nil, fmt.Errorf("format: %w", err)
 	}
 

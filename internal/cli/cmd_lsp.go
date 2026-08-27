@@ -10,6 +10,13 @@ import (
 )
 
 func (c *Cli) lspAction(ctx context.Context, cmd *cli.Command) error {
-	server := lsp.NewServer(c.version)
+	configPath, err := resolveConfigPath(cmd)
+	if err != nil {
+		return err
+	}
+	server, err := lsp.NewServer(c.version, configPath)
+	if err != nil {
+		return err
+	}
 	return server.Run(ctx, os.Stdin, os.Stdout)
 }

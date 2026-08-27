@@ -44,7 +44,7 @@ func TestTagValueSpan(t *testing.T) {
 }
 
 func TestServer_Hover_DocumentNotFound(t *testing.T) {
-	srv := NewServer("test")
+	srv := newServer(t)
 	res, err := srv.server.Hover(context.Background(), &protocol.HoverParams{
 		TextDocument: protocol.TextDocumentIdentifier{URI: uri.URI("file:///nonexistent.journal")},
 		Position:     protocol.Position{Line: 0, Character: 0},
@@ -94,7 +94,7 @@ func TestGolden_Hover(t *testing.T) {
 func BenchmarkHover(b *testing.B) {
 	content := openJournal(b, "../../journal/testdata/journals/actual-1ktxns-100accts.journal")
 
-	srv := NewServer("test")
+	srv := newServer(b)
 	srv.server.openDoc(uri.URI("file:///test.journal"), content, 1, "journal")
 	srv.server.analysisFor(uri.URI("file:///test.journal")) // warm the per-doc cache
 

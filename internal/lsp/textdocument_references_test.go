@@ -16,7 +16,7 @@ import (
 )
 
 func TestServer_References_DocumentNotFound(t *testing.T) {
-	srv := NewServer("test")
+	srv := newServer(t)
 	res, err := srv.server.References(context.Background(), &protocol.ReferenceParams{
 		TextDocument: protocol.TextDocumentIdentifier{URI: uri.URI("file:///nonexistent.journal")},
 		Position:     protocol.Position{Line: 0, Character: 0},
@@ -67,7 +67,7 @@ func TestGolden_References(t *testing.T) {
 func BenchmarkReferences(b *testing.B) {
 	content := openJournal(b, "../../journal/testdata/journals/actual-1ktxns-100accts.journal")
 
-	srv := NewServer("test")
+	srv := newServer(b)
 	u := uri.URI("file:///test.journal")
 	srv.server.openDoc(u, content, 1, "journal")
 	srv.server.analysisFor(u) // warm per-doc cache

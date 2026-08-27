@@ -55,6 +55,15 @@ func (s *server) publishDiagnostics(ctx context.Context) {
 
 	// Rebuild every dirty doc and publish the union of their files;
 	// the same included file may appear in several trees and must be published once.
+	s.mu.RLock()
+	lintCfg := s.settings.Linter
+	s.mu.RUnlock()
+	lint, err := linter.NewLinter(lintCfg)
+	if err != nil {
+		s.log.Warn("building linter failed", "err", err)
+		return
+	}
+
 	var finds []linter.Find
 	paths := make(map[string]bool)
 	for _, u := range dirtyURIs {
@@ -65,7 +74,7 @@ func (s *server) publishDiagnostics(ctx context.Context) {
 		for _, pf := range a.Files {
 			paths[pf.Path] = true
 		}
-		finds = append(finds, s.linter.Run(a)...)
+		finds = append(finds, lint.Run(a)...)
 	}
 
 	if ctx.Err() != nil {

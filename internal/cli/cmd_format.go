@@ -8,6 +8,7 @@ import (
 
 	"github.com/urfave/cli/v3"
 
+	"olexsmir.xyz/clerk/internal/settings"
 	"olexsmir.xyz/clerk/journal"
 	"olexsmir.xyz/clerk/journal/printer"
 )
@@ -18,6 +19,18 @@ func (c *Cli) formatAction(ctx context.Context, cmd *cli.Command) error {
 	list := cmd.Bool("list")
 	write := cmd.Bool("write")
 	paths := cmd.StringArgs("journals")
+
+	configPath, err := resolveConfigPath(cmd)
+	if err != nil {
+		return err
+	}
+	set, warns, err := settings.Load(configPath)
+	if err != nil {
+		return err
+	}
+	for _, w := range warns {
+		fmt.Fprintln(os.Stderr, "warning:", w)
+	}
 
 	loader := journal.NewLoader()
 	if len(paths) == 0 {
@@ -36,7 +49,7 @@ func (c *Cli) formatAction(ctx context.Context, cmd *cli.Command) error {
 			}
 			return cli.Exit("", 1)
 		}
-		return c.formatFile("stdin", pf, check, diff, list, write)
+		return c.formatFile("stdin", pf, set.Format, check, diff, list, write)
 	}
 
 	files, err := resolvePaths(paths)
@@ -64,7 +77,7 @@ func (c *Cli) formatAction(ctx context.Context, cmd *cli.Command) error {
 			continue
 		}
 
-		if err := c.formatFile(path, pf, check, diff, list, write); err != nil {
+		if err := c.formatFile(path, pf, set.Format, check, diff, list, write); err != nil {
 			fmt.Fprintf(os.Stderr, "error: %s: %v\n", path, err)
 			hasErrors = true
 		}
@@ -75,9 +88,9 @@ func (c *Cli) formatAction(ctx context.Context, cmd *cli.Command) error {
 	return nil
 }
 
-func (c *Cli) formatFile(path string, pf *journal.ParsedFile, check, wantDiff, list, write bool) error {
+func (c *Cli) formatFile(path string, pf *journal.ParsedFile, cfg printer.Config, check, wantDiff, list, write bool) error {
 	var buf bytes.Buffer
-	if err := printer.Fprint(&buf, pf.Ast); err != nil {
+	if err := cfg.Fprint(&buf, pf.Ast); err != nil {
 		return fmt.Errorf("format: %w", err)
 	}
 	formatted := buf.Bytes()

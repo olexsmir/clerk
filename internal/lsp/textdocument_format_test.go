@@ -10,7 +10,7 @@ import (
 func BenchmarkFormatting(b *testing.B) {
 	content := openJournal(b, "../../journal/testdata/journals/actual-1ktxns-100accts.journal")
 
-	srv := NewServer("test")
+	srv := newServer(b)
 	srv.server.openDoc(uri.URI("file:///test.journal"), content, 1, "journal")
 
 	params := &protocol.DocumentFormattingParams{

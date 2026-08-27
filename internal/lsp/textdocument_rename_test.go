@@ -138,7 +138,7 @@ func BenchmarkRename(b *testing.B) {
 	}
 	content := string(rj.Occurrences[0].Src)
 
-	srv := NewServer("test")
+	srv := newServer(b)
 	u := uri.File(abs)
 	srv.server.openDoc(u, content, 1, "journal")
 	srv.server.analysisFor(u) // warm the per-doc cache
@@ -203,7 +203,7 @@ func newTxtarHarness(t *testing.T, ar *golden.Archive) *txtarHarness {
 	}
 	u := uri.File(filepath.Join(dir, "in.journal"))
 
-	srv := NewServer("test")
+	srv := newServer(t)
 	srv.server.openDoc(u, content, 1, "journal")
 
 	return &txtarHarness{srv: srv.server, uri: u, content: content, cursors: cursors}
