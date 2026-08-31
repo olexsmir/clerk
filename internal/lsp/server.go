@@ -194,3 +194,15 @@ func (s *server) applySettings(v protocol.LSPAny) {
 		s.log.Warn("settings", "warning", w)
 	}
 }
+
+func (s *server) semanticHighlightingEnabled() bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.settings.SemanticHighlighting
+}
+
+func (s *server) latinToCyrillicCompletionEnabled() bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.settings.LatinToCyrillicCompletion
+}

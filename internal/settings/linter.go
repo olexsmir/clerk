@@ -5,84 +5,85 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"sync"
 
 	"olexsmir.xyz/clerk/internal/linter"
 )
 
-var (
-	lintIndexOnce sync.Once
-	lintIndex     map[string]linter.RuleID
-)
-
-// lintRuleID resolves a normalized rule key to its ID, building the index once
-// and reusing it across calls (rule IDs are static). This avoids re-deriving
-// the map and re-running normKey over every rule on each Apply.
-func lintRuleID(name string) (linter.RuleID, bool) {
-	lintIndexOnce.Do(func() {
-		lintIndex = make(map[string]linter.RuleID, len(linter.Rules))
-		for id := range linter.Rules {
-			lintIndex[normKey(string(id))] = id
-		}
-	})
-	id, ok := lintIndex[name]
-	return id, ok
-}
+var ruleIndex = func() map[string]linter.RuleID {
+	idx := make(map[string]linter.RuleID, len(linter.Rules))
+	for id := range linter.Rules {
+		idx[normalizeKey(string(id))] = id
+	}
+	return idx
+}()
 
 func (s *Settings) setLint(v any) ([]string, error) {
-	m, ok := v.(map[string]any)
-	if !ok {
-		return nil, fmt.Errorf("invalid value %v (want table)", v)
-	}
-	rules := make(map[linter.RuleID]linter.RuleConfig, len(s.Linter.Rules))
-	for id, rc := range s.Linter.Rules {
-		rules[id] = rc
-	}
-	warns, err := applyMap(m, func(name string, rv any) ([]string, error) {
-		id, ok := lintRuleID(normKey(name))
+	return applyTable(v, func(name string, val any) ([]string, error) {
+		id, ok := ruleIndex[normalizeKey(name)]
 		if !ok {
 			return []string{fmt.Sprintf("unknown lint rule %q", name)}, nil
 		}
-		rc := rules[id]
-		if err := setRule(&rc, rv); err != nil {
+		rc, err := s.applyLintRule(s.Linter.Rules[id], val)
+		if err != nil {
 			return nil, err
 		}
-		rules[id] = rc
+		s.Linter.Rules[id] = rc
 		return nil, nil
 	})
-	if err != nil {
-		return warns, err
-	}
-	s.Linter.Rules = rules
-	return warns, nil
 }
 
-func setRule(rc *linter.RuleConfig, v any) error {
+// applyLintRule returns a copy of rc with the raw rule value applied. It returns a
+// new value (never mutates in place) so callers can store it back into a map.
+func (s *Settings) applyLintRule(rc linter.RuleConfig, v any) (linter.RuleConfig, error) {
 	switch v := v.(type) {
 	case bool:
 		if v {
-			return errors.New(`true is not supported (want false, "off", a severity, or an options table)`)
+			return rc, errors.New(`true is not supported (want false, "off", a severity, or an options table)`)
 		}
 		rc.Disabled = true
 	case string:
-		if strings.EqualFold(v, "off") {
-			rc.Disabled = true
-			return nil
-		}
-		sev, ok := linter.ParseSeverity(v)
-		if !ok {
-			return fmt.Errorf("invalid severity %q (want %q, %q, %q, %q, or %q)",
-				v, "off", "error", "warn", "info", "hint")
-		}
-		rc.Severity = sev
+		return applySeverity(rc, v)
 	case map[string]any:
-		raw, err := json.Marshal(v)
-		if err != nil {
-			return err
+		opts := make(map[string]any, len(v))
+		for k, val := range v {
+			if normalizeKey(k) == "severity" {
+				s, ok := val.(string)
+				if !ok {
+					return rc, fmt.Errorf("invalid severity %v (want string)", val)
+				}
+				var err error
+				rc, err = applySeverity(rc, s)
+				if err != nil {
+					return rc, err
+				}
+				continue
+			}
+			opts[k] = val
 		}
-		rc.Options = raw
+		if len(opts) > 0 {
+			raw, err := json.Marshal(opts)
+			if err != nil {
+				return rc, err
+			}
+			rc.Options = raw
+		}
 	default:
-		return fmt.Errorf("invalid type %T (want bool, string, or table)", v)
+		return rc, fmt.Errorf("invalid type %T (want bool, string, or table)", v)
 	}
-	return nil
+	return rc, nil
+}
+
+// applySeverity returns a copy of rc with a rule severity (or "off") applied.
+func applySeverity(rc linter.RuleConfig, s string) (linter.RuleConfig, error) {
+	if strings.EqualFold(s, "off") {
+		rc.Disabled = true
+		return rc, nil
+	}
+	sev, ok := linter.ParseSeverity(s)
+	if !ok {
+		return rc, fmt.Errorf("invalid severity %q (want %q, %q, %q, %q, or %q)",
+			s, "off", "error", "warn", "info", "hint")
+	}
+	rc.Severity = sev
+	return rc, nil
 }

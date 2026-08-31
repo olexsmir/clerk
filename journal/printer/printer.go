@@ -62,9 +62,6 @@ type printer struct {
 	prevWasBlank bool
 }
 
-// Fprint formats using the default config.
-func Fprint(w io.Writer, j *ast.Journal) error { return DefaultConfig.Fprint(w, j) }
-
 // Fprint formats a parsed journal.
 func (c *Config) Fprint(w io.Writer, j *ast.Journal) error {
 	p := printer{cfg: c, indent: c.indent()}
@@ -78,9 +75,6 @@ func (c *Config) Fprint(w io.Writer, j *ast.Journal) error {
 	_, err := io.WriteString(w, out)
 	return err
 }
-
-// FprintEntry formats a single ast entry using the default config.
-func FprintEntry(w io.Writer, e ast.Entry) error { return DefaultConfig.FprintEntry(w, e) }
 
 // FprintEntry formats a single journal entry.
 func (c *Config) FprintEntry(w io.Writer, e ast.Entry) error {

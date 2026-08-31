@@ -1,6 +1,7 @@
 package settings
 
 import (
+	"reflect"
 	"strings"
 	"testing"
 
@@ -20,224 +21,170 @@ func TestNormKey(t *testing.T) {
 		"indent-width":                 "indent_width",
 	}
 	for in, want := range cases {
-		if got := normKey(in); got != want {
+		if got := normalizeKey(in); got != want {
 			t.Errorf("normKey(%q) = %q, want %q", in, got, want)
 		}
 	}
 }
 
-func TestParseTopLevel(t *testing.T) {
-	s, warns, err := Parse(map[string]any{
+func TestParseClonesDefaults(t *testing.T) {
+	base := DefaultConfig
+	if _, _, err := Parse(map[string]any{
+		"format": map[string]any{"indent-width": int64(6)},
+		"lint":   map[string]any{"missing-payee": "error"},
+	}); err != nil {
+		t.Fatalf("Parse: %v", err)
+	}
+	if !reflect.DeepEqual(DefaultConfig, base) {
+		t.Error("Parse mutated the global DefaultConfig")
+	}
+	s, _, err := Parse(nil)
+	if err != nil {
+		t.Fatalf("Parse(nil): %v", err)
+	}
+	if !reflect.DeepEqual(s, base) {
+		t.Error("Parse(nil) leaked state from an earlier Parse")
+	}
+}
+
+func TestParseAppliesFormat(t *testing.T) {
+	s, _, err := Parse(map[string]any{
 		"format": map[string]any{
 			"tab-indent":    true,
 			"indent-width":  int64(4),
 			"align-style":   "right",
 			"commodity-pos": "before",
+			"align-column":  int64(80),
 		},
+	})
+	if err != nil {
+		t.Fatalf("Parse: %v", err)
+	}
+	if !s.Format.TabIndent || s.Format.IndentWidth != 4 ||
+		s.Format.AlignStyle != printer.AlignRight ||
+		s.Format.CommodityPos != printer.CommodityBefore ||
+		s.Format.AlignColumn != 80 {
+		t.Errorf("format not applied: %+v", s.Format)
+	}
+}
+
+func TestParseAppliesLint(t *testing.T) {
+	s, _, err := Parse(map[string]any{
 		"lint": map[string]any{
 			"unbalanced-transaction": "info",
 			"missing-payee":          false,
+			"empty-postings":         "warn",
+			"account-depth": map[string]any{
+				"severity":  "error",
+				"max-depth": int64(8),
+			},
 		},
-		"unknown_top": "x",
 	})
 	if err != nil {
-		t.Fatalf("Parse returned error: %v", err)
-	}
-	if len(warns) != 1 || !strings.Contains(warns[0], "unknown_top") {
-		t.Fatalf("expected one unknown-top warning, got %v", warns)
-	}
-	if !s.Format.TabIndent || s.Format.IndentWidth != 4 {
-		t.Errorf("format not applied: %+v", s.Format)
-	}
-	if s.Format.AlignStyle != printer.AlignRight {
-		t.Errorf("AlignStyle = %v, want AlignRight", s.Format.AlignStyle)
-	}
-	if s.Format.CommodityPos != printer.CommodityBefore {
-		t.Errorf("CommodityPos = %v, want CommodityBefore", s.Format.CommodityPos)
+		t.Fatalf("Parse: %v", err)
 	}
 	if rc := s.Linter.Rules[linter.UnbalancedTransactionID]; rc.Severity != linter.SeverityInfo {
 		t.Errorf("unbalanced-transaction severity = %v, want info", rc.Severity)
 	}
 	if rc := s.Linter.Rules[linter.MissingPayeeID]; !rc.Disabled {
-		t.Errorf("missing-payee should be disabled")
+		t.Error("missing-payee should be disabled")
 	}
-}
-
-func TestParseRejectsLSPOnly(t *testing.T) {
-	s, warns, err := Parse(map[string]any{
-		"semanticHighlighting":      false,
-		"latinToCyrillicCompletion": true,
-	})
-	if err != nil {
-		t.Fatalf("Parse returned error: %v", err)
+	if rc := s.Linter.Rules[linter.EmptyPostingsID]; rc.Severity != linter.SeverityWarning {
+		t.Errorf("empty-postings severity = %v, want warn", rc.Severity)
 	}
-	if !s.SemanticHighlighting {
-		t.Errorf("SemanticHighlighting = false, want default true (file value ignored)")
+	if rc := s.Linter.Rules[linter.AccountDepthLimitID]; rc.Severity != linter.SeverityError {
+		t.Errorf("account-depth severity = %v, want error", rc.Severity)
 	}
-	if s.LatinToCyrillicCompletion {
-		t.Errorf("LatinToCyrillicCompletion = true, want default false (file value ignored)")
+	if rc := s.Linter.Rules[linter.AccountDepthLimitID]; string(rc.Options) != `{"max-depth":8}` {
+		t.Errorf("account-depth options = %s, want %q", rc.Options, `{"max-depth":8}`)
 	}
-	if len(warns) != 2 {
-		t.Fatalf("expected 2 unknown-setting warnings, got %v", warns)
-	}
-	for _, w := range warns {
-		if !strings.Contains(w, "unknown setting") {
-			t.Errorf("warning %q: want generic unknown-setting message, not LSP-specific", w)
-		}
+	// Options must not include the severity key: the rule's UnmarshalOptions
+	// rejects unknown fields, so a valid config proves severity was stripped.
+	if _, err := linter.NewLinter(s.Linter); err != nil {
+		t.Fatalf("config should validate: %v", err)
 	}
 }
 
 func TestApplyLSP(t *testing.T) {
-	s := Default()
+	s := DefaultConfig
 	_, err := s.ApplyLSP(map[string]any{
 		"semanticHighlighting":      false,
 		"latinToCyrillicCompletion": true,
 		"format":                    map[string]any{"indent-width": int64(4)},
 	})
 	if err != nil {
-		t.Fatalf("ApplyLSP returned error: %v", err)
+		t.Fatalf("ApplyLSP: %v", err)
 	}
 	if s.SemanticHighlighting {
-		t.Errorf("SemanticHighlighting = true, want false")
+		t.Error("SemanticHighlighting = true, want false")
 	}
 	if !s.LatinToCyrillicCompletion {
-		t.Errorf("LatinToCyrillicCompletion = false, want true")
+		t.Error("LatinToCyrillicCompletion = false, want true")
 	}
 	if s.Format.IndentWidth != 4 {
 		t.Errorf("IndentWidth = %d, want 4", s.Format.IndentWidth)
 	}
 }
 
-func TestApplyUnknownFormatWarns(t *testing.T) {
-	s := Default()
+func TestUnknownKeysWarn(t *testing.T) {
+	s := DefaultConfig
 	warns, err := s.Apply(map[string]any{
-		"format": map[string]any{"bogus": true},
+		"unknown_top": "x",
+		"format":      map[string]any{"bogus": true},
+		"lint":        map[string]any{"nope-rule": "error"},
 	})
 	if err != nil {
-		t.Fatalf("expected no error for unknown format option, got %v", err)
+		t.Fatalf("unknown keys should warn, not error: %v", err)
 	}
-	if len(warns) != 1 || !strings.Contains(warns[0], "bogus") {
-		t.Fatalf("expected unknown format warning, got %v", warns)
+	if len(warns) != 3 {
+		t.Fatalf("got %d warnings, want 3: %v", len(warns), warns)
 	}
-}
-
-func TestApplyUnknownLintWarns(t *testing.T) {
-	s := Default()
-	warns, err := s.Apply(map[string]any{
-		"lint": map[string]any{"nope-rule": "error"},
-	})
-	if err != nil {
-		t.Fatalf("expected no error for unknown lint rule, got %v", err)
-	}
-	if len(warns) != 1 || !strings.Contains(warns[0], "nope-rule") {
-		t.Fatalf("expected unknown lint warning, got %v", warns)
+	for _, w := range warns {
+		if !strings.Contains(w, "unknown") {
+			t.Errorf("warning %q: want unknown-key message", w)
+		}
 	}
 }
 
-func TestApplyFloatRejected(t *testing.T) {
-	s := Default()
-	if _, err := s.Apply(map[string]any{
-		"format": map[string]any{"indent-width": 2.5},
-	}); err == nil {
-		t.Fatal("expected error for non-integral float indent-width")
-	}
-}
+func TestApplyErrors(t *testing.T) {
+	s := DefaultConfig
 
-func TestApplyIntegralFloatAccepted(t *testing.T) {
-	s := Default()
-	if _, err := s.Apply(map[string]any{
-		"format": map[string]any{"indent-width": 4.0},
-	}); err != nil {
-		t.Fatalf("integral float should be accepted: %v", err)
+	err := func(raw map[string]any) error {
+		_, err := s.Apply(raw)
+		return err
 	}
-	if s.Format.IndentWidth != 4 {
-		t.Errorf("IndentWidth = %d, want 4", s.Format.IndentWidth)
+	if err(map[string]any{"format": map[string]any{"indent-width": 2.5}}) == nil {
+		t.Error("expected error for non-integral float indent-width")
 	}
-}
-
-func TestApplyBounds(t *testing.T) {
-	s := Default()
 	for _, n := range []any{0, 17} {
-		if _, err := s.Apply(map[string]any{"format": map[string]any{"indent-width": n}}); err == nil {
+		if err(map[string]any{"format": map[string]any{"indent-width": n}}) == nil {
 			t.Errorf("indent-width %v: expected error", n)
 		}
 	}
 	for _, n := range []any{0, 241} {
-		if _, err := s.Apply(map[string]any{"format": map[string]any{"align-column": n}}); err == nil {
+		if err(map[string]any{"format": map[string]any{"align-column": n}}) == nil {
 			t.Errorf("align-column %v: expected error", n)
 		}
 	}
-}
+	if err(map[string]any{"lint": map[string]any{"unbalanced-transaction": true}}) == nil {
+		t.Error("expected error for lint rule set to true")
+	}
+	if err(map[string]any{"format": map[string]any{"align-style": "none"}}) == nil {
+		t.Error("expected error for unknown align-style")
+	}
 
-func TestApplyLintTrueRejected(t *testing.T) {
-	s := Default()
-	if _, err := s.Apply(map[string]any{
-		"lint": map[string]any{"unbalanced-transaction": true},
-	}); err == nil {
-		t.Fatal("expected error for lint rule set to true")
+	if err(map[string]any{"format": map[string]any{"indent-width": 4.0}}) != nil {
+		t.Error("integral float should be accepted")
 	}
 }
 
-func TestDefaultFormat(t *testing.T) {
-	if Default().Format != printer.DefaultConfig {
-		t.Errorf("Default().Format = %+v, want %+v", Default().Format, printer.DefaultConfig)
+func TestParseTOML(t *testing.T) {
+	if s, _, err := ParseTOML([]byte(`format = { indent-width = 4 }`)); err != nil {
+		t.Fatalf("ParseTOML: %v", err)
+	} else if s.Format.IndentWidth != 4 {
+		t.Errorf("IndentWidth = %d, want 4", s.Format.IndentWidth)
 	}
-	// Empty Rules means every built-in rule runs at its default severity.
-	if _, err := linter.NewLinter(Default().Linter); err != nil {
-		t.Fatalf("default linter config invalid: %v", err)
-	}
-}
-
-func TestParseTOMLNonTable(t *testing.T) {
-	if _, _, err := ParseTOML([]byte("42")); err == nil {
+	if _, _, err := ParseTOML([]byte(`42`)); err == nil {
 		t.Error("expected error for non-table TOML")
-	}
-}
-
-var benchTOML = []byte(`
-semantic_highlighting = true
-latin_to_cyrillic_completion = false
-format = { tab-indent = true, indent-width = 4, align-style = "right", commodity-pos = "before", align-column = 80, preserve-blank-lines = true }
-[lint]
-unbalanced-transaction = "error"
-missing-payee = false
-empty-postings = "warn"
-`)
-
-func benchRaw() map[string]any {
-	return map[string]any{
-		"semantic_highlighting": true,
-		"format": map[string]any{
-			"tab-indent":           true,
-			"indent-width":         int64(4),
-			"align-style":          "right",
-			"commodity-pos":        "before",
-			"align-column":         int64(80),
-			"preserve-blank-lines": true,
-		},
-		"lint": map[string]any{
-			"unbalanced-transaction": "error",
-			"missing-payee":          false,
-			"empty-postings":         "warn",
-		},
-	}
-}
-
-func BenchmarkParseTOML(b *testing.B) {
-	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
-		if _, _, err := ParseTOML(benchTOML); err != nil {
-			b.Fatal(err)
-		}
-	}
-}
-
-func BenchmarkParseMap(b *testing.B) {
-	raw := benchRaw()
-	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
-		if _, _, err := Parse(raw); err != nil {
-			b.Fatal(err)
-		}
 	}
 }

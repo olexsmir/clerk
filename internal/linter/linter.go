@@ -21,6 +21,16 @@ type Config struct {
 	Rules map[RuleID]RuleConfig
 }
 
+var DefaultConfig Config
+
+func init() {
+	rules := make(map[RuleID]RuleConfig, len(Rules))
+	for id := range Rules {
+		rules[id] = RuleConfig{Severity: Rules[id].Severity}
+	}
+	DefaultConfig = Config{Rules: rules}
+}
+
 // SeverityFor returns the severity for a rule. Returns config override if set,
 // otherwise the rule's default from [Rules]
 func (c Config) SeverityFor(rule RuleID) Severity {

@@ -8,75 +8,70 @@ import (
 	"olexsmir.xyz/clerk/journal/printer"
 )
 
-func applyFormatTable(f *printer.Config, v any) ([]string, error) {
-	m, ok := v.(map[string]any)
-	if !ok {
-		return nil, fmt.Errorf("invalid value %v (want table)", v)
-	}
-	return applyMap(m, func(k string, v any) ([]string, error) {
-		return setFormatField(f, k, v)
-	})
+func (s *Settings) setFormat(v any) ([]string, error) {
+	return applyTable(v, s.setFormatField)
 }
 
-func setFormatField(f *printer.Config, name string, v any) ([]string, error) {
-	switch normKey(name) {
+func (s *Settings) setFormatField(name string, val any) ([]string, error) {
+	switch normalizeKey(name) {
 	case "tab_indent":
-		b, ok := v.(bool)
+		b, ok := val.(bool)
 		if !ok {
-			return nil, fmt.Errorf("invalid value %v (want bool)", v)
+			return nil, fmt.Errorf("invalid value %v (want bool)", val)
 		}
-		f.TabIndent = b
+		s.Format.TabIndent = b
 	case "indent_width":
-		n, ok := toInt(v)
+		n, ok := toInt(val)
 		if !ok {
-			return nil, fmt.Errorf("invalid value %v (want int)", v)
+			return nil, fmt.Errorf("invalid value %v (want int)", val)
 		}
 		if n < 1 || n > 16 {
 			return nil, fmt.Errorf("indent-width %d out of range (want 1..16)", n)
 		}
-		f.IndentWidth = n
+		s.Format.IndentWidth = n
 	case "preserve_blank_lines":
-		b, ok := v.(bool)
+		b, ok := val.(bool)
 		if !ok {
-			return nil, fmt.Errorf("invalid value %v (want bool)", v)
+			return nil, fmt.Errorf("invalid value %v (want bool)", val)
 		}
-		f.PreserveBlankLines = b
+		s.Format.PreserveBlankLines = b
 	case "align_style":
-		s, ok := v.(string)
+		as, ok := val.(string)
 		if !ok {
-			return nil, fmt.Errorf("invalid value %v (want string)", v)
+			return nil, fmt.Errorf("invalid value %v (want string)", val)
 		}
 		switch {
-		case strings.EqualFold(s, "two-spaces"):
-			f.AlignStyle = printer.AlignTwoSpaces
-		case strings.EqualFold(s, "right"):
-			f.AlignStyle = printer.AlignRight
-		case strings.EqualFold(s, "tab"):
-			f.AlignStyle = printer.AlignTab
+		case strings.EqualFold(as, "two-spaces"):
+			s.Format.AlignStyle = printer.AlignTwoSpaces
+		case strings.EqualFold(as, "right"):
+			s.Format.AlignStyle = printer.AlignRight
+		case strings.EqualFold(as, "tab"):
+			s.Format.AlignStyle = printer.AlignTab
 		default:
-			return nil, fmt.Errorf("invalid align-style %q (want %q, %q, or %q)", s, "two-spaces", "right", "tab")
+			return nil, fmt.Errorf("invalid align-style %q (want %q, %q, or %q)",
+				as, "two-spaces", "right", "tab")
 		}
 	case "align_column":
-		n, ok := toInt(v)
+		n, ok := toInt(val)
 		if !ok {
-			return nil, fmt.Errorf("invalid value %v (want int)", v)
+			return nil, fmt.Errorf("invalid value %v (want int)", val)
 		}
 		if n < 1 || n > 240 {
 			return nil, fmt.Errorf("align-column %d out of range (want 1..240)", n)
 		}
-		f.AlignColumn = n
+		s.Format.AlignColumn = n
 	case "commodity_pos":
-		s, ok := v.(string)
+		c, ok := val.(string)
 		if !ok {
-			return nil, fmt.Errorf("invalid value %v (want string)", v)
+			return nil, fmt.Errorf("invalid value %v (want string)", val)
 		}
 		switch {
-		case strings.EqualFold(s, "after"):
-			f.CommodityPos = printer.CommodityAfter
-		case strings.EqualFold(s, "before"):
-			f.CommodityPos = printer.CommodityBefore
+		case strings.EqualFold(c, "after"):
+			s.Format.CommodityPos = printer.CommodityAfter
+		case strings.EqualFold(c, "before"):
+			s.Format.CommodityPos = printer.CommodityBefore
 		default:
-			return nil, fmt.Errorf("invalid commodity-pos %q (want %q or %q)", s, "after", "before")
+			return nil, fmt.Errorf("invalid commodity-pos %q (want %q or %q)", c, "after", "before")
 		}
 	default:
 		return []string{fmt.Sprintf("unknown format option %q", name)}, nil

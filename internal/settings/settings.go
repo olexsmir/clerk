@@ -20,48 +20,36 @@ type Settings struct {
 	Format printer.Config
 }
 
-func Default() Settings {
-	return Settings{
-		SemanticHighlighting:      true,
-		LatinToCyrillicCompletion: false,
-		Format:                    printer.DefaultConfig,
-		Linter:                    linter.Config{},
-	}
+var DefaultConfig = Settings{
+	SemanticHighlighting:      true,
+	LatinToCyrillicCompletion: false,
+	Linter:                    linter.DefaultConfig,
+	Format:                    printer.DefaultConfig,
 }
 
-// Parse decodes raw settings from a config file over the defaults.
-func Parse(raw map[string]any) (Settings, []string, error) {
-	s := Default()
-	warns, err := s.Apply(raw)
-	return s, warns, err
-}
-
-// Apply merges raw settings from a config file into s. The file schema knows
-// only about format and lint; everything else (including LSP-only options) is
-// reported as an unknown setting.
+// Apply merges raw setting from a config file into Settings object.
 func (s *Settings) Apply(raw map[string]any) ([]string, error) {
 	return applyMap(raw, s.applyFileField)
 }
 
-// ApplyLSP merges raw settings from the LSP server into s, including the
-// LSP-only options the config file is not allowed to set.
-func (s *Settings) ApplyLSP(raw map[string]any) ([]string, error) {
-	return applyMap(raw, s.applyLSPField)
-}
-
 func (s *Settings) applyFileField(name string, val any) ([]string, error) {
-	switch normKey(name) {
-	case "format":
-		return applyFormatTable(&s.Format, val)
+	switch normalizeKey(name) {
 	case "lint":
 		return s.setLint(val)
+	case "format":
+		return s.setFormat(val)
 	default:
 		return []string{fmt.Sprintf("unknown setting %q", name)}, nil
 	}
 }
 
+// ApplyLSP merges raw settings from lsp server config into Settings object.
+func (s *Settings) ApplyLSP(raw map[string]any) ([]string, error) {
+	return applyMap(raw, s.applyLSPField)
+}
+
 func (s *Settings) applyLSPField(name string, val any) ([]string, error) {
-	switch normKey(name) {
+	switch normalizeKey(name) {
 	case "semantic_highlighting":
 		b, ok := val.(bool)
 		if !ok {
@@ -80,15 +68,13 @@ func (s *Settings) applyLSPField(name string, val any) ([]string, error) {
 	return nil, nil
 }
 
-// applyMap iterates a settings table, collecting warnings and joining per-key
-// errors so every handler shares one walk.
-func applyMap(m map[string]any, fn func(k string, v any) ([]string, error)) ([]string, error) {
+func applyMap(m map[string]any, fn func(k string, val any) ([]string, error)) ([]string, error) {
 	var (
 		warns []string
 		errs  []error
 	)
-	for k, v := range m {
-		ws, err := fn(k, v)
+	for k, val := range m {
+		ws, err := fn(k, val)
 		warns = append(warns, ws...)
 		if err != nil {
 			errs = append(errs, fmt.Errorf("%s: %w", k, err))
@@ -97,9 +83,29 @@ func applyMap(m map[string]any, fn func(k string, v any) ([]string, error)) ([]s
 	return warns, errors.Join(errs...)
 }
 
-// normKey canonicalizes a setting name to lowercase snake_case, accepting
-// snake_case, kebab-case, and camelCase input (e.g. from TOML or JSON).
-func normKey(s string) string {
+// applyTable requires v to be a table and applies fn over each of its entries.
+func applyTable(v any, fn func(k string, val any) ([]string, error)) ([]string, error) {
+	m, ok := v.(map[string]any)
+	if !ok {
+		return nil, fmt.Errorf("invalid value %v (want table)", v)
+	}
+	return applyMap(m, fn)
+}
+
+func normalizeKey(s string) string {
+	// already canonical(lowercase, digits, underscores)
+	canonical := true
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if c != '_' && (c < 'a' || c > 'z') && (c < '0' || c > '9') {
+			canonical = false
+			break
+		}
+	}
+	if canonical {
+		return s
+	}
+
 	var b strings.Builder
 	b.Grow(len(s))
 	prevLower := false
