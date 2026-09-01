@@ -10,9 +10,10 @@ import (
 	"olexsmir.xyz/clerk/internal/linter"
 )
 
-var ruleIndex = func() map[string]linter.RuleID {
-	idx := make(map[string]linter.RuleID, len(linter.Rules))
+var lintRuleLookup = func() map[string]linter.RuleID {
+	idx := make(map[string]linter.RuleID, 2*len(linter.Rules))
 	for id := range linter.Rules {
+		idx[string(id)] = id
 		idx[normalizeKey(string(id))] = id
 	}
 	return idx
@@ -23,7 +24,10 @@ func (s *Settings) setLint(v any) ([]string, error) {
 	maps.Copy(rules, s.Linter.Rules)
 	s.Linter.Rules = rules
 	return applyTable(v, func(name string, val any) ([]string, error) {
-		id, ok := ruleIndex[normalizeKey(name)]
+		id, ok := lintRuleLookup[name]
+		if !ok {
+			id, ok = lintRuleLookup[normalizeKey(name)]
+		}
 		if !ok {
 			return []string{fmt.Sprintf("unknown lint rule %q", name)}, nil
 		}

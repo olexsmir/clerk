@@ -94,6 +94,16 @@ func BenchmarkParseLargeLint(b *testing.B) {
 	}
 }
 
+func BenchmarkLoad(b *testing.B) {
+	path := filepath.Join("testdata", "bench.toml")
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, _, err := Load(path); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
 func BenchmarkNormKey(b *testing.B) {
 	tests := []string{"latinToCyrillicCompletion", "semantic_highlighting", "unbalanced-transaction"}
 	for _, test := range tests {
