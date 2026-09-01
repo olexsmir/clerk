@@ -2,6 +2,7 @@ package lsp
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"sync"
 
@@ -29,6 +30,7 @@ type server struct {
 	openDocs      map[uri.URI]docState
 	diagCancel    context.CancelFunc
 	dynFileWather bool
+	configPath    string
 }
 
 // analysisFor returns the cached analysis for an open doc, rebuilds when the doc or a file it inclues changed.
@@ -75,7 +77,9 @@ func (s *server) Initialize(ctx context.Context, params *protocol.InitializePara
 		}
 	}
 
-	s.applySettings(params.InitializationOptions)
+	if err := s.applySettings(ctx, params.InitializationOptions); err != nil {
+		return nil, err
+	}
 	full := protocol.SemanticTokensOptionsFull(protocol.Boolean(true))
 	if td := params.Capabilities.TextDocument; td != nil {
 		if fd, ok := td.SemanticTokens.Requests.Full.(*protocol.ClientSemanticTokensRequestFullDelta); ok && fd.Delta != nil && *fd.Delta {
@@ -118,8 +122,25 @@ func (s *server) Initialized(ctx context.Context, params *protocol.InitializedPa
 	if s.dynFileWather {
 		go s.registerFileWatchers(context.Background())
 	}
+	s.applyConfigFile(ctx)
 	s.scheduleDiagnostics(ctx)
 	return nil
+}
+
+func (s *server) applyConfigFile(ctx context.Context) {
+	sets, warns, err := settings.Load(s.configPath)
+	if err != nil {
+		msg := "config " + s.configPath + ": " + err.Error()
+		s.log.Error("loading config failed", "err", err)
+		s.reportConfigProblem(ctx, protocol.MessageTypeError, msg)
+		return
+	}
+	s.mu.Lock()
+	s.settings = sets
+	s.mu.Unlock()
+	for _, w := range warns {
+		s.reportConfigProblem(ctx, protocol.MessageTypeWarning, w)
+	}
 }
 
 func (s *server) DidChangeWatchedFiles(ctx context.Context, params *protocol.DidChangeWatchedFilesParams) error {
@@ -140,8 +161,7 @@ func (s *server) DidChangeWatchedFiles(ctx context.Context, params *protocol.Did
 }
 
 func (s *server) DidChangeConfiguration(ctx context.Context, params *protocol.DidChangeConfigurationParams) error {
-	s.applySettings(params.Settings)
-	return nil
+	return s.applySettings(ctx, params.Settings)
 }
 
 func (s *server) Shutdown(ctx context.Context) error {
@@ -175,23 +195,37 @@ func (s *server) registerFileWatchers(ctx context.Context) {
 	}
 }
 
-func (s *server) applySettings(v protocol.LSPAny) {
+func (s *server) applySettings(ctx context.Context, v protocol.LSPAny) error {
 	if len(v) == 0 {
-		return
+		return nil
 	}
 	var raw map[string]any
 	if err := json.Unmarshal(v, &raw); err != nil {
-		s.log.Error("invalid settings", "err", err)
-		return
+		return fmt.Errorf("invalid settings: %w", err)
 	}
 	s.mu.Lock()
 	warns, err := s.settings.ApplyLSP(raw)
 	s.mu.Unlock()
-	if err != nil {
-		s.log.Error("failed to apply settings", "err", err)
-	}
 	for _, w := range warns {
-		s.log.Warn("settings", "warning", w)
+		s.reportConfigProblem(ctx, protocol.MessageTypeWarning, w)
+	}
+	return err
+}
+
+func (s *server) reportConfigProblem(ctx context.Context, typ protocol.MessageType, msg string) {
+	lvl := slog.LevelWarn
+	if typ == protocol.MessageTypeError {
+		lvl = slog.LevelError
+	}
+	s.log.Log(ctx, lvl, "config", "message", msg)
+	if s.client == nil {
+		return
+	}
+	if err := s.client.LogMessage(ctx, &protocol.LogMessageParams{
+		Type:    typ,
+		Message: msg,
+	}); err != nil {
+		s.log.Warn("window/logMessage failed", "err", err)
 	}
 }
 

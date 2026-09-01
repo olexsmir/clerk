@@ -4,6 +4,7 @@ import (
 	"context"
 	"path/filepath"
 	"slices"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -11,7 +12,6 @@ import (
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 
-	"olexsmir.xyz/clerk/internal/settings"
 	"olexsmir.xyz/clerk/internal/testutil"
 )
 
@@ -187,13 +187,21 @@ func TestServer_DidChangeWatchedFiles_DiskChangeDirtiesDependents(t *testing.T) 
 
 type captureClient struct {
 	protocol.Client
-	mu   sync.Mutex
-	diag []protocol.PublishDiagnosticsParams
+	mu      sync.Mutex
+	diag    []protocol.PublishDiagnosticsParams
+	logmsgs []protocol.LogMessageParams
 }
 
 func (c *captureClient) PublishDiagnostics(_ context.Context, params *protocol.PublishDiagnosticsParams) error {
 	c.mu.Lock()
 	c.diag = append(c.diag, *params)
+	c.mu.Unlock()
+	return nil
+}
+
+func (c *captureClient) LogMessage(_ context.Context, params *protocol.LogMessageParams) error {
+	c.mu.Lock()
+	c.logmsgs = append(c.logmsgs, *params)
 	c.mu.Unlock()
 	return nil
 }
@@ -223,9 +231,40 @@ func waitFor(t *testing.T, what string, cond func() bool) {
 
 func newServer(tb testing.TB) Server {
 	tb.Helper()
-	s, err := NewServer("test", settings.DefaultConfig)
+	s, err := NewServer("test", filepath.Join(tb.TempDir(), "clerk.toml"))
 	if err != nil {
 		tb.Fatal(err)
 	}
 	return s
+}
+
+func TestServer_InitializedReportsConfigProblems(t *testing.T) {
+	for _, tt := range []struct {
+		name, config string
+		typ          protocol.MessageType
+		want         string
+	}{
+		{"unknown key", "bogus = 1\n", protocol.MessageTypeWarning, `unknown setting "bogus"`},
+		{"unparseable", "not toml [[[\n", protocol.MessageTypeError, "toml:"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			cfgPath := filepath.Join(t.TempDir(), "clerk.toml")
+			testutil.WriteFile(t, cfgPath, []byte(tt.config))
+			s, err := NewServer("test", cfgPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			capture := &captureClient{}
+			s.server.client = capture
+			if err := s.server.Initialized(t.Context(), &protocol.InitializedParams{}); err != nil {
+				t.Fatalf("initialized: %v", err)
+			}
+			capture.mu.Lock()
+			msgs := slices.Clone(capture.logmsgs)
+			capture.mu.Unlock()
+			if len(msgs) != 1 || msgs[0].Type != tt.typ || !strings.Contains(msgs[0].Message, tt.want) {
+				t.Errorf("unexpected log messages: %+v", msgs)
+			}
+		})
+	}
 }

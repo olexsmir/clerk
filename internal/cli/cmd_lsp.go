@@ -2,7 +2,6 @@ package cli
 
 import (
 	"context"
-	"fmt"
 	"os"
 
 	"github.com/urfave/cli/v3"
@@ -11,15 +10,12 @@ import (
 )
 
 func (c *Cli) lspAction(ctx context.Context, cmd *cli.Command) error {
-	sets, warns, err := loadConfig(cmd)
+	configPath, err := findConfigFilePath(cmd)
 	if err != nil {
 		return err
 	}
-	for i := range warns {
-		fmt.Fprintf(os.Stderr, "warning: %s\n", warns[i])
-	}
 
-	server, err := lsp.NewServer(c.version, sets)
+	server, err := lsp.NewServer(c.version, configPath)
 	if err != nil {
 		return err
 	}

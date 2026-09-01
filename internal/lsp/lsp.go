@@ -18,7 +18,7 @@ import (
 
 type Server struct{ server *server }
 
-func NewServer(version string, sets settings.Settings) (Server, error) {
+func NewServer(version string, configPath string) (Server, error) {
 	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
 	if logFile, err := openLogFile(); err == nil {
 		logger = slog.New(slog.NewTextHandler(logFile, nil))
@@ -30,8 +30,9 @@ func NewServer(version string, sets settings.Settings) (Server, error) {
 
 		openDocs: make(map[uri.URI]docState),
 
-		settings: sets,
-		loader:   journal.NewLoader(),
+		settings:   settings.DefaultConfig,
+		configPath: configPath,
+		loader:     journal.NewLoader(),
 
 		log: logger,
 	}

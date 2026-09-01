@@ -96,7 +96,9 @@ func TestGolden_Completion(t *testing.T) {
 		t.Run(tt, func(t *testing.T) {
 			ar := golden.Read(t, tt)
 			h := newTxtarHarness(t, ar)
-			h.srv.applySettings([]byte(`{"latin_to_cyrillic_completion": true}`))
+			if err := h.srv.applySettings(t.Context(), []byte(`{"latin_to_cyrillic_completion": true}`)); err != nil {
+				t.Fatal(err)
+			}
 
 			var b strings.Builder
 			for i, c := range h.cursors {
@@ -225,7 +227,9 @@ func BenchmarkCompletionTransliteration(b *testing.B) {
 	srv := newServer(b)
 	srv.server.openDoc(uri.URI("file:///test.journal"), content, 1, "journal")
 	srv.server.analysisFor(uri.URI("file:///test.journal")) // warm the per-doc cache
-	srv.server.applySettings([]byte(`{"latin_to_cyrillic_completion": true}`))
+	if err := srv.server.applySettings(b.Context(), []byte(`{"latin_to_cyrillic_completion": true}`)); err != nil {
+		b.Fatal(err)
+	}
 
 	line, col := lsputil.LineCol(content, len(content))
 	params := &protocol.CompletionParams{
