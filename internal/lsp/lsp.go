@@ -2,7 +2,6 @@ package lsp
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"log/slog"
 	"os"
@@ -19,18 +18,10 @@ import (
 
 type Server struct{ server *server }
 
-func NewServer(version, configPath string) (Server, error) {
+func NewServer(version string, sets settings.Settings) (Server, error) {
 	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
 	if logFile, err := openLogFile(); err == nil {
 		logger = slog.New(slog.NewTextHandler(logFile, nil))
-	}
-
-	s, warns, err := settings.Load(configPath)
-	if err != nil {
-		return Server{}, fmt.Errorf("load config %q: %w", configPath, err)
-	}
-	for _, w := range warns {
-		logger.Warn("config", "warning", w)
 	}
 
 	srv := &server{
@@ -39,7 +30,7 @@ func NewServer(version, configPath string) (Server, error) {
 
 		openDocs: make(map[uri.URI]docState),
 
-		settings: s,
+		settings: sets,
 		loader:   journal.NewLoader(),
 
 		log: logger,

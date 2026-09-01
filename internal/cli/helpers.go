@@ -8,6 +8,7 @@ import (
 
 	"github.com/urfave/cli/v3"
 
+	"olexsmir.xyz/clerk/internal/settings"
 	"olexsmir.xyz/clerk/journal"
 )
 
@@ -56,19 +57,25 @@ func readStdin() ([]byte, error) {
 	return src, nil
 }
 
-// resolveConfigPath returns the config file path: --config if set (and it must
-// exist), otherwise clerk.toml in the current directory (which may be absent,
-// in which case the tool falls back to defaults).
-func resolveConfigPath(cmd *cli.Command) (string, error) {
+func findConfigFilePath(cmd *cli.Command) (string, error) {
 	if p := cmd.String("config"); p != "" {
 		if _, err := os.Stat(p); err != nil {
 			return "", fmt.Errorf("config %q: %w", p, err)
 		}
 		return p, nil
 	}
+
 	cwd, err := os.Getwd()
 	if err != nil {
 		return "", err
 	}
 	return filepath.Join(cwd, "clerk.toml"), nil
+}
+
+func loadConfig(cmd *cli.Command) (settings.Settings, []string, error) {
+	configPath, err := findConfigFilePath(cmd)
+	if err != nil {
+		return settings.Settings{}, nil, err
+	}
+	return settings.Load(configPath)
 }
