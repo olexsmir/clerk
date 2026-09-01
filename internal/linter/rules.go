@@ -56,8 +56,8 @@ var Rules = map[RuleID]builtinRule{
 	UnbalancedTransactionID:  {&UnbalancedTransaction{}, SeverityError},
 	UndeclaredAccountID:      {&UndeclaredAccount{}, SeverityWarning},
 	UndeclaredCommodityID:    {&UndeclaredCommodity{}, SeverityWarning},
-	UndeclaredPayeeID:        {&UndeclaredPayee{}, SeverityWarning},
-	UndeclaredTagID:          {&UndeclaredTag{}, SeverityWarning},
+	UndeclaredPayeeID:        {&UndeclaredPayee{}, severityNone},
+	UndeclaredTagID:          {&UndeclaredTag{}, severityNone},
 	UnusedAccountID:          {&UnusedAccount{}, SeverityWarning},
 	UnusedTagID:              {&UnusedTag{}, SeverityWarning},
 }

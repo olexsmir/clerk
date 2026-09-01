@@ -92,6 +92,7 @@ func allRules() []Rule {
 }
 
 func TestNewLinter(t *testing.T) {
+	offByDefault := []RuleID{UndeclaredPayeeID, UndeclaredTagID}
 	t.Run("all-default", func(t *testing.T) {
 		l, err := NewLinter(Config{})
 		if err != nil {
@@ -101,8 +102,8 @@ func TestNewLinter(t *testing.T) {
 		for _, r := range l.rules {
 			got = append(got, r.ID())
 		}
-		if !slices.Equal(got, builtinIDs()) {
-			t.Errorf("got %v, want %v", got, builtinIDs())
+		if want := without(builtinIDs(), offByDefault...); !slices.Equal(got, want) {
+			t.Errorf("got %v, want %v", got, want)
 		}
 	})
 
@@ -119,6 +120,22 @@ func TestNewLinter(t *testing.T) {
 			got = append(got, r.ID())
 		}
 		want := without(builtinIDs(), OrderDateID, MissingPayeeID)
+		want = without(want, offByDefault...)
+		if !slices.Equal(got, want) {
+			t.Errorf("got %v, want %v", got, want)
+		}
+	})
+
+	t.Run("severity-none-enabled-by-config", func(t *testing.T) {
+		l, err := NewLinter(Config{Rules: map[RuleID]RuleConfig{UndeclaredPayeeID: {Severity: SeverityWarning}}})
+		if err != nil {
+			t.Fatal(err)
+		}
+		var got []RuleID
+		for _, r := range l.rules {
+			got = append(got, r.ID())
+		}
+		want := without(builtinIDs(), UndeclaredTagID)
 		if !slices.Equal(got, want) {
 			t.Errorf("got %v, want %v", got, want)
 		}

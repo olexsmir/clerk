@@ -25,8 +25,8 @@ var DefaultConfig Config
 
 func init() {
 	rules := make(map[RuleID]RuleConfig, len(Rules))
-	for id := range Rules {
-		rules[id] = RuleConfig{Severity: Rules[id].Severity}
+	for id, br := range Rules {
+		rules[id] = RuleConfig{Severity: br.Severity, Disabled: br.Severity == severityNone}
 	}
 	DefaultConfig = Config{Rules: rules}
 }
@@ -46,12 +46,16 @@ type Linter struct {
 }
 
 // NewLinter creates a [Linter] with all built-in [Rules] configured by cfg.
-// Disabled rules are omitted and options are applied to rule copies.
-// Rules run in ID order for determinism.
+// Rules with [RuleConfig.Disabled] set are omitted; options are applied to
+// rule copies. Rules run in ID order for determinism.
 func NewLinter(cfg Config) (*Linter, error) {
 	ids := make([]RuleID, 0, len(Rules))
 	for id := range Rules {
-		if rc, ok := cfg.Rules[id]; ok && rc.Disabled {
+		rc, ok := cfg.Rules[id]
+		if !ok {
+			rc = DefaultConfig.Rules[id]
+		}
+		if rc.Disabled {
 			continue
 		}
 		ids = append(ids, id)
@@ -108,6 +112,8 @@ func (s Severity) String() string {
 		return "info"
 	case SeverityHint:
 		return "hint"
+	case severityNone:
+		return "off"
 	}
 	panic("impossible severity state")
 }
