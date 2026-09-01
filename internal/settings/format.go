@@ -62,6 +62,11 @@ func setInt(n *int, v any, lo, hi int) error {
 		x = t
 	case int64:
 		x = int(t)
+	case float64:
+		if t != float64(int(t)) {
+			return fmt.Errorf("invalid value %v (want int)", v)
+		}
+		x = int(t)
 	default:
 		return fmt.Errorf("invalid value %v (want int)", v)
 	}

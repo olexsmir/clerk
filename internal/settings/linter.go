@@ -90,6 +90,7 @@ func applySeverity(rc linter.RuleConfig, s string) (linter.RuleConfig, error) {
 		return rc, fmt.Errorf("invalid severity %q (want %q, %q, %q, %q, or %q)",
 			s, "off", "error", "warn", "info", "hint")
 	}
+	rc.Disabled = false
 	rc.Severity = sev
 	return rc, nil
 }
