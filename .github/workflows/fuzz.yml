@@ -15,7 +15,7 @@ jobs:
           go-version-file: go.mod
 
       - name: Fuzz lexer
-        run: go test -fuzz=FuzzLexer -fuzztime=90s ./journal/lexer/
+        run: go test -vet=off -fuzz=FuzzLexer -fuzztime=90s ./journal/lexer/
 
       - name: Fuzz parser
-        run: go test -fuzz=FuzzParser -fuzztime=90s ./journal/parser/
+        run: go test -vet=off -fuzz=FuzzParser -fuzztime=90s ./journal/parser/

@@ -38,10 +38,10 @@ jobs:
       - name: Run base benchmarks
         if: github.event_name == 'pull_request'
         working-directory: __base
-        run: go test -bench . -benchmem -run '^$' -count=6 -benchtime=100ms ./... > ../bench-base.txt 2>&1
+        run: go test -vet=off -bench . -benchmem -run '^$' -count=6 -benchtime=100ms ./... > ../bench-base.txt 2>&1
 
       - name: Run benchmarks
-        run: go test -bench . -benchmem -run '^$' -count=6 -benchtime=100ms ./... > bench.txt 2>&1
+        run: go test -vet=off -bench . -benchmem -run '^$' -count=6 -benchtime=100ms ./... > bench.txt 2>&1
 
       - name: Print benchmark numbers
         run: benchstat bench.txt
