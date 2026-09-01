@@ -52,6 +52,23 @@ func TestApplyLSP(t *testing.T) {
 	}
 }
 
+func TestApply_duplicateKey(t *testing.T) {
+	s := DefaultConfig
+	_, err := s.Apply(map[string]any{
+		"format": map[string]any{
+			"indent-width": 4,
+			"indent_width": 8,
+		},
+	})
+	if err == nil {
+		t.Fatal("expected duplicate-key error, got nil")
+	}
+	// Neither conflicting value is applied; default prevails.
+	if s.Format.IndentWidth != DefaultConfig.Format.IndentWidth {
+		t.Errorf("IndentWidth = %d, want default %d", s.Format.IndentWidth, DefaultConfig.Format.IndentWidth)
+	}
+}
+
 // Benchmarks
 
 func BenchmarkParseMap(b *testing.B) {

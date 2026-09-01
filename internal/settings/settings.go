@@ -86,11 +86,20 @@ func (s *Settings) applyLSPField(name string, val any) ([]string, error) {
 }
 
 func applyMap(m map[string]any, fn func(k string, val any) ([]string, error)) ([]string, error) {
+	count := make(map[string]int, len(m))
+	for k := range m {
+		count[normalizeKey(k)]++
+	}
 	var (
 		warns []string
 		errs  []error
 	)
 	for k, val := range m {
+		norm := normalizeKey(k)
+		if count[norm] > 1 {
+			errs = append(errs, fmt.Errorf("%s: duplicate setting %q not applied", k, norm))
+			continue
+		}
 		ws, err := fn(k, val)
 		warns = append(warns, ws...)
 		if err != nil {
