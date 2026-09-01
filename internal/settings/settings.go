@@ -77,21 +77,12 @@ func (s *Settings) ApplyLSP(raw map[string]any) ([]string, error) {
 func (s *Settings) applyLSPField(name string, val any) ([]string, error) {
 	switch normalizeKey(name) {
 	case "semantic_highlighting":
-		b, ok := val.(bool)
-		if !ok {
-			return nil, fmt.Errorf("invalid value %v (want bool)", val)
-		}
-		s.SemanticHighlighting = b
+		return nil, setBool(&s.SemanticHighlighting, val)
 	case "latin_to_cyrillic_completion":
-		b, ok := val.(bool)
-		if !ok {
-			return nil, fmt.Errorf("invalid value %v (want bool)", val)
-		}
-		s.LatinToCyrillicCompletion = b
+		return nil, setBool(&s.LatinToCyrillicCompletion, val)
 	default:
 		return s.applyFileField(name, val)
 	}
-	return nil, nil
 }
 
 func applyMap(m map[string]any, fn func(k string, val any) ([]string, error)) ([]string, error) {
@@ -109,7 +100,6 @@ func applyMap(m map[string]any, fn func(k string, val any) ([]string, error)) ([
 	return warns, errors.Join(errs...)
 }
 
-// applyTable requires v to be a table and applies fn over each of its entries.
 func applyTable(v any, fn func(k string, val any) ([]string, error)) ([]string, error) {
 	m, ok := v.(map[string]any)
 	if !ok {

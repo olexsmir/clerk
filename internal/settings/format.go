@@ -14,26 +14,11 @@ func (s *Settings) setFormat(v any) ([]string, error) {
 func (s *Settings) setFormatField(name string, val any) ([]string, error) {
 	switch normalizeKey(name) {
 	case "tab_indent":
-		b, ok := val.(bool)
-		if !ok {
-			return nil, fmt.Errorf("invalid value %v (want bool)", val)
-		}
-		s.Format.TabIndent = b
+		return nil, setBool(&s.Format.TabIndent, val)
 	case "indent_width":
-		n, ok := toInt(val)
-		if !ok {
-			return nil, fmt.Errorf("invalid value %v (want int)", val)
-		}
-		if n < 1 || n > 32 {
-			return nil, fmt.Errorf("%d out of range (want 1..32)", n)
-		}
-		s.Format.IndentWidth = n
+		return nil, setInt(&s.Format.IndentWidth, val, 1, 32)
 	case "preserve_blank_lines":
-		b, ok := val.(bool)
-		if !ok {
-			return nil, fmt.Errorf("invalid value %v (want bool)", val)
-		}
-		s.Format.PreserveBlankLines = b
+		return nil, setBool(&s.Format.PreserveBlankLines, val)
 	case "align_style":
 		as, ok := val.(string)
 		if !ok {
@@ -50,14 +35,7 @@ func (s *Settings) setFormatField(name string, val any) ([]string, error) {
 			return nil, fmt.Errorf("invalid value %q (want %q, %q, or %q)", as, "two-spaces", "right", "tab")
 		}
 	case "align_column":
-		n, ok := toInt(val)
-		if !ok {
-			return nil, fmt.Errorf("invalid value %v (want int)", val)
-		}
-		if n < 1 || n > 240 {
-			return nil, fmt.Errorf("%d out of range (want 1..240)", n)
-		}
-		s.Format.AlignColumn = n
+		return nil, setInt(&s.Format.AlignColumn, val, 1, 240)
 	case "commodity_pos":
 		c, ok := val.(string)
 		if !ok {
@@ -77,13 +55,28 @@ func (s *Settings) setFormatField(name string, val any) ([]string, error) {
 	return nil, nil
 }
 
-func toInt(v any) (int, bool) {
-	switch n := v.(type) {
+func setInt(n *int, v any, lo, hi int) error {
+	var x int
+	switch t := v.(type) {
 	case int:
-		return n, true
+		x = t
 	case int64:
-		return int(n), true
+		x = int(t)
 	default:
-		return 0, false
+		return fmt.Errorf("invalid value %v (want int)", v)
 	}
+	if x < lo || x > hi {
+		return fmt.Errorf("%d out of range (want %d..%d)", x, lo, hi)
+	}
+	*n = x
+	return nil
+}
+
+func setBool(b *bool, v any) error {
+	x, ok := v.(bool)
+	if !ok {
+		return fmt.Errorf("invalid value %v (want bool)", v)
+	}
+	*b = x
+	return nil
 }
