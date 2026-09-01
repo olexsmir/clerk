@@ -11,6 +11,7 @@ import (
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 
+	"olexsmir.xyz/clerk/internal/settings"
 	"olexsmir.xyz/clerk/internal/testutil"
 )
 
@@ -222,7 +223,7 @@ func waitFor(t *testing.T, what string, cond func() bool) {
 
 func newServer(tb testing.TB) Server {
 	tb.Helper()
-	s, err := NewServer("test", "clerk.toml")
+	s, err := NewServer("test", settings.DefaultConfig)
 	if err != nil {
 		tb.Fatal(err)
 	}

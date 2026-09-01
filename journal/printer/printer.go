@@ -17,6 +17,19 @@ const (
 	AlignTab                         // elastic tabstops
 )
 
+func (a AlignStyle) String() string {
+	switch a {
+	case AlignTwoSpaces:
+		return "two-spaces"
+	case AlignRight:
+		return "right"
+	case AlignTab:
+		return "tab"
+	default:
+		panic("invalid align style value")
+	}
+}
+
 // CommodityPos controls where the commodity marker is placed
 type CommodityPos int
 
@@ -24,6 +37,17 @@ const (
 	CommodityAfter  CommodityPos = iota // "10.00 EUR"
 	CommodityBefore                     // "$10.00"
 )
+
+func (c CommodityPos) String() string {
+	switch c {
+	case CommodityAfter:
+		return "after"
+	case CommodityBefore:
+		return "before"
+	default:
+		panic("invalid commodity pos value")
+	}
+}
 
 type Config struct {
 	TabIndent          bool         // true = tabs, false = spaces

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"strings"
 
 	"olexsmir.xyz/clerk/internal/linter"
@@ -18,12 +19,15 @@ var ruleIndex = func() map[string]linter.RuleID {
 }()
 
 func (s *Settings) setLint(v any) ([]string, error) {
+	rules := make(map[linter.RuleID]linter.RuleConfig, len(s.Linter.Rules))
+	maps.Copy(rules, s.Linter.Rules)
+	s.Linter.Rules = rules
 	return applyTable(v, func(name string, val any) ([]string, error) {
 		id, ok := ruleIndex[normalizeKey(name)]
 		if !ok {
 			return []string{fmt.Sprintf("unknown lint rule %q", name)}, nil
 		}
-		rc, err := s.applyLintRule(s.Linter.Rules[id], val)
+		rc, err := applyLintRule(s.Linter.Rules[id], val)
 		if err != nil {
 			return nil, err
 		}
@@ -32,9 +36,7 @@ func (s *Settings) setLint(v any) ([]string, error) {
 	})
 }
 
-// applyLintRule returns a copy of rc with the raw rule value applied. It returns a
-// new value (never mutates in place) so callers can store it back into a map.
-func (s *Settings) applyLintRule(rc linter.RuleConfig, v any) (linter.RuleConfig, error) {
+func applyLintRule(rc linter.RuleConfig, v any) (linter.RuleConfig, error) {
 	switch v := v.(type) {
 	case bool:
 		if v {
@@ -51,6 +53,7 @@ func (s *Settings) applyLintRule(rc linter.RuleConfig, v any) (linter.RuleConfig
 				if !ok {
 					return rc, fmt.Errorf("invalid severity %v (want string)", val)
 				}
+
 				var err error
 				rc, err = applySeverity(rc, s)
 				if err != nil {
@@ -73,7 +76,6 @@ func (s *Settings) applyLintRule(rc linter.RuleConfig, v any) (linter.RuleConfig
 	return rc, nil
 }
 
-// applySeverity returns a copy of rc with a rule severity (or "off") applied.
 func applySeverity(rc linter.RuleConfig, s string) (linter.RuleConfig, error) {
 	if strings.EqualFold(s, "off") {
 		rc.Disabled = true

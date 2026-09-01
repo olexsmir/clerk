@@ -3,8 +3,11 @@ package settings
 import (
 	"errors"
 	"fmt"
+	"io/fs"
+	"os"
 	"strings"
 
+	"github.com/pelletier/go-toml/v2"
 	"olexsmir.xyz/clerk/internal/linter"
 	"olexsmir.xyz/clerk/journal/printer"
 )
@@ -25,6 +28,29 @@ var DefaultConfig = Settings{
 	LatinToCyrillicCompletion: false,
 	Linter:                    linter.DefaultConfig,
 	Format:                    printer.DefaultConfig,
+}
+
+// Load reads and parses the TOML config file at path.
+// A missing file yields defaults without error.
+func Load(path string) (Settings, []string, error) {
+	data, err := os.ReadFile(path)
+	if errors.Is(err, fs.ErrNotExist) {
+		return DefaultConfig, nil, nil
+	}
+	if err != nil {
+		return DefaultConfig, nil, err
+	}
+	var raw map[string]any
+	if err := toml.Unmarshal(data, &raw); err != nil {
+		return Settings{}, nil, err
+	}
+	return parse(raw)
+}
+
+func parse(raw map[string]any) (settings Settings, warns []string, err error) {
+	s := DefaultConfig
+	warns, err = s.Apply(raw)
+	return s, warns, err
 }
 
 // Apply merges raw setting from a config file into Settings object.
@@ -77,7 +103,7 @@ func applyMap(m map[string]any, fn func(k string, val any) ([]string, error)) ([
 		ws, err := fn(k, val)
 		warns = append(warns, ws...)
 		if err != nil {
-			errs = append(errs, fmt.Errorf("%s: %w", k, err))
+			errs = append(errs, prefixLines(k, err))
 		}
 	}
 	return warns, errors.Join(errs...)
@@ -130,4 +156,14 @@ func normalizeKey(s string) string {
 		}
 	}
 	return b.String()
+}
+
+func prefixLines(prefix string, err error) error {
+	lines := strings.Split(err.Error(), "\n")
+	for i, line := range lines {
+		if line != "" {
+			lines[i] = prefix + ": " + line
+		}
+	}
+	return errors.New(strings.Join(lines, "\n"))
 }

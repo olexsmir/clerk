@@ -1,0 +1,17 @@
+-- config.toml --
+semantic_highlighting = true
+latin_to_cyrillic_completion = true
+bogus-setting = true
+
+[format]
+bogus-option = 1
+
+[lint]
+not-a-rule = "error"
+
+-- expect --
+warning: unknown format option "bogus-option"
+warning: unknown lint rule "not-a-rule"
+warning: unknown setting "bogus-setting"
+warning: unknown setting "latin_to_cyrillic_completion"
+warning: unknown setting "semantic_highlighting"

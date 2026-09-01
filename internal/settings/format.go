@@ -2,7 +2,6 @@ package settings
 
 import (
 	"fmt"
-	"math"
 	"strings"
 
 	"olexsmir.xyz/clerk/journal/printer"
@@ -25,8 +24,8 @@ func (s *Settings) setFormatField(name string, val any) ([]string, error) {
 		if !ok {
 			return nil, fmt.Errorf("invalid value %v (want int)", val)
 		}
-		if n < 1 || n > 16 {
-			return nil, fmt.Errorf("indent-width %d out of range (want 1..16)", n)
+		if n < 1 || n > 32 {
+			return nil, fmt.Errorf("%d out of range (want 1..32)", n)
 		}
 		s.Format.IndentWidth = n
 	case "preserve_blank_lines":
@@ -48,8 +47,7 @@ func (s *Settings) setFormatField(name string, val any) ([]string, error) {
 		case strings.EqualFold(as, "tab"):
 			s.Format.AlignStyle = printer.AlignTab
 		default:
-			return nil, fmt.Errorf("invalid align-style %q (want %q, %q, or %q)",
-				as, "two-spaces", "right", "tab")
+			return nil, fmt.Errorf("invalid value %q (want %q, %q, or %q)", as, "two-spaces", "right", "tab")
 		}
 	case "align_column":
 		n, ok := toInt(val)
@@ -57,7 +55,7 @@ func (s *Settings) setFormatField(name string, val any) ([]string, error) {
 			return nil, fmt.Errorf("invalid value %v (want int)", val)
 		}
 		if n < 1 || n > 240 {
-			return nil, fmt.Errorf("align-column %d out of range (want 1..240)", n)
+			return nil, fmt.Errorf("%d out of range (want 1..240)", n)
 		}
 		s.Format.AlignColumn = n
 	case "commodity_pos":
@@ -71,7 +69,7 @@ func (s *Settings) setFormatField(name string, val any) ([]string, error) {
 		case strings.EqualFold(c, "before"):
 			s.Format.CommodityPos = printer.CommodityBefore
 		default:
-			return nil, fmt.Errorf("invalid commodity-pos %q (want %q or %q)", c, "after", "before")
+			return nil, fmt.Errorf("invalid value %q (want %q or %q)", c, "after", "before")
 		}
 	default:
 		return []string{fmt.Sprintf("unknown format option %q", name)}, nil
@@ -79,19 +77,11 @@ func (s *Settings) setFormatField(name string, val any) ([]string, error) {
 	return nil, nil
 }
 
-// toInt converts an integer-like value to int. Integral floats (e.g. JSON 2.0)
-// are accepted; non-integral floats (e.g. TOML 2.5) are rejected so callers
-// surface a clear error instead of silently truncating.
 func toInt(v any) (int, bool) {
 	switch n := v.(type) {
 	case int:
 		return n, true
 	case int64:
-		return int(n), true
-	case float64:
-		if n != math.Trunc(n) {
-			return 0, false
-		}
 		return int(n), true
 	default:
 		return 0, false
