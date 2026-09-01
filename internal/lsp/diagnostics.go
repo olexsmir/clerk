@@ -81,9 +81,7 @@ func (s *server) publishDiagnostics(ctx context.Context) {
 		return
 	}
 
-	for i := range finds { // LSP has no [Reporter]; default severities until settings land
-		finds[i].Severity = linter.Rules[finds[i].Code].Severity
-	}
+	s.assignSeverities(finds)
 	diagsByFile := s.groupFindsByFile(dedupFinds(finds))
 	for fpath := range paths {
 		if ctx.Err() != nil {
@@ -165,6 +163,15 @@ func spanToRange(span token.Span) protocol.Range {
 			Line:      max(0, uint32(span.End.Line-1)),
 			Character: uint32(max(0, span.End.Col-1)),
 		},
+	}
+}
+
+func (s *server) assignSeverities(finds []linter.Find) {
+	s.mu.RLock()
+	l := s.settings.Linter
+	s.mu.RUnlock()
+	for i := range finds {
+		finds[i].Severity = l.SeverityFor(finds[i].Code)
 	}
 }
 

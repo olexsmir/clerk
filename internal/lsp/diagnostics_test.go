@@ -23,6 +23,7 @@ func BenchmarkDiagnostics(b *testing.B) {
 	for b.Loop() {
 		an := analyzer.Build(journal.NewLoader().ResolveBytes("/test.journal", []byte(content)))
 		finds := dedupFinds(lint.Run(an))
+		srv.server.assignSeverities(finds)
 		_ = srv.server.groupFindsByFile(finds)
 	}
 }
