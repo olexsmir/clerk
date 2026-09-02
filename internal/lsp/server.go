@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"os"
 	"sync"
 
 	"github.com/go-json-experiment/json"
@@ -127,22 +128,6 @@ func (s *server) Initialized(ctx context.Context, params *protocol.InitializedPa
 	return nil
 }
 
-func (s *server) applyConfigFile(ctx context.Context) {
-	sets, warns, err := settings.Load(s.configPath)
-	if err != nil {
-		msg := "config " + s.configPath + ": " + err.Error()
-		s.log.Error("loading config failed", "err", err)
-		s.reportConfigProblem(ctx, protocol.MessageTypeError, msg)
-		return
-	}
-	s.mu.Lock()
-	s.settings = sets
-	s.mu.Unlock()
-	for _, w := range warns {
-		s.reportConfigProblem(ctx, protocol.MessageTypeWarning, w)
-	}
-}
-
 func (s *server) DidChangeWatchedFiles(ctx context.Context, params *protocol.DidChangeWatchedFilesParams) error {
 	for _, change := range params.Changes {
 		u := change.URI
@@ -212,6 +197,23 @@ func (s *server) applySettings(ctx context.Context, v protocol.LSPAny) error {
 	return err
 }
 
+func (s *server) applyConfigFile(ctx context.Context) {
+	if _, err := os.Stat(s.configPath); err != nil {
+		return
+	}
+	sets, warns, err := settings.Load(s.configPath)
+	if err != nil {
+		s.reportConfigProblem(ctx, protocol.MessageTypeError, "config "+s.configPath+": "+err.Error())
+		s.log.Error("loading config failed", "err", err)
+	}
+	s.mu.Lock()
+	s.settings = sets
+	s.mu.Unlock()
+	for _, w := range warns {
+		s.reportConfigProblem(ctx, protocol.MessageTypeWarning, w)
+	}
+}
+
 func (s *server) reportConfigProblem(ctx context.Context, typ protocol.MessageType, msg string) {
 	lvl := slog.LevelWarn
 	if typ == protocol.MessageTypeError {
@@ -221,11 +223,8 @@ func (s *server) reportConfigProblem(ctx context.Context, typ protocol.MessageTy
 	if s.client == nil {
 		return
 	}
-	if err := s.client.LogMessage(ctx, &protocol.LogMessageParams{
-		Type:    typ,
-		Message: msg,
-	}); err != nil {
-		s.log.Warn("window/logMessage failed", "err", err)
+	if err := s.client.ShowMessage(ctx, &protocol.ShowMessageParams{Type: typ, Message: msg}); err != nil {
+		s.log.Warn("window/showMessage failed", "err", err)
 	}
 }
 

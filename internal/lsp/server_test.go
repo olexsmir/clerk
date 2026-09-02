@@ -187,9 +187,9 @@ func TestServer_DidChangeWatchedFiles_DiskChangeDirtiesDependents(t *testing.T) 
 
 type captureClient struct {
 	protocol.Client
-	mu      sync.Mutex
-	diag    []protocol.PublishDiagnosticsParams
-	logmsgs []protocol.LogMessageParams
+	mu    sync.Mutex
+	diag  []protocol.PublishDiagnosticsParams
+	shown []protocol.ShowMessageParams
 }
 
 func (c *captureClient) PublishDiagnostics(_ context.Context, params *protocol.PublishDiagnosticsParams) error {
@@ -199,9 +199,9 @@ func (c *captureClient) PublishDiagnostics(_ context.Context, params *protocol.P
 	return nil
 }
 
-func (c *captureClient) LogMessage(_ context.Context, params *protocol.LogMessageParams) error {
+func (c *captureClient) ShowMessage(_ context.Context, params *protocol.ShowMessageParams) error {
 	c.mu.Lock()
-	c.logmsgs = append(c.logmsgs, *params)
+	c.shown = append(c.shown, *params)
 	c.mu.Unlock()
 	return nil
 }
@@ -245,6 +245,7 @@ func TestServer_InitializedReportsConfigProblems(t *testing.T) {
 		want         string
 	}{
 		{"unknown key", "bogus = 1\n", protocol.MessageTypeWarning, `unknown setting "bogus"`},
+		{"unknown lint rule", "[lint]\nnot-a-rule = \"error\"\n", protocol.MessageTypeWarning, `unknown lint rule "not-a-rule"`},
 		{"unparseable", "not toml [[[\n", protocol.MessageTypeError, "toml:"},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
@@ -260,11 +261,28 @@ func TestServer_InitializedReportsConfigProblems(t *testing.T) {
 				t.Fatalf("initialized: %v", err)
 			}
 			capture.mu.Lock()
-			msgs := slices.Clone(capture.logmsgs)
+			msgs := slices.Clone(capture.shown)
 			capture.mu.Unlock()
 			if len(msgs) != 1 || msgs[0].Type != tt.typ || !strings.Contains(msgs[0].Message, tt.want) {
-				t.Errorf("unexpected log messages: %+v", msgs)
+				t.Errorf("unexpected messages: %+v", msgs)
 			}
 		})
+	}
+}
+
+func TestServer_DidChangeConfigurationReportsProblems(t *testing.T) {
+	srv := newServer(t)
+	capture := &captureClient{}
+	srv.server.client = capture
+	if err := srv.server.DidChangeConfiguration(t.Context(), &protocol.DidChangeConfigurationParams{
+		Settings: protocol.LSPAny(`{"latin_to_cyrillic_completion": true, "lint": {"unused_accountt": "off"}}`),
+	}); err != nil {
+		t.Fatalf("didChangeConfiguration: %v", err)
+	}
+	capture.mu.Lock()
+	msgs := slices.Clone(capture.shown)
+	capture.mu.Unlock()
+	if len(msgs) != 1 || msgs[0].Type != protocol.MessageTypeWarning || !strings.Contains(msgs[0].Message, `unknown lint rule "unused_accountt"`) {
+		t.Errorf("unexpected messages: %+v", msgs)
 	}
 }

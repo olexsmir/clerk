@@ -32,17 +32,17 @@ var DefaultConfig = Settings{
 
 // Load reads and parses the TOML config file at path.
 // A missing file yields defaults without error.
-func Load(path string) (Settings, []string, error) {
-	data, err := os.ReadFile(path)
-	if errors.Is(err, fs.ErrNotExist) {
-		return DefaultConfig, nil, nil
-	}
+func Load(fpath string) (Settings, []string, error) {
+	data, err := os.ReadFile(fpath)
 	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return DefaultConfig, nil, nil
+		}
 		return DefaultConfig, nil, err
 	}
 	var raw map[string]any
 	if err := toml.Unmarshal(data, &raw); err != nil {
-		return Settings{}, nil, err
+		return DefaultConfig, nil, err
 	}
 	return parse(raw)
 }
