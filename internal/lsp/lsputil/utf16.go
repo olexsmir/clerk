@@ -7,7 +7,8 @@ import (
 )
 
 // Utf16Col returns the UTF-16 code unit column (0-based) for a byte offset
-// within the given line content (without newline).
+// within the given line content (without newline). Pure-ASCII prefixes score
+// one unit per byte without decoding.
 func Utf16Col(line string, byteOffset int) int {
 	if byteOffset <= 0 {
 		return 0
@@ -15,6 +16,16 @@ func Utf16Col(line string, byteOffset int) int {
 	if byteOffset > len(line) {
 		byteOffset = len(line)
 	}
+	asc := line[:byteOffset]
+	for i := range asc {
+		if asc[i] >= utf8.RuneSelf {
+			return utf16ColSlow(line, byteOffset)
+		}
+	}
+	return byteOffset
+}
+
+func utf16ColSlow(line string, byteOffset int) int {
 	col := 0
 	for i := 0; i < byteOffset; {
 		r, size := utf8.DecodeRuneInString(line[i:])
@@ -29,6 +40,15 @@ func Utf16Col(line string, byteOffset int) int {
 
 // Utf16ColBytes returns the UTF-16 code unit column of b (without newline).
 func Utf16ColBytes(b []byte) int {
+	for _, c := range b {
+		if c >= utf8.RuneSelf {
+			return utf16ColBytesSlow(b)
+		}
+	}
+	return len(b)
+}
+
+func utf16ColBytesSlow(b []byte) int {
 	col := 0
 	for i := 0; i < len(b); {
 		r, size := utf8.DecodeRune(b[i:])
@@ -52,6 +72,16 @@ func Utf16Len(content string, offset, end int) int {
 	if offset >= end {
 		return 0
 	}
+	seg := content[offset:end]
+	for i := range seg {
+		if seg[i] >= utf8.RuneSelf {
+			return utf16LenSlow(content, offset, end)
+		}
+	}
+	return end - offset
+}
+
+func utf16LenSlow(content string, offset, end int) int {
 	n := 0
 	for i := offset; i < end; {
 		r, size := utf8.DecodeRuneInString(content[i:])

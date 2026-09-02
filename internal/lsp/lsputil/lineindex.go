@@ -61,6 +61,20 @@ func (l *LineIndex) Offset(line, col int) int {
 	for lineEnd > lineStart && (l.content[lineEnd-1] == '\n' || l.content[lineEnd-1] == '\r') {
 		lineEnd--
 	}
+	seg := l.content[lineStart:lineEnd]
+	ascii := true
+	for i := range seg {
+		if seg[i] >= utf8.RuneSelf {
+			ascii = false
+			break
+		}
+	}
+	if ascii {
+		if col >= len(seg) {
+			return lineEnd
+		}
+		return lineStart + col
+	}
 	off := lineStart
 	units := 0
 	for off < lineEnd && units < col {

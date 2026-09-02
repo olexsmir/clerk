@@ -14,18 +14,17 @@ func (s *server) DocumentSymbol(_ context.Context, params *protocol.DocumentSymb
 	if an == nil {
 		return nil, nil
 	}
-	for _, pf := range an.Files {
-		if pf.Path == params.TextDocument.URI.Path() {
-			symbols := make([]protocol.DocumentSymbol, 0, len(pf.Ast.Entries)/2)
-			for _, entry := range pf.Ast.Entries {
-				if symbol, ok := entryDocumentSymbol(entry, pf.Src); ok {
-					symbols = append(symbols, symbol)
-				}
-			}
-			return protocol.DocumentSymbolSlice(symbols), nil
+	pf := parsedFileFor(an, params.TextDocument.URI.Path())
+	if pf == nil {
+		return nil, nil
+	}
+	symbols := make([]protocol.DocumentSymbol, 0, len(pf.Ast.Entries)/2)
+	for _, entry := range pf.Ast.Entries {
+		if symbol, ok := entryDocumentSymbol(entry, pf.Src); ok {
+			symbols = append(symbols, symbol)
 		}
 	}
-	return nil, nil
+	return protocol.DocumentSymbolSlice(symbols), nil
 }
 
 func entryDocumentSymbol(e ast.Entry, src []byte) (protocol.DocumentSymbol, bool) {

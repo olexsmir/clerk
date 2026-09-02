@@ -76,14 +76,12 @@ func (s *server) Rename(_ context.Context, params *protocol.RenameParams) (*prot
 }
 
 func findSymbolUnderCursor(an *analyzer.Analysis, docPath, content string, cursor int) *symbolRef {
-	for _, pf := range an.Files {
-		if pf.Path != docPath {
-			continue
-		}
-		if entry := entryAt(pf.Ast.Entries, cursor); entry != nil {
-			return symbolInEntry(content, entry, cursor)
-		}
+	pf := parsedFileFor(an, docPath)
+	if pf == nil {
 		return nil
+	}
+	if entry := entryAt(pf.Ast.Entries, cursor); entry != nil {
+		return symbolInEntry(content, entry, cursor)
 	}
 	return nil
 }

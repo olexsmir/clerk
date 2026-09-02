@@ -220,57 +220,58 @@ func spanContains(content string, span token.Span, offset int) bool {
 }
 
 func entryAt(entries []ast.Entry, cursor int) ast.Entry {
-	idx := sort.Search(len(entries), func(i int) bool { return entryStart(entries[i]) > cursor }) - 1
+	idx := sort.Search(len(entries), func(i int) bool { return entrySpan(entries[i]).Start.Offset > cursor }) - 1
 	if idx < 0 {
 		return nil
 	}
 	return entries[idx]
 }
 
-func entryStart(e ast.Entry) int {
+// entrySpan returns the span covering an entry.
+func entrySpan(e ast.Entry) token.Span {
 	switch e := e.(type) {
 	case *ast.BlankLine:
-		return e.Span.Start.Offset
+		return e.Span
 	case *ast.Transaction:
-		return e.Span.Start.Offset
+		return e.Span
 	case *ast.PeriodicTransaction:
-		return e.Span.Start.Offset
+		return e.Span
 	case *ast.AutomatedTransaction:
-		return e.Span.Start.Offset
+		return e.Span
 	case *ast.Comment:
-		return e.Span.Start.Offset
+		return e.Span
 	case *ast.AccountDirective:
-		return e.Span.Start.Offset
+		return e.Span
 	case *ast.CommodityDirective:
-		return e.Span.Start.Offset
+		return e.Span
 	case *ast.PayeeDirective:
-		return e.Span.Start.Offset
+		return e.Span
 	case *ast.TagDirective:
-		return e.Span.Start.Offset
+		return e.Span
 	case *ast.IncludeDirective:
-		return e.Span.Start.Offset
+		return e.Span
 	case *ast.AliasDirective:
-		return e.Span.Start.Offset
+		return e.Span
 	case *ast.YearDirective:
-		return e.Span.Start.Offset
+		return e.Span
 	case *ast.DecimalMarkDirective:
-		return e.Span.Start.Offset
+		return e.Span
 	case *ast.DefaultCommodityDirective:
-		return e.Span.Start.Offset
+		return e.Span
 	case *ast.MarketPriceDirective:
-		return e.Span.Start.Offset
+		return e.Span
 	case *ast.ConversionDirective:
-		return e.Span.Start.Offset
+		return e.Span
 	case *ast.ApplyDirective:
-		return e.Span.Start.Offset
+		return e.Span
 	case *ast.EndDirective:
-		return e.Span.Start.Offset
+		return e.Span
 	case *ast.CommentBlockDirective:
-		return e.Span.Start.Offset
+		return e.Span
 	case *ast.IgnoredDirective:
-		return e.Span.Start.Offset
+		return e.Span
 	}
-	return 0
+	return token.Span{}
 }
 
 func spanEndClamped(content string, end int) int {

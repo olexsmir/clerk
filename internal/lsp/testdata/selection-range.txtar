@@ -1,0 +1,90 @@
+-- in.journal --
+; file co^mment
+; ta^g:file
+
+account expenses:^food
+  alias super^market
+commodity ^$
+payee Grocery ^Store
+payee "Quoted ^Payee"
+
+2024-^01-15 ^* ^(cafe) Grocery ^Store | lu^nch ; ta^g:v1
+    ; header comment tag:^h1
+    expenses:^food:cafe  $12.50  ; discount tag:d1
+    assets:^cash
+    (virtual:un^balanced)  $5
+    expenses:food:cafe  ^$12.50  ; discount tag:d1
+    expenses:food:cafe  $12.^50  ; discount tag:d1
+    expenses:food:cafe  $12.50  ; discount ^tag:d1
+    expenses:food  50 EU^R @ 1.2 USD
+    expenses:food  50 EUR @ ^1.2 USD
+    assets:checking  10 USD = ^20 USD
+
+2024-01-16 ^Grocery
+    expenses:food  50 ^EUR
+    ca^sh  $5
+
+~ monthly  Gro^cery
+    expenses:food  10 ^EUR
+
+~ every ^week from 2024-01-^01 to 2024-0^2-01 ; note
+    expenses:food  10 EUR
+
+= ex^pr
+    expenses:food  10 EUR
+
+alias expenses:ca^fe = expenses:food:restaurant
+tag na^me
+D 1 U^SD
+P 2024-01-20 12:^00:00 EUR 1.^2 USD
+C 1 EUR = 1.^1 USD
+
+payee Ка^фе
+
+^
+2024-01-17 t
+    assets:cash
+^
+
+-- expect --
+0:9 "; file comment" -> <doc>
+1:4 "tag" -> "; tag:file" -> <doc>
+3:17 "food" -> "expenses:food" -> "account expenses:food\n  alias supermarket" -> <doc>
+4:13 "supermarket" -> "account expenses:food\n  alias supermarket" -> <doc>
+5:10 "$" -> "commodity $" -> <doc>
+6:14 "Grocery Store" -> "payee Grocery Store" -> <doc>
+7:14 "\"Quoted Payee\"" -> "payee \"Quoted Payee\"" -> <doc>
+9:5 "2024-01-15" -> "2024-01-15 * (cafe) Grocery Store | lunch ; tag:v1\n    ; header comment tag:h1\n    expenses:food:cafe  $12.50  ; discount tag:d1\n    assets:cash\n    (virtual:unbalanced)  $5\n    expenses:food:cafe  $12.50  ; discount tag:d1\n    expenses:food:cafe  $12.50  ; discount tag:d1\n    expenses:food:cafe  $12.50  ; discount tag:d1\n    expenses:food  50 EUR @ 1.2 USD\n    expenses:food  50 EUR @ 1.2 USD\n    assets:checking  10 USD = 20 USD" -> <doc>
+9:11 "*" -> "2024-01-15 * (cafe) Grocery Store | lunch ; tag:v1\n    ; header comment tag:h1\n    expenses:food:cafe  $12.50  ; discount tag:d1\n    assets:cash\n    (virtual:unbalanced)  $5\n    expenses:food:cafe  $12.50  ; discount tag:d1\n    expenses:food:cafe  $12.50  ; discount tag:d1\n    expenses:food:cafe  $12.50  ; discount tag:d1\n    expenses:food  50 EUR @ 1.2 USD\n    expenses:food  50 EUR @ 1.2 USD\n    assets:checking  10 USD = 20 USD" -> <doc>
+9:13 "(cafe)" -> "2024-01-15 * (cafe) Grocery Store | lunch ; tag:v1\n    ; header comment tag:h1\n    expenses:food:cafe  $12.50  ; discount tag:d1\n    assets:cash\n    (virtual:unbalanced)  $5\n    expenses:food:cafe  $12.50  ; discount tag:d1\n    expenses:food:cafe  $12.50  ; discount tag:d1\n    expenses:food:cafe  $12.50  ; discount tag:d1\n    expenses:food  50 EUR @ 1.2 USD\n    expenses:food  50 EUR @ 1.2 USD\n    assets:checking  10 USD = 20 USD" -> <doc>
+9:28 "Grocery Store" -> "2024-01-15 * (cafe) Grocery Store | lunch ; tag:v1\n    ; header comment tag:h1\n    expenses:food:cafe  $12.50  ; discount tag:d1\n    assets:cash\n    (virtual:unbalanced)  $5\n    expenses:food:cafe  $12.50  ; discount tag:d1\n    expenses:food:cafe  $12.50  ; discount tag:d1\n    expenses:food:cafe  $12.50  ; discount tag:d1\n    expenses:food  50 EUR @ 1.2 USD\n    expenses:food  50 EUR @ 1.2 USD\n    assets:checking  10 USD = 20 USD" -> <doc>
+9:38 "lunch" -> "2024-01-15 * (cafe) Grocery Store | lunch ; tag:v1\n    ; header comment tag:h1\n    expenses:food:cafe  $12.50  ; discount tag:d1\n    assets:cash\n    (virtual:unbalanced)  $5\n    expenses:food:cafe  $12.50  ; discount tag:d1\n    expenses:food:cafe  $12.50  ; discount tag:d1\n    expenses:food:cafe  $12.50  ; discount tag:d1\n    expenses:food  50 EUR @ 1.2 USD\n    expenses:food  50 EUR @ 1.2 USD\n    assets:checking  10 USD = 20 USD" -> <doc>
+9:46 "tag" -> "; tag:v1" -> "2024-01-15 * (cafe) Grocery Store | lunch ; tag:v1\n    ; header comment tag:h1\n    expenses:food:cafe  $12.50  ; discount tag:d1\n    assets:cash\n    (virtual:unbalanced)  $5\n    expenses:food:cafe  $12.50  ; discount tag:d1\n    expenses:food:cafe  $12.50  ; discount tag:d1\n    expenses:food:cafe  $12.50  ; discount tag:d1\n    expenses:food  50 EUR @ 1.2 USD\n    expenses:food  50 EUR @ 1.2 USD\n    assets:checking  10 USD = 20 USD" -> <doc>
+10:25 "; header comment tag:h1" -> "2024-01-15 * (cafe) Grocery Store | lunch ; tag:v1\n    ; header comment tag:h1\n    expenses:food:cafe  $12.50  ; discount tag:d1\n    assets:cash\n    (virtual:unbalanced)  $5\n    expenses:food:cafe  $12.50  ; discount tag:d1\n    expenses:food:cafe  $12.50  ; discount tag:d1\n    expenses:food:cafe  $12.50  ; discount tag:d1\n    expenses:food  50 EUR @ 1.2 USD\n    expenses:food  50 EUR @ 1.2 USD\n    assets:checking  10 USD = 20 USD" -> <doc>
+11:13 "food" -> "expenses:food:cafe" -> "    expenses:food:cafe  $12.50  ; discount tag:d1" -> "2024-01-15 * (cafe) Grocery Store | lunch ; tag:v1\n    ; header comment tag:h1\n    expenses:food:cafe  $12.50  ; discount tag:d1\n    assets:cash\n    (virtual:unbalanced)  $5\n    expenses:food:cafe  $12.50  ; discount tag:d1\n    expenses:food:cafe  $12.50  ; discount tag:d1\n    expenses:food:cafe  $12.50  ; discount tag:d1\n    expenses:food  50 EUR @ 1.2 USD\n    expenses:food  50 EUR @ 1.2 USD\n    assets:checking  10 USD = 20 USD" -> <doc>
+12:11 "cash" -> "assets:cash" -> "    assets:cash" -> "2024-01-15 * (cafe) Grocery Store | lunch ; tag:v1\n    ; header comment tag:h1\n    expenses:food:cafe  $12.50  ; discount tag:d1\n    assets:cash\n    (virtual:unbalanced)  $5\n    expenses:food:cafe  $12.50  ; discount tag:d1\n    expenses:food:cafe  $12.50  ; discount tag:d1\n    expenses:food:cafe  $12.50  ; discount tag:d1\n    expenses:food  50 EUR @ 1.2 USD\n    expenses:food  50 EUR @ 1.2 USD\n    assets:checking  10 USD = 20 USD" -> <doc>
+13:15 "unbalanced" -> "virtual:unbalanced" -> "    (virtual:unbalanced)  $5" -> "2024-01-15 * (cafe) Grocery Store | lunch ; tag:v1\n    ; header comment tag:h1\n    expenses:food:cafe  $12.50  ; discount tag:d1\n    assets:cash\n    (virtual:unbalanced)  $5\n    expenses:food:cafe  $12.50  ; discount tag:d1\n    expenses:food:cafe  $12.50  ; discount tag:d1\n    expenses:food:cafe  $12.50  ; discount tag:d1\n    expenses:food  50 EUR @ 1.2 USD\n    expenses:food  50 EUR @ 1.2 USD\n    assets:checking  10 USD = 20 USD" -> <doc>
+14:24 "$" -> "$12.50" -> "    expenses:food:cafe  $12.50  ; discount tag:d1" -> "2024-01-15 * (cafe) Grocery Store | lunch ; tag:v1\n    ; header comment tag:h1\n    expenses:food:cafe  $12.50  ; discount tag:d1\n    assets:cash\n    (virtual:unbalanced)  $5\n    expenses:food:cafe  $12.50  ; discount tag:d1\n    expenses:food:cafe  $12.50  ; discount tag:d1\n    expenses:food:cafe  $12.50  ; discount tag:d1\n    expenses:food  50 EUR @ 1.2 USD\n    expenses:food  50 EUR @ 1.2 USD\n    assets:checking  10 USD = 20 USD" -> <doc>
+15:28 "12.50" -> "$12.50" -> "    expenses:food:cafe  $12.50  ; discount tag:d1" -> "2024-01-15 * (cafe) Grocery Store | lunch ; tag:v1\n    ; header comment tag:h1\n    expenses:food:cafe  $12.50  ; discount tag:d1\n    assets:cash\n    (virtual:unbalanced)  $5\n    expenses:food:cafe  $12.50  ; discount tag:d1\n    expenses:food:cafe  $12.50  ; discount tag:d1\n    expenses:food:cafe  $12.50  ; discount tag:d1\n    expenses:food  50 EUR @ 1.2 USD\n    expenses:food  50 EUR @ 1.2 USD\n    assets:checking  10 USD = 20 USD" -> <doc>
+16:43 "tag" -> "; discount tag:d1" -> "    expenses:food:cafe  $12.50  ; discount tag:d1" -> "2024-01-15 * (cafe) Grocery Store | lunch ; tag:v1\n    ; header comment tag:h1\n    expenses:food:cafe  $12.50  ; discount tag:d1\n    assets:cash\n    (virtual:unbalanced)  $5\n    expenses:food:cafe  $12.50  ; discount tag:d1\n    expenses:food:cafe  $12.50  ; discount tag:d1\n    expenses:food:cafe  $12.50  ; discount tag:d1\n    expenses:food  50 EUR @ 1.2 USD\n    expenses:food  50 EUR @ 1.2 USD\n    assets:checking  10 USD = 20 USD" -> <doc>
+17:24 "EUR" -> "50 EUR" -> "    expenses:food  50 EUR @ 1.2 USD" -> "2024-01-15 * (cafe) Grocery Store | lunch ; tag:v1\n    ; header comment tag:h1\n    expenses:food:cafe  $12.50  ; discount tag:d1\n    assets:cash\n    (virtual:unbalanced)  $5\n    expenses:food:cafe  $12.50  ; discount tag:d1\n    expenses:food:cafe  $12.50  ; discount tag:d1\n    expenses:food:cafe  $12.50  ; discount tag:d1\n    expenses:food  50 EUR @ 1.2 USD\n    expenses:food  50 EUR @ 1.2 USD\n    assets:checking  10 USD = 20 USD" -> <doc>
+18:28 "@ 1.2 USD" -> "    expenses:food  50 EUR @ 1.2 USD" -> "2024-01-15 * (cafe) Grocery Store | lunch ; tag:v1\n    ; header comment tag:h1\n    expenses:food:cafe  $12.50  ; discount tag:d1\n    assets:cash\n    (virtual:unbalanced)  $5\n    expenses:food:cafe  $12.50  ; discount tag:d1\n    expenses:food:cafe  $12.50  ; discount tag:d1\n    expenses:food:cafe  $12.50  ; discount tag:d1\n    expenses:food  50 EUR @ 1.2 USD\n    expenses:food  50 EUR @ 1.2 USD\n    assets:checking  10 USD = 20 USD" -> <doc>
+19:30 "= 20 USD" -> "    assets:checking  10 USD = 20 USD" -> "2024-01-15 * (cafe) Grocery Store | lunch ; tag:v1\n    ; header comment tag:h1\n    expenses:food:cafe  $12.50  ; discount tag:d1\n    assets:cash\n    (virtual:unbalanced)  $5\n    expenses:food:cafe  $12.50  ; discount tag:d1\n    expenses:food:cafe  $12.50  ; discount tag:d1\n    expenses:food:cafe  $12.50  ; discount tag:d1\n    expenses:food  50 EUR @ 1.2 USD\n    expenses:food  50 EUR @ 1.2 USD\n    assets:checking  10 USD = 20 USD" -> <doc>
+21:11 "Grocery" -> "2024-01-16 Grocery\n    expenses:food  50 EUR\n    cash  $5" -> <doc>
+22:22 "EUR" -> "50 EUR" -> "    expenses:food  50 EUR" -> "2024-01-16 Grocery\n    expenses:food  50 EUR\n    cash  $5" -> <doc>
+23:6 "cash" -> "    cash  $5" -> "2024-01-16 Grocery\n    expenses:food  50 EUR\n    cash  $5" -> <doc>
+25:14 "Grocery" -> "~ monthly  Grocery\n    expenses:food  10 EUR" -> <doc>
+26:22 "EUR" -> "10 EUR" -> "    expenses:food  10 EUR" -> "~ monthly  Grocery\n    expenses:food  10 EUR" -> <doc>
+28:8 "every week from 2024-01-01 to 2024-02-01" -> "~ every week from 2024-01-01 to 2024-02-01 ; note\n    expenses:food  10 EUR" -> <doc>
+28:26 "2024-01-01" -> "every week from 2024-01-01 to 2024-02-01" -> "~ every week from 2024-01-01 to 2024-02-01 ; note\n    expenses:food  10 EUR" -> <doc>
+28:38 "2024-02-01" -> "every week from 2024-01-01 to 2024-02-01" -> "~ every week from 2024-01-01 to 2024-02-01 ; note\n    expenses:food  10 EUR" -> <doc>
+31:4 "expr" -> "= expr\n    expenses:food  10 EUR" -> <doc>
+34:17 "cafe" -> "expenses:cafe" -> "alias expenses:cafe = expenses:food:restaurant" -> <doc>
+35:6 "name" -> "tag name" -> <doc>
+36:5 "USD" -> "1 USD" -> "D 1 USD" -> <doc>
+37:16 "12:00:00" -> "P 2024-01-20 12:00:00 EUR 1.2 USD" -> <doc>
+37:28 "1.2" -> "1.2 USD" -> "P 2024-01-20 12:00:00 EUR 1.2 USD" -> <doc>
+38:12 "1.1" -> "1.1 USD" -> "C 1 EUR = 1.1 USD" -> <doc>
+40:8 "Кафе" -> "payee Кафе" -> <doc>
+42:0 <doc>
+45:0 <doc>

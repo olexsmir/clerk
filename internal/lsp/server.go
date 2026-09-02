@@ -36,6 +36,16 @@ type server struct {
 	configPath    string
 }
 
+// parsedFileFor returns the parsed file for path within the analysis, or nil.
+func parsedFileFor(an *analyzer.Analysis, path string) *journal.ParsedFile {
+	for _, pf := range an.Files {
+		if pf.Path == path {
+			return pf
+		}
+	}
+	return nil
+}
+
 // analysisFor returns the cached analysis for an open doc, rebuilds when the doc or a file it inclues changed.
 func (s *server) analysisFor(u uri.URI) *analyzer.Analysis {
 	s.mu.RLock()
@@ -102,13 +112,14 @@ func (s *server) Initialize(ctx context.Context, params *protocol.InitializePara
 			ReferencesProvider:         protocol.Boolean(true),
 			WorkspaceSymbolProvider:    protocol.Boolean(true),
 			DocumentSymbolProvider:     protocol.Boolean(true),
+			FoldingRangeProvider:       protocol.Boolean(true),
+			SelectionRangeProvider:     protocol.Boolean(true),
 			RenameProvider: &protocol.RenameOptions{
 				PrepareProvider: new(true),
 			},
 			CompletionProvider: &protocol.CompletionOptions{
 				TriggerCharacters: []string{":", "@"},
 			},
-			FoldingRangeProvider: protocol.Boolean(true),
 			TextDocumentSync: &protocol.TextDocumentSyncOptions{
 				OpenClose: new(true),
 				Change:    new(protocol.TextDocumentSyncKindFull),

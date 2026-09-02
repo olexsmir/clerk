@@ -61,14 +61,12 @@ type hoverElement struct {
 // docPath. Only the entry containing the cursor can match; entries are in
 // file order, so [entryAt] finds the containing entry in O(log n).
 func hoverAt(an *analyzer.Analysis, docPath, content string, cursor int) *hoverElement {
-	for _, pf := range an.Files {
-		if pf.Path != docPath {
-			continue
-		}
-		if entry := entryAt(pf.Ast.Entries, cursor); entry != nil {
-			return hoverInEntry(content, entry, cursor)
-		}
+	pf := parsedFileFor(an, docPath)
+	if pf == nil {
 		return nil
+	}
+	if entry := entryAt(pf.Ast.Entries, cursor); entry != nil {
+		return hoverInEntry(content, entry, cursor)
 	}
 	return nil
 }

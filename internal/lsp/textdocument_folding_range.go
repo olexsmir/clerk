@@ -16,17 +16,15 @@ func (s *server) FoldingRange(_ context.Context, params *protocol.FoldingRangePa
 	if an == nil {
 		return nil, nil
 	}
-	for _, pf := range an.Files {
-		if pf.Path != params.TextDocument.URI.Path() {
-			continue
-		}
-		ranges := foldingRangesFor(pf.Ast.Entries)
-		slices.SortFunc(ranges, func(a, b protocol.FoldingRange) int {
-			return cmp.Compare(a.StartLine, b.StartLine)
-		})
-		return ranges, nil
+	pf := parsedFileFor(an, params.TextDocument.URI.Path())
+	if pf == nil {
+		return nil, nil
 	}
-	return nil, nil
+	ranges := foldingRangesFor(pf.Ast.Entries)
+	slices.SortFunc(ranges, func(a, b protocol.FoldingRange) int {
+		return cmp.Compare(a.StartLine, b.StartLine)
+	})
+	return ranges, nil
 }
 
 // foldingRangesFor folds every foldable structure in a journal's top-level entries:
