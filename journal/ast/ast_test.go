@@ -8,21 +8,18 @@ func TestDateCompare(t *testing.T) {
 	feb1 := Date{Year: 2024, Month: 2, Day: 1}
 	nextYear := Date{Year: 2025, Month: 1, Day: 1}
 
-	tests := []struct {
-		a, b Date
-		want int
-	}{
-		{jan1, jan1, 0},
-		{jan2, jan1, 1},
-		{jan1, jan2, -1},
-		{feb1, jan2, 1},
-		{jan2, feb1, -1},
-		{nextYear, feb1, 1},
-		{feb1, nextYear, -1},
+	tests := map[[2]Date]int{
+		{jan1, jan1}:     0,
+		{jan2, jan1}:     1,
+		{jan1, jan2}:     -1,
+		{feb1, jan2}:     1,
+		{jan2, feb1}:     -1,
+		{nextYear, feb1}: 1,
+		{feb1, nextYear}: -1,
 	}
-	for _, c := range tests {
-		if got := c.a.Compare(c.b); got != c.want {
-			t.Errorf("Compare(%v, %v) = %d, want %d", c.a, c.b, got, c.want)
+	for dates, want := range tests {
+		if got := dates[0].Compare(dates[1]); got != want {
+			t.Errorf("Compare(%v, %v) = %d, want %d", dates[0], dates[1], got, want)
 		}
 	}
 }

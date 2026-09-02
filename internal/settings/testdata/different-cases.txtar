@@ -1,0 +1,18 @@
+-- config.toml --
+[format]
+tabIndent = true
+indentWidth = 4
+preserveBlankLines = true
+
+[lint]
+missingPayee = "off"
+accountDepth = { severity = "info" }
+account_pepth = "info"
+
+-- expect --
+warning: unknown lint rule "account_pepth"
+format.tab-indent: true
+format.indent-width: 4
+format.preserve-blank-lines: true
+lint.account-depth: info
+lint.missing-payee: disabled

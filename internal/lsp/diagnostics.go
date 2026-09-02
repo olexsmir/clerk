@@ -36,10 +36,6 @@ func (s *server) scheduleDiagnostics(ctx context.Context) {
 func (s *server) publishDiagnostics(ctx context.Context) {
 	s.log.Debug("publishing diagnostics")
 
-	if ctx.Err() != nil {
-		return
-	}
-
 	s.mu.RLock()
 	var dirtyURIs []uri.URI
 	for u, state := range s.openDocs {
@@ -55,6 +51,15 @@ func (s *server) publishDiagnostics(ctx context.Context) {
 
 	// Rebuild every dirty doc and publish the union of their files;
 	// the same included file may appear in several trees and must be published once.
+	s.mu.RLock()
+	lintCfg := s.settings.Linter
+	s.mu.RUnlock()
+	lint, err := linter.NewLinter(lintCfg)
+	if err != nil {
+		s.log.Warn("building linter failed", "err", err)
+		return
+	}
+
 	var finds []linter.Find
 	paths := make(map[string]bool)
 	for _, u := range dirtyURIs {
@@ -65,18 +70,16 @@ func (s *server) publishDiagnostics(ctx context.Context) {
 		for _, pf := range a.Files {
 			paths[pf.Path] = true
 		}
-		finds = append(finds, s.linter.Run(a)...)
+		finds = append(finds, lint.Run(a)...)
 	}
 
 	if ctx.Err() != nil {
 		return
 	}
 
+	s.assignSeverities(finds)
 	diagsByFile := s.groupFindsByFile(dedupFinds(finds))
 	for fpath := range paths {
-		if ctx.Err() != nil {
-			return
-		}
 		if err := s.client.PublishDiagnostics(ctx, &protocol.PublishDiagnosticsParams{
 			URI:         uri.File(fpath),
 			Diagnostics: diagsByFile[fpath],
@@ -135,8 +138,6 @@ func dedupFinds(finds []linter.Find) []linter.Find {
 	return dedup
 }
 
-// findKey identifies a find by its position and rule; a struct key avoids a
-// per-find fmt.Sprintf.
 type findKey struct {
 	file      string
 	line, col int
@@ -153,6 +154,15 @@ func spanToRange(span token.Span) protocol.Range {
 			Line:      max(0, uint32(span.End.Line-1)),
 			Character: uint32(max(0, span.End.Col-1)),
 		},
+	}
+}
+
+func (s *server) assignSeverities(finds []linter.Find) {
+	s.mu.RLock()
+	l := s.settings.Linter
+	s.mu.RUnlock()
+	for i := range finds {
+		finds[i].Severity = l.SeverityFor(finds[i].Code)
 	}
 }
 

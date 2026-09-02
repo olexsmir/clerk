@@ -39,7 +39,7 @@ func TestGolden_DocumentSymbols(t *testing.T) {
 func BenchmarkDocumentSymbol(b *testing.B) {
 	content := openJournal(b, "../../journal/testdata/journals/actual-1ktxns-100accts.journal")
 
-	srv := NewServer("test")
+	srv := newServer(b)
 	u := uri.URI("file:///test.journal")
 	srv.server.openDoc(u, content, 1, "journal")
 	srv.server.analysisFor(u) // warm the per-doc cache

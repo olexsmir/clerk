@@ -6,6 +6,9 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/urfave/cli/v3"
+
+	"olexsmir.xyz/clerk/internal/settings"
 	"olexsmir.xyz/clerk/journal"
 )
 
@@ -52,4 +55,27 @@ func readStdin() ([]byte, error) {
 		return nil, fmt.Errorf("reading stdin: %w", err)
 	}
 	return src, nil
+}
+
+func findConfigFilePath(cmd *cli.Command) (string, error) {
+	if p := cmd.String("config"); p != "" {
+		if _, err := os.Stat(p); err != nil {
+			return "", fmt.Errorf("config %q: %w", p, err)
+		}
+		return p, nil
+	}
+
+	cwd, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(cwd, "clerk.toml"), nil
+}
+
+func loadConfig(cmd *cli.Command) (settings.Settings, []string, error) {
+	configPath, err := findConfigFilePath(cmd)
+	if err != nil {
+		return settings.Settings{}, nil, err
+	}
+	return settings.Load(configPath)
 }

@@ -87,7 +87,7 @@ func TestSemanticTokensEdits(t *testing.T) {
 }
 
 func TestServer_Semantic_EmptyDocument(t *testing.T) {
-	srv := NewServer("test")
+	srv := newServer(t)
 	srv.server.openDoc(uri.URI("file:///empty.journal"), "", 1, "journal")
 	result, err := srv.server.SemanticTokensFull(t.Context(), &protocol.SemanticTokensParams{
 		TextDocument: protocol.TextDocumentIdentifier{URI: uri.URI("file:///empty.journal")},
@@ -101,7 +101,7 @@ func TestServer_Semantic_EmptyDocument(t *testing.T) {
 }
 
 func TestServer_Semantic_DocumentNotFound(t *testing.T) {
-	result, err := NewServer("test").server.SemanticTokensFull(t.Context(), &protocol.SemanticTokensParams{
+	result, err := newServer(t).server.SemanticTokensFull(t.Context(), &protocol.SemanticTokensParams{
 		TextDocument: protocol.TextDocumentIdentifier{URI: uri.URI("file:///unknown.journal")},
 	})
 	if err != nil {
@@ -140,7 +140,7 @@ func TestGolden_SemanticTokensRange(t *testing.T) {
 
 	t.Run("golden", func(t *testing.T) {
 		u := uri.URI("file:///test.journal")
-		srv := NewServer("test")
+		srv := newServer(t)
 		srv.server.openDoc(u, string(in), 1, "journal")
 
 		var out strings.Builder
@@ -189,7 +189,7 @@ func TestGolden_SemanticTokensDelta(t *testing.T) {
 			in := ar.Get("in.journal")
 
 			u := uri.URI("file:///test.journal")
-			srv := NewServer("test")
+			srv := newServer(t)
 			srv.server.openDoc(u, string(in), 1, "journal")
 
 			full, err := srv.server.SemanticTokensFull(t.Context(), &protocol.SemanticTokensParams{

@@ -6,11 +6,12 @@ import (
 	"olexsmir.xyz/clerk/internal/analyzer"
 )
 
+const UndeclaredTagID RuleID = "undeclared-tag"
+
 // UndeclaredTag flags used tag that's not declared via `tag` directive.
 type UndeclaredTag struct{}
 
-func (UndeclaredTag) ID() RuleID         { return "undeclared-tag" }
-func (UndeclaredTag) Severity() Severity { return SeverityWarning }
+func (UndeclaredTag) ID() RuleID { return UndeclaredTagID }
 func (u *UndeclaredTag) CheckJournal(an *analyzer.Analysis) []Find {
 	var finds []Find
 	for name, info := range an.Tags {
@@ -23,10 +24,9 @@ func (u *UndeclaredTag) CheckJournal(an *analyzer.Analysis) []Find {
 		}
 		for _, usage := range info.Usage {
 			finds = append(finds, Find{
-				Code:     u.ID(),
-				Severity: u.Severity(),
-				Span:     usage.Tag.Span,
-				Message:  fmt.Sprintf("undeclared tag: %s", name),
+				Code:    u.ID(),
+				Span:    usage.Tag.Span,
+				Message: fmt.Sprintf("undeclared tag: %s", name),
 			})
 		}
 	}

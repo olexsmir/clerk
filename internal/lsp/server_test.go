@@ -4,6 +4,7 @@ import (
 	"context"
 	"path/filepath"
 	"slices"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -11,12 +12,13 @@ import (
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 
+	"olexsmir.xyz/clerk/internal/linter"
 	"olexsmir.xyz/clerk/internal/testutil"
 )
 
 func TestAnalysisFor_CachedAndRebuilt(t *testing.T) {
 	u := uri.File(filepath.Join(t.TempDir(), "a.journal"))
-	srv := NewServer("test")
+	srv := newServer(t)
 	srv.server.openDoc(u, "2024-01-01 t\n    expenses:food  $10\n    assets:cash\n", 1, "journal")
 
 	a1 := srv.server.analysisFor(u)
@@ -46,7 +48,7 @@ func TestAnalysisFor_DependentDirty(t *testing.T) {
 	testutil.WriteFile(t, base, []byte("2024-01-01 t\n    expenses:food  $10\n    assets:cash\n"))
 	testutil.WriteFile(t, main, []byte("include base.journal\n"))
 
-	srv := NewServer("test")
+	srv := newServer(t)
 	uMain, uBase := uri.File(main), uri.File(base)
 	srv.server.openDoc(uMain, "include base.journal\n", 1, "journal")
 	srv.server.openDoc(uBase, "2024-01-01 t\n    expenses:food  $10\n    assets:cash\n", 1, "journal")
@@ -75,7 +77,7 @@ func TestServer_Diagnostics(t *testing.T) {
 	testutil.WriteFile(t, a.Path(), []byte(aContent))
 	testutil.WriteFile(t, b.Path(), []byte(bContent))
 
-	srv := NewServer("test")
+	srv := newServer(t)
 	capture := &captureClient{}
 	srv.server.client = capture
 
@@ -128,7 +130,7 @@ func TestServer_DidChangeWatchedFiles_SkipsOpenDocuments(t *testing.T) {
 	base := filepath.Join(dir, "base.journal")
 	testutil.WriteFile(t, base, []byte("2024-01-01 t\n    expenses:food  $10\n    assets:cash\n"))
 
-	srv := NewServer("test")
+	srv := newServer(t)
 	uBase := uri.File(base)
 	srv.server.openDoc(uBase, "2024-01-01 t\n    expenses:food  $10\n    assets:cash\n", 1, "journal")
 
@@ -153,7 +155,7 @@ func TestServer_DidChangeWatchedFiles_DiskChangeDirtiesDependents(t *testing.T) 
 	testutil.WriteFile(t, base, []byte("2024-01-01 t\n    expenses:food  $10\n    assets:cash\n"))
 	testutil.WriteFile(t, main, []byte("include base.journal\n"))
 
-	srv := NewServer("test")
+	srv := newServer(t)
 	srv.server.client = &captureClient{}
 	uMain := uri.File(main)
 	if err := srv.server.DidOpen(context.Background(), &protocol.DidOpenTextDocumentParams{
@@ -184,10 +186,80 @@ func TestServer_DidChangeWatchedFiles_DiskChangeDirtiesDependents(t *testing.T) 
 	}
 }
 
+func TestServer_ReportsConfigProblems(t *testing.T) {
+	for name, tt := range map[string]struct {
+		config, inline string
+		typ            protocol.MessageType
+		want           string
+	}{
+		"unknown setting":            {config: "bogus = 1\n", typ: protocol.MessageTypeWarning, want: `unknown setting "bogus"`},
+		"unknown lint rule":          {config: "[lint]\nnot-a-rule = \"error\"\n", typ: protocol.MessageTypeWarning, want: `unknown lint rule "not-a-rule"`},
+		"unparseable":                {config: "not toml [[[\n", typ: protocol.MessageTypeError, want: "toml:"},
+		"settings unknown lint rule": {inline: `{"lint":{"unused_accountt":"off"}}`, typ: protocol.MessageTypeWarning, want: `unknown lint rule "unused_accountt"`},
+	} {
+		t.Run(name, func(t *testing.T) {
+			capture := &captureClient{}
+			var srv *server
+			if tt.config != "" {
+				cfgPath := filepath.Join(t.TempDir(), "clerk.toml")
+				testutil.WriteFile(t, cfgPath, []byte(tt.config))
+				s, err := NewServer("test", cfgPath)
+				if err != nil {
+					t.Fatal(err)
+				}
+				srv = s.server
+				srv.client = capture
+				if err := srv.Initialized(t.Context(), &protocol.InitializedParams{}); err != nil {
+					t.Fatalf("initialized: %v", err)
+				}
+			} else {
+				srv = newServer(t).server
+				srv.client = capture
+				if err := srv.DidChangeConfiguration(t.Context(), &protocol.DidChangeConfigurationParams{
+					Settings: protocol.LSPAny(tt.inline),
+				}); err != nil {
+					t.Fatalf("didChangeConfiguration: %v", err)
+				}
+			}
+			msgs := capture.shownMessages()
+			if len(msgs) != 1 || msgs[0].Type != tt.typ || !strings.Contains(msgs[0].Message, tt.want) {
+				t.Errorf("unexpected messages: %+v", msgs)
+			}
+		})
+	}
+}
+
+func TestServer_Initialized_mergesConfigWithLSPSettings(t *testing.T) {
+	cfgPath := filepath.Join(t.TempDir(), "clerk.toml")
+	testutil.WriteFile(t, cfgPath, []byte("[lint]\nunbalanced-transaction = \"off\"\n"))
+	s, err := NewServer("test", cfgPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.server.Initialize(t.Context(), &protocol.InitializeParams{
+		InitializationOptions: protocol.LSPAny(`{"lint": {"missing-payee": "warn"}}`),
+	}); err != nil {
+		t.Fatalf("initialize: %v", err)
+	}
+	if err := s.server.Initialized(t.Context(), &protocol.InitializedParams{}); err != nil {
+		t.Fatalf("initialized: %v", err)
+	}
+	s.server.mu.RLock()
+	got := s.server.settings
+	s.server.mu.RUnlock()
+	if !got.Linter.Rules[linter.UnbalancedTransactionID].Disabled {
+		t.Error("file setting unbalanced-transaction=off not applied")
+	}
+	if rc := got.Linter.Rules[linter.MissingPayeeID]; rc.Disabled || rc.Severity != linter.SeverityWarning {
+		t.Errorf("init option missing-payee=warn clobbered by file: %+v", rc)
+	}
+}
+
 type captureClient struct {
 	protocol.Client
-	mu   sync.Mutex
-	diag []protocol.PublishDiagnosticsParams
+	mu    sync.Mutex
+	diag  []protocol.PublishDiagnosticsParams
+	shown []protocol.ShowMessageParams
 }
 
 func (c *captureClient) PublishDiagnostics(_ context.Context, params *protocol.PublishDiagnosticsParams) error {
@@ -195,6 +267,19 @@ func (c *captureClient) PublishDiagnostics(_ context.Context, params *protocol.P
 	c.diag = append(c.diag, *params)
 	c.mu.Unlock()
 	return nil
+}
+
+func (c *captureClient) ShowMessage(_ context.Context, params *protocol.ShowMessageParams) error {
+	c.mu.Lock()
+	c.shown = append(c.shown, *params)
+	c.mu.Unlock()
+	return nil
+}
+
+func (c *captureClient) shownMessages() []protocol.ShowMessageParams {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return slices.Clone(c.shown)
 }
 
 func (c *captureClient) lastDiags(u uri.URI) ([]protocol.Diagnostic, bool) {
@@ -218,4 +303,13 @@ func waitFor(t *testing.T, what string, cond func() bool) {
 		time.Sleep(10 * time.Millisecond)
 	}
 	t.Fatalf("timed out waiting for %s", what)
+}
+
+func newServer(tb testing.TB) Server {
+	tb.Helper()
+	s, err := NewServer("test", filepath.Join(tb.TempDir(), "clerk.toml"))
+	if err != nil {
+		tb.Fatal(err)
+	}
+	return s
 }

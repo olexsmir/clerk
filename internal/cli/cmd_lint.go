@@ -17,8 +17,20 @@ func (c *Cli) lintAction(ctx context.Context, cmd *cli.Command) error {
 	format := cmd.String("format")
 	pathStyle := cmd.String("path-style")
 
-	lint := linter.NewLinter(linter.Rules)
-	reporter := linter.NewReporter(os.Stdout, parsePathStyle(pathStyle))
+	set, warns, err := loadConfig(cmd)
+	if err != nil {
+		return err
+	}
+
+	for _, w := range warns {
+		fmt.Fprintln(os.Stderr, "warning:", w)
+	}
+
+	lint, err := linter.NewLinter(set.Linter)
+	if err != nil {
+		return err
+	}
+	reporter := linter.NewReporter(os.Stdout, parsePathStyle(pathStyle), set.Linter)
 
 	journals := cmd.StringArgs("journals")
 	if len(journals) == 0 {
@@ -35,12 +47,12 @@ func (c *Cli) lintAction(ctx context.Context, cmd *cli.Command) error {
 
 	loader := journal.NewLoader()
 
-	var hasIssues bool
+	var hasFailures bool
 	for _, f := range journalFiles {
 		rj, err := loader.Resolve(f)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error: %v\n", err)
-			hasIssues = true
+			hasFailures = true
 			continue
 		}
 		reporter.Collect(lint.Run(analyzer.Build(rj)))
@@ -50,7 +62,7 @@ func (c *Cli) lintAction(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("flushing report: %w", err)
 	}
 
-	if reporter.HasIssues() || hasIssues {
+	if reporter.HasFailures() || hasFailures {
 		return cli.Exit("", 1)
 	}
 	return nil
@@ -68,7 +80,7 @@ func (c *Cli) lintStdin(lint *linter.Linter, reporter *linter.Reporter, format s
 	if err := reporter.Flush(format); err != nil {
 		return fmt.Errorf("flushing report: %w", err)
 	}
-	if reporter.HasIssues() {
+	if reporter.HasFailures() {
 		return cli.Exit("", 1)
 	}
 	return nil

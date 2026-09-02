@@ -9,11 +9,12 @@ import (
 	"olexsmir.xyz/clerk/journal/ast"
 )
 
+const InvalidIncludeID RuleID = "invalid-include"
+
 // InvalidInclude flags include directives that don't point to an existing journal file.
 type InvalidInclude struct{}
 
-func (InvalidInclude) ID() RuleID         { return "invalid-include" }
-func (InvalidInclude) Severity() Severity { return SeverityError }
+func (InvalidInclude) ID() RuleID { return InvalidIncludeID }
 func (i *InvalidInclude) CheckJournal(an *analyzer.Analysis) []Find {
 	var finds []Find
 	for _, pf := range an.Files {
@@ -26,19 +27,17 @@ func (i *InvalidInclude) CheckJournal(an *analyzer.Analysis) []Find {
 
 			if !i.resolved(target, an.Files) {
 				finds = append(finds, Find{
-					Code:     i.ID(),
-					Severity: i.Severity(),
-					Message:  fmt.Sprintf("include not found: %s", inc.Path),
-					Span:     inc.Span,
+					Code:    i.ID(),
+					Message: fmt.Sprintf("include not found: %s", inc.Path),
+					Span:    inc.Span,
 				})
 				continue
 			}
 			if !journal.IsJournalFile(target) {
 				finds = append(finds, Find{
-					Code:     i.ID(),
-					Severity: i.Severity(),
-					Message:  fmt.Sprintf("include is not a journal file: %s", inc.Path),
-					Span:     inc.Span,
+					Code:    i.ID(),
+					Message: fmt.Sprintf("include is not a journal file: %s", inc.Path),
+					Span:    inc.Span,
 				})
 			}
 		}

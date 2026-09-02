@@ -1,0 +1,7 @@
+[format]
+tab-indent = true
+indent-width = 4
+
+[lint]
+unbalanced-transaction = "info"
+missing-payee = false

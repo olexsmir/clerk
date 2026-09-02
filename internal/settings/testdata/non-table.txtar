@@ -1,0 +1,5 @@
+-- config.toml --
+42
+
+-- expect --
+error: toml: expected character =

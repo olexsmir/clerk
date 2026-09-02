@@ -6,11 +6,12 @@ import (
 	"olexsmir.xyz/clerk/internal/analyzer"
 )
 
+const UnusedAccountID RuleID = "unused-account"
+
 // UnusedAccount flags declared accounts that are not used.
 type UnusedAccount struct{}
 
-func (UnusedAccount) ID() RuleID         { return "unused-account" }
-func (UnusedAccount) Severity() Severity { return SeverityWarning }
+func (UnusedAccount) ID() RuleID { return UnusedAccountID }
 func (u *UnusedAccount) CheckJournal(an *analyzer.Analysis) []Find {
 	var finds []Find
 	for name, info := range an.Accounts {
@@ -25,10 +26,9 @@ func (u *UnusedAccount) CheckJournal(an *analyzer.Analysis) []Find {
 		}
 		for _, d := range info.Directives {
 			finds = append(finds, Find{
-				Code:     u.ID(),
-				Severity: u.Severity(),
-				Span:     d.Account.Span,
-				Message:  fmt.Sprintf("unused account: %s", name),
+				Code:    u.ID(),
+				Span:    d.Account.Span,
+				Message: fmt.Sprintf("unused account: %s", name),
 			})
 		}
 	}

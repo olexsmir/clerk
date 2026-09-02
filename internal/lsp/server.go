@@ -2,16 +2,20 @@ package lsp
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"log/slog"
+	"os"
 	"sync"
 
+	"github.com/go-json-experiment/json"
+	"github.com/pelletier/go-toml/v2"
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 
 	"olexsmir.xyz/clerk/internal/analyzer"
-	"olexsmir.xyz/clerk/internal/linter"
+	"olexsmir.xyz/clerk/internal/settings"
 	"olexsmir.xyz/clerk/journal"
-	"olexsmir.xyz/clerk/journal/printer"
 )
 
 type server struct {
@@ -22,15 +26,14 @@ type server struct {
 
 	version, name string
 
-	linter  *linter.Linter
-	loader  *journal.Loader
-	printer *printer.Config
+	settings settings.Settings
+	loader   *journal.Loader
 
 	mu            sync.RWMutex
-	config        Config
 	openDocs      map[uri.URI]docState
 	diagCancel    context.CancelFunc
 	dynFileWather bool
+	configPath    string
 }
 
 // analysisFor returns the cached analysis for an open doc, rebuilds when the doc or a file it inclues changed.
@@ -77,7 +80,9 @@ func (s *server) Initialize(ctx context.Context, params *protocol.InitializePara
 		}
 	}
 
-	s.applySettings(params.InitializationOptions)
+	if err := s.applySettings(ctx, params.InitializationOptions); err != nil {
+		return nil, err
+	}
 	full := protocol.SemanticTokensOptionsFull(protocol.Boolean(true))
 	if td := params.Capabilities.TextDocument; td != nil {
 		if fd, ok := td.SemanticTokens.Requests.Full.(*protocol.ClientSemanticTokensRequestFullDelta); ok && fd.Delta != nil && *fd.Delta {
@@ -120,6 +125,7 @@ func (s *server) Initialized(ctx context.Context, params *protocol.InitializedPa
 	if s.dynFileWather {
 		go s.registerFileWatchers(context.Background())
 	}
+	s.applyConfigFile(ctx)
 	s.scheduleDiagnostics(ctx)
 	return nil
 }
@@ -142,8 +148,7 @@ func (s *server) DidChangeWatchedFiles(ctx context.Context, params *protocol.Did
 }
 
 func (s *server) DidChangeConfiguration(ctx context.Context, params *protocol.DidChangeConfigurationParams) error {
-	s.applySettings(params.Settings)
-	return nil
+	return s.applySettings(ctx, params.Settings)
 }
 
 func (s *server) Shutdown(ctx context.Context) error {
@@ -177,10 +182,74 @@ func (s *server) registerFileWatchers(ctx context.Context) {
 	}
 }
 
-func (s *server) applySettings(v protocol.LSPAny) {
-	s.mu.Lock()
-	if err := s.config.merge(v); err != nil {
-		s.log.Error("failed to merge config", "err", err)
+func (s *server) applySettings(ctx context.Context, v protocol.LSPAny) error {
+	if len(v) == 0 {
+		return nil
 	}
+	var raw map[string]any
+	if err := json.Unmarshal(v, &raw); err != nil {
+		return fmt.Errorf("invalid settings: %w", err)
+	}
+	s.mu.Lock()
+	warns, err := s.settings.ApplyLSP(raw)
 	s.mu.Unlock()
+	for _, w := range warns {
+		s.reportConfigProblem(ctx, protocol.MessageTypeWarning, w)
+	}
+	return err
+}
+
+func (s *server) applyConfigFile(ctx context.Context) {
+	data, err := os.ReadFile(s.configPath)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return
+		}
+		s.reportConfigError(ctx, err)
+		return
+	}
+	var raw map[string]any
+	if err := toml.Unmarshal(data, &raw); err != nil {
+		s.reportConfigError(ctx, err)
+		return
+	}
+	s.mu.Lock()
+	warns, err := s.settings.Apply(raw)
+	s.mu.Unlock()
+	if err != nil {
+		s.reportConfigError(ctx, err)
+	}
+	for _, w := range warns {
+		s.reportConfigProblem(ctx, protocol.MessageTypeWarning, w)
+	}
+}
+
+func (s *server) reportConfigError(ctx context.Context, err error) {
+	s.reportConfigProblem(ctx, protocol.MessageTypeError, "config "+s.configPath+": "+err.Error())
+}
+
+func (s *server) reportConfigProblem(ctx context.Context, typ protocol.MessageType, msg string) {
+	lvl := slog.LevelWarn
+	if typ == protocol.MessageTypeError {
+		lvl = slog.LevelError
+	}
+	s.log.Log(ctx, lvl, "config", "message", msg)
+	if s.client == nil {
+		return
+	}
+	if err := s.client.ShowMessage(ctx, &protocol.ShowMessageParams{Type: typ, Message: msg}); err != nil {
+		s.log.Warn("window/showMessage failed", "err", err)
+	}
+}
+
+func (s *server) semanticHighlightingEnabled() bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.settings.SemanticHighlighting
+}
+
+func (s *server) latinToCyrillicCompletionEnabled() bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.settings.LatinToCyrillicCompletion
 }

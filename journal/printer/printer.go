@@ -17,6 +17,19 @@ const (
 	AlignTab                         // elastic tabstops
 )
 
+func (a AlignStyle) String() string {
+	switch a {
+	case AlignTwoSpaces:
+		return "two-spaces"
+	case AlignRight:
+		return "right"
+	case AlignTab:
+		return "tab"
+	default:
+		panic("invalid align style value")
+	}
+}
+
 // CommodityPos controls where the commodity marker is placed
 type CommodityPos int
 
@@ -24,6 +37,17 @@ const (
 	CommodityAfter  CommodityPos = iota // "10.00 EUR"
 	CommodityBefore                     // "$10.00"
 )
+
+func (c CommodityPos) String() string {
+	switch c {
+	case CommodityAfter:
+		return "after"
+	case CommodityBefore:
+		return "before"
+	default:
+		panic("invalid commodity pos value")
+	}
+}
 
 type Config struct {
 	TabIndent          bool         // true = tabs, false = spaces
@@ -34,7 +58,7 @@ type Config struct {
 	CommodityPos       CommodityPos // where to place commodity
 }
 
-var DefaultConfig = &Config{
+var DefaultConfig = Config{
 	TabIndent:          false,
 	IndentWidth:        2,
 	PreserveBlankLines: false,
@@ -62,14 +86,8 @@ type printer struct {
 	prevWasBlank bool
 }
 
-// Fprint formats using the default config.
-func Fprint(w io.Writer, j *ast.Journal) error { return DefaultConfig.Fprint(w, j) }
-
 // Fprint formats a parsed journal.
 func (c *Config) Fprint(w io.Writer, j *ast.Journal) error {
-	if c == nil {
-		c = DefaultConfig
-	}
 	p := printer{cfg: c, indent: c.indent()}
 
 	for _, e := range j.Entries {
@@ -82,14 +100,8 @@ func (c *Config) Fprint(w io.Writer, j *ast.Journal) error {
 	return err
 }
 
-// FprintEntry formats a single ast entry using the default config.
-func FprintEntry(w io.Writer, e ast.Entry) error { return DefaultConfig.FprintEntry(w, e) }
-
 // FprintEntry formats a single journal entry.
 func (c *Config) FprintEntry(w io.Writer, e ast.Entry) error {
-	if c == nil {
-		c = DefaultConfig
-	}
 	p := printer{cfg: c, indent: c.indent()}
 	p.formatEntry(e)
 	_, err := io.WriteString(w, p.buf.String())

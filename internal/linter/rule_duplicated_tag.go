@@ -6,11 +6,12 @@ import (
 	"olexsmir.xyz/clerk/internal/analyzer"
 )
 
+const DuplicatedTagID = "duplicated-tag"
+
 // DuplicatedTag flags tag declarations that appear more than once.
 type DuplicatedTag struct{}
 
-func (DuplicatedTag) ID() RuleID         { return "duplicated-tag" }
-func (DuplicatedTag) Severity() Severity { return SeverityWarning }
+func (DuplicatedTag) ID() RuleID { return DuplicatedTagID }
 func (d *DuplicatedTag) CheckJournal(an *analyzer.Analysis) []Find {
 	var finds []Find
 	for name, info := range an.Tags {
@@ -19,10 +20,9 @@ func (d *DuplicatedTag) CheckJournal(an *analyzer.Analysis) []Find {
 		}
 		for _, td := range info.Directives {
 			finds = append(finds, Find{
-				Code:     d.ID(),
-				Severity: d.Severity(),
-				Message:  fmt.Sprintf("duplicated tag declaration: %s", name),
-				Span:     td.Span,
+				Code:    d.ID(),
+				Message: fmt.Sprintf("duplicated tag declaration: %s", name),
+				Span:    td.Span,
 			})
 		}
 	}

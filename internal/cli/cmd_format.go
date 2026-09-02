@@ -19,11 +19,19 @@ func (c *Cli) formatAction(ctx context.Context, cmd *cli.Command) error {
 	write := cmd.Bool("write")
 	paths := cmd.StringArgs("journals")
 
+	sets, warns, err := loadConfig(cmd)
+	if err != nil {
+		return err
+	}
+	for i := range warns {
+		fmt.Fprintf(os.Stderr, "warning: %s\n", warns[i])
+	}
+
 	loader := journal.NewLoader()
 	if len(paths) == 0 {
-		src, err := readStdin()
-		if err != nil {
-			return err
+		src, rerr := readStdin()
+		if rerr != nil {
+			return rerr
 		}
 		rj := loader.ResolveBytes("stdin", src)
 		pf := rj.Occurrences[0]
@@ -36,7 +44,7 @@ func (c *Cli) formatAction(ctx context.Context, cmd *cli.Command) error {
 			}
 			return cli.Exit("", 1)
 		}
-		return c.formatFile("stdin", pf, check, diff, list, write)
+		return c.formatFile("stdin", pf, sets.Format, check, diff, list, write)
 	}
 
 	files, err := resolvePaths(paths)
@@ -64,7 +72,7 @@ func (c *Cli) formatAction(ctx context.Context, cmd *cli.Command) error {
 			continue
 		}
 
-		if err := c.formatFile(path, pf, check, diff, list, write); err != nil {
+		if err := c.formatFile(path, pf, sets.Format, check, diff, list, write); err != nil {
 			fmt.Fprintf(os.Stderr, "error: %s: %v\n", path, err)
 			hasErrors = true
 		}
@@ -75,9 +83,9 @@ func (c *Cli) formatAction(ctx context.Context, cmd *cli.Command) error {
 	return nil
 }
 
-func (c *Cli) formatFile(path string, pf *journal.ParsedFile, check, wantDiff, list, write bool) error {
+func (c *Cli) formatFile(path string, pf *journal.ParsedFile, cfg printer.Config, check, wantDiff, list, write bool) error {
 	var buf bytes.Buffer
-	if err := printer.Fprint(&buf, pf.Ast); err != nil {
+	if err := cfg.Fprint(&buf, pf.Ast); err != nil {
 		return fmt.Errorf("format: %w", err)
 	}
 	formatted := buf.Bytes()

@@ -6,6 +6,7 @@ tool golang.org/x/tools/cmd/stringer
 
 require (
 	github.com/go-json-experiment/json v0.0.0-20260623181947-01eb4420fa68
+	github.com/pelletier/go-toml/v2 v2.3.1
 	github.com/urfave/cli/v3 v3.10.0
 	go.lsp.dev/jsonrpc2 v1.0.1
 	go.lsp.dev/protocol v1.0.1

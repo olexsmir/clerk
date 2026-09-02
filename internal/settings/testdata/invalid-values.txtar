@@ -1,0 +1,17 @@
+-- config.toml --
+[format]
+indent-width = 17
+align-column = 0
+align-style = "none"
+commodity-pos = "left"
+
+[lint]
+unbalanced-transaction = true
+account-depth = { severity = "critical" }
+
+-- expect --
+error: format: align-column: 0 out of range (want 1..240)
+error: format: align-style: invalid value "none" (want "two-spaces", "right", or "tab")
+error: format: commodity-pos: invalid value "left" (want "after" or "before")
+error: lint: account-depth: invalid severity "critical" (want "off", "error", "warn", "info", or "hint")
+error: lint: unbalanced-transaction: true is not supported (want false, "off", a severity, or an options table)

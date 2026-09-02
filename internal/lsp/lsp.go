@@ -11,15 +11,14 @@ import (
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 
-	"olexsmir.xyz/clerk/internal/linter"
+	"olexsmir.xyz/clerk/internal/settings"
 	"olexsmir.xyz/clerk/internal/xdg"
 	"olexsmir.xyz/clerk/journal"
-	"olexsmir.xyz/clerk/journal/printer"
 )
 
 type Server struct{ server *server }
 
-func NewServer(version string) Server {
+func NewServer(version string, configPath string) (Server, error) {
 	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
 	if logFile, err := openLogFile(); err == nil {
 		logger = slog.New(slog.NewTextHandler(logFile, nil))
@@ -31,15 +30,14 @@ func NewServer(version string) Server {
 
 		openDocs: make(map[uri.URI]docState),
 
-		config:  DefaultConfig,
-		linter:  linter.NewLinter(linter.Rules),
-		loader:  journal.NewLoader(),
-		printer: printer.DefaultConfig,
+		settings:   settings.DefaultConfig,
+		configPath: configPath,
+		loader:     journal.NewLoader(),
 
 		log: logger,
 	}
 	srv.loader.ContentProvider = srv.bufferContent
-	return Server{srv}
+	return Server{srv}, nil
 }
 
 func (s *Server) Run(ctx context.Context, stdin io.ReadCloser, stdout io.WriteCloser) error {

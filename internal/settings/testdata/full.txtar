@@ -1,0 +1,28 @@
+-- config.toml --
+[format]
+tab-indent = true
+indent-width = 4
+align-style = "right"
+commodity-pos = "before"
+align-column = 80
+preserve-blank-lines = true
+
+[lint]
+unbalanced-transaction = "info"
+missing-payee = false
+empty-postings = "warn"
+orderdate = "hint"
+account-depth = { severity = "error", max-depth = 8 }
+
+-- expect --
+format.tab-indent: true
+format.indent-width: 4
+format.preserve-blank-lines: true
+format.align-style: right
+format.align-column: 80
+format.commodity-pos: before
+lint.account-depth: error options={"max-depth":8}
+lint.empty-postings: warning
+lint.missing-payee: disabled
+lint.orderdate: hint
+lint.unbalanced-transaction: info

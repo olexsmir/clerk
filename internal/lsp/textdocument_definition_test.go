@@ -15,7 +15,7 @@ import (
 )
 
 func TestServer_Definition_DocumentNotFound(t *testing.T) {
-	srv := NewServer("test")
+	srv := newServer(t)
 	res, err := srv.server.Definition(t.Context(), &protocol.DefinitionParams{
 		TextDocument: protocol.TextDocumentIdentifier{URI: uri.URI("file:///nonexistent.journal")},
 		Position:     protocol.Position{Line: 0, Character: 0},
@@ -70,7 +70,7 @@ func BenchmarkDefinition(b *testing.B) {
 	}
 	content := string(rj.Occurrences[0].Src)
 
-	srv := NewServer("test")
+	srv := newServer(b)
 	u := uri.File(abs)
 	srv.server.openDoc(u, content, 1, "journal")
 	srv.server.analysisFor(u) // warm the per-doc cache
