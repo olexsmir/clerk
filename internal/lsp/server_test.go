@@ -12,6 +12,7 @@ import (
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 
+	"olexsmir.xyz/clerk/internal/linter"
 	"olexsmir.xyz/clerk/internal/testutil"
 )
 
@@ -185,6 +186,75 @@ func TestServer_DidChangeWatchedFiles_DiskChangeDirtiesDependents(t *testing.T) 
 	}
 }
 
+func TestServer_ReportsConfigProblems(t *testing.T) {
+	for name, tt := range map[string]struct {
+		config, inline string
+		typ            protocol.MessageType
+		want           string
+	}{
+		"unknown setting":            {config: "bogus = 1\n", typ: protocol.MessageTypeWarning, want: `unknown setting "bogus"`},
+		"unknown lint rule":          {config: "[lint]\nnot-a-rule = \"error\"\n", typ: protocol.MessageTypeWarning, want: `unknown lint rule "not-a-rule"`},
+		"unparseable":                {config: "not toml [[[\n", typ: protocol.MessageTypeError, want: "toml:"},
+		"settings unknown lint rule": {inline: `{"lint":{"unused_accountt":"off"}}`, typ: protocol.MessageTypeWarning, want: `unknown lint rule "unused_accountt"`},
+	} {
+		t.Run(name, func(t *testing.T) {
+			capture := &captureClient{}
+			var srv *server
+			if tt.config != "" {
+				cfgPath := filepath.Join(t.TempDir(), "clerk.toml")
+				testutil.WriteFile(t, cfgPath, []byte(tt.config))
+				s, err := NewServer("test", cfgPath)
+				if err != nil {
+					t.Fatal(err)
+				}
+				srv = s.server
+				srv.client = capture
+				if err := srv.Initialized(t.Context(), &protocol.InitializedParams{}); err != nil {
+					t.Fatalf("initialized: %v", err)
+				}
+			} else {
+				srv = newServer(t).server
+				srv.client = capture
+				if err := srv.DidChangeConfiguration(t.Context(), &protocol.DidChangeConfigurationParams{
+					Settings: protocol.LSPAny(tt.inline),
+				}); err != nil {
+					t.Fatalf("didChangeConfiguration: %v", err)
+				}
+			}
+			msgs := capture.shownMessages()
+			if len(msgs) != 1 || msgs[0].Type != tt.typ || !strings.Contains(msgs[0].Message, tt.want) {
+				t.Errorf("unexpected messages: %+v", msgs)
+			}
+		})
+	}
+}
+
+func TestServer_Initialized_mergesConfigWithLSPSettings(t *testing.T) {
+	cfgPath := filepath.Join(t.TempDir(), "clerk.toml")
+	testutil.WriteFile(t, cfgPath, []byte("[lint]\nunbalanced-transaction = \"off\"\n"))
+	s, err := NewServer("test", cfgPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.server.Initialize(t.Context(), &protocol.InitializeParams{
+		InitializationOptions: protocol.LSPAny(`{"lint": {"missing-payee": "warn"}}`),
+	}); err != nil {
+		t.Fatalf("initialize: %v", err)
+	}
+	if err := s.server.Initialized(t.Context(), &protocol.InitializedParams{}); err != nil {
+		t.Fatalf("initialized: %v", err)
+	}
+	s.server.mu.RLock()
+	got := s.server.settings
+	s.server.mu.RUnlock()
+	if !got.Linter.Rules[linter.UnbalancedTransactionID].Disabled {
+		t.Error("file setting unbalanced-transaction=off not applied")
+	}
+	if rc := got.Linter.Rules[linter.MissingPayeeID]; rc.Disabled || rc.Severity != linter.SeverityWarning {
+		t.Errorf("init option missing-payee=warn clobbered by file: %+v", rc)
+	}
+}
+
 type captureClient struct {
 	protocol.Client
 	mu    sync.Mutex
@@ -204,6 +274,12 @@ func (c *captureClient) ShowMessage(_ context.Context, params *protocol.ShowMess
 	c.shown = append(c.shown, *params)
 	c.mu.Unlock()
 	return nil
+}
+
+func (c *captureClient) shownMessages() []protocol.ShowMessageParams {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return slices.Clone(c.shown)
 }
 
 func (c *captureClient) lastDiags(u uri.URI) ([]protocol.Diagnostic, bool) {
@@ -236,53 +312,4 @@ func newServer(tb testing.TB) Server {
 		tb.Fatal(err)
 	}
 	return s
-}
-
-func TestServer_InitializedReportsConfigProblems(t *testing.T) {
-	for _, tt := range []struct {
-		name, config string
-		typ          protocol.MessageType
-		want         string
-	}{
-		{"unknown key", "bogus = 1\n", protocol.MessageTypeWarning, `unknown setting "bogus"`},
-		{"unknown lint rule", "[lint]\nnot-a-rule = \"error\"\n", protocol.MessageTypeWarning, `unknown lint rule "not-a-rule"`},
-		{"unparseable", "not toml [[[\n", protocol.MessageTypeError, "toml:"},
-	} {
-		t.Run(tt.name, func(t *testing.T) {
-			cfgPath := filepath.Join(t.TempDir(), "clerk.toml")
-			testutil.WriteFile(t, cfgPath, []byte(tt.config))
-			s, err := NewServer("test", cfgPath)
-			if err != nil {
-				t.Fatal(err)
-			}
-			capture := &captureClient{}
-			s.server.client = capture
-			if err := s.server.Initialized(t.Context(), &protocol.InitializedParams{}); err != nil {
-				t.Fatalf("initialized: %v", err)
-			}
-			capture.mu.Lock()
-			msgs := slices.Clone(capture.shown)
-			capture.mu.Unlock()
-			if len(msgs) != 1 || msgs[0].Type != tt.typ || !strings.Contains(msgs[0].Message, tt.want) {
-				t.Errorf("unexpected messages: %+v", msgs)
-			}
-		})
-	}
-}
-
-func TestServer_DidChangeConfigurationReportsProblems(t *testing.T) {
-	srv := newServer(t)
-	capture := &captureClient{}
-	srv.server.client = capture
-	if err := srv.server.DidChangeConfiguration(t.Context(), &protocol.DidChangeConfigurationParams{
-		Settings: protocol.LSPAny(`{"latin_to_cyrillic_completion": true, "lint": {"unused_accountt": "off"}}`),
-	}); err != nil {
-		t.Fatalf("didChangeConfiguration: %v", err)
-	}
-	capture.mu.Lock()
-	msgs := slices.Clone(capture.shown)
-	capture.mu.Unlock()
-	if len(msgs) != 1 || msgs[0].Type != protocol.MessageTypeWarning || !strings.Contains(msgs[0].Message, `unknown lint rule "unused_accountt"`) {
-		t.Errorf("unexpected messages: %+v", msgs)
-	}
 }
