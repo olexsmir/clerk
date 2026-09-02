@@ -84,7 +84,7 @@ func appendFold(ranges []protocol.FoldingRange, r *protocol.FoldingRange) []prot
 }
 
 // postingsFold folds the posting block of a transaction, leaving the header visible.
-func postingsFold(postings []*ast.Posting) *protocol.FoldingRange {
+func postingsFold(postings []ast.Posting) *protocol.FoldingRange {
 	if len(postings) < 2 {
 		return nil
 	}

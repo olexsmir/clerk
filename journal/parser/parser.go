@@ -243,14 +243,15 @@ func (p *Parser) parseAutomatedTransaction() *ast.AutomatedTransaction {
 	return at
 }
 
-func (p *Parser) parseHeaderCommentsAndPostings() (comments []*ast.Comment, postings []*ast.Posting) {
+func (p *Parser) parseHeaderCommentsAndPostings() (comments []*ast.Comment, postings []ast.Posting) {
 	for p.got(token.INDENT) && p.willGet(token.SEMICOLON) {
 		p.advance() // consume indent
 		comments = append(comments, p.parseComment())
 	}
 
+	postings = make([]ast.Posting, 0, 2) // most transactions have 2 postings, small optimization
 	for p.got(token.INDENT) {
-		if posting := p.parsePosting(); posting != nil {
+		if posting, ok := p.parsePosting(); ok {
 			postings = append(postings, posting)
 		}
 	}
@@ -423,13 +424,13 @@ func (p *Parser) parseCommodityDirective() *ast.CommodityDirective {
 			amt.CommoditySpan = commoditySpan
 			amt.CommodityPos = ast.CommodityBefore
 			amt.HasSpace = hadSpace
-			format = &ast.FormatSubDirective{Amount: *amt}
+			format = &ast.FormatSubDirective{Amount: amt}
 		}
 	case token.INT, token.DECIMAL:
 		amt := p.parseAmount()
 		commodity = amt.Commodity
 		commoditySpan = amt.CommoditySpan
-		format = &ast.FormatSubDirective{Amount: *amt}
+		format = &ast.FormatSubDirective{Amount: amt}
 	default:
 		p.errorf("expected commodity name or amount, got %s", p.cur.Type)
 	}
@@ -471,7 +472,7 @@ func (p *Parser) parseCommodityDirective() *ast.CommodityDirective {
 			}
 			c := p.parseOptInlineComment()
 			p.expectNewline()
-			format = &ast.FormatSubDirective{KeywordSpan: kw, Amount: *amt, Comment: c}
+			format = &ast.FormatSubDirective{KeywordSpan: kw, Amount: amt, Comment: c}
 		case p.got(token.SEMICOLON): // comment line
 			c := p.parseCommentRest(p.cur.Span)
 			p.expectNewline()
@@ -622,7 +623,7 @@ func (p *Parser) parseDefaultCommodityDirective() *ast.DefaultCommodityDirective
 	com := &ast.DefaultCommodityDirective{}
 	p.expect(token.D)
 	p.skipWhitespace()
-	com.Amount = *p.parseAmount()
+	com.Amount = p.parseAmount()
 	com.Comment = p.parseOptInlineComment()
 	p.expectNewline()
 	com.Span = p.span(s)
@@ -636,7 +637,7 @@ func (p *Parser) parseConversionDirective() *ast.ConversionDirective {
 	p.skipWhitespace()
 
 	if p.isAmountStart() {
-		cd.From = *p.parseAmount()
+		cd.From = p.parseAmount()
 	} else {
 		p.errorf("expected amount, got %s", p.cur.Type)
 	}
@@ -646,7 +647,7 @@ func (p *Parser) parseConversionDirective() *ast.ConversionDirective {
 		p.advance()
 		p.skipWhitespace()
 		if p.isAmountStart() {
-			cd.To = *p.parseAmount()
+			cd.To = p.parseAmount()
 		} else {
 			p.errorf("expected amount, got %s", p.cur.Type)
 		}
@@ -697,7 +698,7 @@ func (p *Parser) parseMarketPriceDirective() *ast.MarketPriceDirective {
 	}
 	p.skipWhitespace()
 
-	mp.Amount = *p.parseAmount()
+	mp.Amount = p.parseAmount()
 
 	mp.Comment = p.parseOptInlineComment()
 
@@ -846,19 +847,11 @@ func (p *Parser) isAmountStart() bool {
 	}
 }
 
-func (p *Parser) parseAmount() *ast.Amount {
+func (p *Parser) parseAmount() ast.Amount {
 	s := p.cur.Span
-	amt := &ast.Amount{
-		QuantityFmt: ast.QuantityFormat{},
-	}
-	defer func() {
-		// The span covers from the first token to the start of the next unconsumed token.
-		// Since parseQuantityInto (and possible commodity consumption) advanced past the last
-		// amount token, p.cur points to the next token after the amount — which is the correct end.
-		amt.Span = p.span(s)
-	}()
+	amt := ast.Amount{QuantityFmt: ast.QuantityFormat{}}
 
-	p.parseAmountSign(amt)
+	p.parseAmountSign(&amt)
 	p.skipWhitespace()
 
 	// commodity before quantity: $10.00, eur 10.00
@@ -875,10 +868,10 @@ func (p *Parser) parseAmount() *ast.Amount {
 	}
 
 	// optional sign after commodity: $ -10
-	p.parseAmountSign(amt)
+	p.parseAmountSign(&amt)
 	p.skipWhitespace()
 
-	p.parseQuantityInto(amt)
+	p.parseQuantityInto(&amt)
 
 	// commodity after quantity: 10.00 UAH, 10.00 "EUR" (only if not set)
 	if amt.Commodity == "" {
@@ -902,6 +895,7 @@ func (p *Parser) parseAmount() *ast.Amount {
 		}
 	}
 
+	amt.Span = p.span(s)
 	return amt
 }
 
@@ -916,19 +910,17 @@ func (p *Parser) parseAmountSign(amt *ast.Amount) {
 	}
 }
 
-func (p *Parser) parseAmountWithOptExpr() *ast.Amount {
+func (p *Parser) parseAmountWithOptExpr() ast.Amount {
 	if p.got(token.STAR) {
 		p.advance()
 		p.skipWhitespace()
 		amt := p.parseAmount()
-		if amt != nil {
-			amt.IsExpr = true
-		}
+		amt.IsExpr = true
 		return amt
 	}
 	if p.got(token.PARENEXPR) {
 		lit := p.cur.Literal
-		amt := &ast.Amount{
+		amt := ast.Amount{
 			IsExpr:      true,
 			QuantityFmt: ast.QuantityFormat{},
 		}
@@ -942,15 +934,15 @@ func (p *Parser) parseAmountWithOptExpr() *ast.Amount {
 	return p.parseAmount()
 }
 
-func (p *Parser) parsePosting() *ast.Posting {
+func (p *Parser) parsePosting() (ast.Posting, bool) {
 	s := p.cur.Span
-	posting := &ast.Posting{}
+	posting := ast.Posting{}
 	p.expect(token.INDENT)
 
 	// exit if it's empty line
 	if p.got(token.NEWLINE) || p.got(token.EOF) {
 		p.syncToNextline()
-		return nil
+		return ast.Posting{}, false
 	}
 
 	// optional status, outside of brackets, '! (account)'
@@ -975,7 +967,7 @@ func (p *Parser) parsePosting() *ast.Posting {
 	if p.cur.Type != token.TEXT {
 		p.errorf("expected account name, got %s", p.cur.Type)
 		p.syncToNextline()
-		return nil
+		return ast.Posting{}, false
 	}
 
 	posting.Account = p.parseAccount()
@@ -992,7 +984,8 @@ func (p *Parser) parsePosting() *ast.Posting {
 	if p.got(token.WHITESPACE) {
 		p.skipWhitespace()
 		if p.isAmountStart() {
-			posting.Amount = p.parseAmountWithOptExpr()
+			amt := p.parseAmountWithOptExpr()
+			posting.Amount = &amt
 		}
 	}
 
@@ -1023,7 +1016,7 @@ func (p *Parser) parsePosting() *ast.Posting {
 	}
 
 	posting.Span = p.span(s)
-	return posting
+	return posting, true
 }
 
 func (p *Parser) parseCost() *ast.Cost {
@@ -1033,7 +1026,7 @@ func (p *Parser) parseCost() *ast.Cost {
 	p.skipWhitespace()
 	return &ast.Cost{
 		IsTotal: isTotal,
-		Amount:  *p.parseAmount(),
+		Amount:  p.parseAmount(),
 		Span:    p.span(s),
 	}
 }
@@ -1055,7 +1048,7 @@ func (p *Parser) parseBalanceAssertion() *ast.BalanceAssertion {
 	p.advance()
 	p.skipWhitespace()
 
-	ba.Amount = *p.parseAmount()
+	ba.Amount = p.parseAmount()
 	p.skipWhitespace()
 	if p.got(token.AT) || p.got(token.ATAT) {
 		c := p.parseCost()
@@ -1097,7 +1090,7 @@ func (p *Parser) readAccountSegment() (ast.SubAccount, bool) {
 
 func (p *Parser) parseAccount() ast.Account {
 	s := p.cur.Span
-	acc := ast.Account{}
+	acc := ast.Account{Name: make([]ast.SubAccount, 0, 2)}
 
 	sub, ok := p.readAccountSegment()
 	if !ok {

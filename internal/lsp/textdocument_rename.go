@@ -211,7 +211,7 @@ func commodityRef(content string, am *ast.Amount, cursor int) *symbolRef {
 	return &symbolRef{symbolCommodity, am.Commodity, am.CommoditySpan}
 }
 
-func symbolInPostings(content string, postings []*ast.Posting, cursor int) *symbolRef {
+func symbolInPostings(content string, postings []ast.Posting, cursor int) *symbolRef {
 	for _, p := range postings {
 		if spanContains(content, p.Account.Span, cursor) {
 			return &symbolRef{symbolAccount, p.Account.String(), p.Account.Span}

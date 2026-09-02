@@ -147,7 +147,7 @@ func hoverInEntry(content string, e ast.Entry, cursor int) *hoverElement {
 	return nil
 }
 
-func hoverInPostings(content string, postings []*ast.Posting, cursor int) *hoverElement {
+func hoverInPostings(content string, postings []ast.Posting, cursor int) *hoverElement {
 	for _, p := range postings {
 		if spanContains(content, p.Account.Span, cursor) {
 			return &hoverElement{kind: hoverAccount, span: p.Account.Span, name: p.Account.String()}

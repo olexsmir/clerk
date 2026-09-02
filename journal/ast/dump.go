@@ -154,8 +154,8 @@ func dumpTransaction(b *strings.Builder, t *Transaction, depth int) {
 			dumpComment(b, c, depth+2)
 		}
 	}
-	for _, p := range t.Postings {
-		dumpPosting(b, p, depth+1)
+	for i := range t.Postings {
+		dumpPosting(b, &t.Postings[i], depth+1)
 	}
 }
 
@@ -172,8 +172,8 @@ func dumpAutomatedTransaction(b *strings.Builder, t *AutomatedTransaction, depth
 			dumpComment(b, c, depth+2)
 		}
 	}
-	for _, p := range t.Postings {
-		dumpPosting(b, p, depth+1)
+	for i := range t.Postings {
+		dumpPosting(b, &t.Postings[i], depth+1)
 	}
 }
 
@@ -210,8 +210,8 @@ func dumpPeriodicTransaction(b *strings.Builder, t *PeriodicTransaction, depth i
 			dumpComment(b, c, depth+2)
 		}
 	}
-	for _, p := range t.Postings {
-		dumpPosting(b, p, depth+1)
+	for i := range t.Postings {
+		dumpPosting(b, &t.Postings[i], depth+1)
 	}
 }
 

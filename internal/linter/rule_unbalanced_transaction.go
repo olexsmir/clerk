@@ -29,12 +29,13 @@ func (u *UnbalancedTransaction) CheckJournal(an *analyzer.Analysis) []Find {
 	return finds
 }
 
-func (u *UnbalancedTransaction) check(postings []*ast.Posting, span token.Span) []Find {
+func (u *UnbalancedTransaction) check(postings []ast.Posting, span token.Span) []Find {
 	var hasExpr, hasCost bool
 	var realPostings []*ast.Posting
 	autoBalancingPostings := 0
 
-	for _, posting := range postings {
+	for i := range postings {
+		posting := &postings[i]
 		if posting.Type != ast.PostingReal {
 			continue
 		}

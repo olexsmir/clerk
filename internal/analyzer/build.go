@@ -230,7 +230,7 @@ func (a *Analysis) addPayee(fileIndex int, payee *ast.Payee) {
 	info.UsedCount++
 }
 
-func (a *Analysis) addPostings(fileIndex int, postings []*ast.Posting, names []string, date *ast.Date) {
+func (a *Analysis) addPostings(fileIndex int, postings []ast.Posting, names []string, date *ast.Date) {
 	if names == nil {
 		names = make([]string, len(postings))
 		for i, p := range postings {
@@ -246,7 +246,7 @@ func (a *Analysis) addPostings(fileIndex int, postings []*ast.Posting, names []s
 		}
 		info.Usages = append(info.Usages, AccountUsage{
 			FileIndex: fileIndex,
-			Posting:   posting,
+			Posting:   &postings[i],
 		})
 		info.UsedCount++
 		if date != nil {

@@ -8,7 +8,7 @@ import (
 	"olexsmir.xyz/clerk/journal/ast"
 )
 
-func (p *printer) writePostings(postings []*ast.Posting) {
+func (p *printer) writePostings(postings []ast.Posting) {
 	if len(postings) == 0 {
 		return
 	}
@@ -21,9 +21,9 @@ func (p *printer) writePostings(postings []*ast.Posting) {
 	}
 }
 
-func (p *printer) writePostingsTwoSpaces(postings []*ast.Posting, maxAcct int) {
+func (p *printer) writePostingsTwoSpaces(postings []ast.Posting, maxAcct int) {
 	for _, pt := range postings {
-		p.writePostingLine(pt, maxAcct)
+		p.writePostingLine(&pt, maxAcct)
 		p.buf.WriteByte('\n')
 		for _, c := range pt.Comments {
 			p.buf.WriteString(p.indent)
@@ -33,14 +33,14 @@ func (p *printer) writePostingsTwoSpaces(postings []*ast.Posting, maxAcct int) {
 	}
 }
 
-func (p *printer) writePostingsTabbed(postings []*ast.Posting, maxAcct int) {
+func (p *printer) writePostingsTabbed(postings []ast.Posting, maxAcct int) {
 	var tmp strings.Builder
 	tw := tabwriter.NewWriter(&tmp, 0, 0, 2, ' ', tabwriter.StripEscape)
 
 	lp := &printer{cfg: p.cfg, indent: p.indent}
 	for _, pt := range postings {
 		lp.buf.Reset()
-		lp.writePostingLine(pt, maxAcct)
+		lp.writePostingLine(&pt, maxAcct)
 		_, _ = fmt.Fprintln(tw, lp.buf.String())
 		for _, c := range pt.Comments {
 			lp.buf.Reset()
@@ -128,7 +128,7 @@ func (p *printer) writePostingLine(pt *ast.Posting, maxAcct int) {
 	}
 }
 
-func measureTxAccts(postings []*ast.Posting) int {
+func measureTxAccts(postings []ast.Posting) int {
 	maxAcct := 0
 	for _, p := range postings {
 		n := len(p.Account.Name)

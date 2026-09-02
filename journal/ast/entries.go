@@ -18,7 +18,7 @@ type Transaction struct {
 	Note           *Note      // part after |
 	Comment        *Comment   // inline ; on header line
 	HeaderComments []*Comment // indented ; lines before first posting
-	Postings       []*Posting
+	Postings       []Posting
 	Span           token.Span
 }
 
@@ -40,7 +40,7 @@ type PeriodicTransaction struct {
 	Description    *Description // optional description
 	Comment        *Comment     // optional inline comment
 	HeaderComments []*Comment
-	Postings       []*Posting
+	Postings       []Posting
 	Span           token.Span
 }
 
@@ -48,7 +48,7 @@ func (PeriodicTransaction) entryNode() {}
 
 type AutomatedTransaction struct {
 	Expr           Expr
-	Postings       []*Posting
+	Postings       []Posting
 	Comment        *Comment   // inline ; on header line
 	HeaderComments []*Comment // indented ; lines before first posting
 	Span           token.Span

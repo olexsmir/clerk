@@ -43,7 +43,7 @@ func (m *MissingCommodity) CheckJournal(an *analyzer.Analysis) []Find {
 	return finds
 }
 
-func (m *MissingCommodity) checkPostings(finds *[]Find, postings []*ast.Posting) {
+func (m *MissingCommodity) checkPostings(finds *[]Find, postings []ast.Posting) {
 	for _, posting := range postings {
 		if posting.Amount == nil {
 			continue

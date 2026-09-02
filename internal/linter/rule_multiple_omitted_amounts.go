@@ -25,7 +25,7 @@ func (m *MultipleOmittedAmounts) CheckJournal(an *analyzer.Analysis) []Find {
 	return finds
 }
 
-func (m *MultipleOmittedAmounts) check(postings []*ast.Posting) []Find {
+func (m *MultipleOmittedAmounts) check(postings []ast.Posting) []Find {
 	var finds []Find
 	for _, p := range postings {
 		if p.Amount == nil && p.Balance == nil {
