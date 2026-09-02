@@ -156,12 +156,25 @@ func (l *Loader) remapFilePaths(rj *ResolvedJournal, oldRoot string) {
 	rj.ByPath = newByPath
 }
 
-// InvalidateFile removes a file from the content cache
+// InvalidateFile removes a file from the content cache.
 func (l *Loader) InvalidateFile(fpath string) {
 	canon := CanonicalPath(fpath)
 	l.mu.Lock()
 	delete(l.contentCache, canon)
 	l.mu.Unlock()
+}
+
+// Evict drops a file's cached content.
+func (l *Loader) Evict(fpath string) {
+	canon := CanonicalPath(fpath)
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	delete(l.contentCache, canon)
+	for k := range l.parseCache {
+		if k.canon == canon {
+			delete(l.parseCache, k)
+		}
+	}
 }
 
 // readContent reads a file, preferring the content provider, then the disk content cache.

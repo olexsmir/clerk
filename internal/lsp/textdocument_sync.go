@@ -30,6 +30,7 @@ func (s *server) DidChange(ctx context.Context, params *protocol.DidChangeTextDo
 func (s *server) DidClose(ctx context.Context, params *protocol.DidCloseTextDocumentParams) error {
 	u := params.TextDocument.URI
 	s.closeDoc(u)
+	s.loader.Evict(u.Path())
 
 	// clear closed doc's diagnostics; dependents rebuild from disk since the buffer text is gone.
 	s.markDependentsDirty(u)
