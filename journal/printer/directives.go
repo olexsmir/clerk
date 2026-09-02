@@ -40,7 +40,7 @@ func (p *printer) writeCommodityDirective(c *ast.CommodityDirective) {
 	}
 	if c.FormatSub.KeywordSpan.End.Offset == 0 {
 		// inline form: "commodity $1,000.00"
-		p.writeCommodityAmount(&c.FormatSub.Amount)
+		p.writeCommodityAmount(c.FormatSub.Amount)
 		p.writeInlineComment(c.Comment)
 		return
 	}
@@ -49,14 +49,14 @@ func (p *printer) writeCommodityDirective(c *ast.CommodityDirective) {
 	p.buf.WriteByte('\n')
 	p.buf.WriteString(p.indent)
 	p.buf.WriteString("format ")
-	p.writeCommodityAmount(&c.FormatSub.Amount)
+	p.writeCommodityAmount(c.FormatSub.Amount)
 	p.writeInlineComment(c.FormatSub.Comment)
 	p.writeBlockComments(c.BlockComments)
 }
 
 // writeCommodityAmount renders a commodity format amount, preserving the
 // original commodity placement instead of the config's CommodityPos.
-func (p *printer) writeCommodityAmount(a *ast.Amount) {
+func (p *printer) writeCommodityAmount(a ast.Amount) {
 	prec := max(a.QuantityFmt.Precision, 2)
 	if a.Commodity == "" {
 		p.writeDecimal(a.Quantity, a.QuantityFmt, prec)

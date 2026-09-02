@@ -384,7 +384,7 @@ func visitTransaction(content string, t *ast.Transaction, emit semEmitFunc) {
 		emitComment(t.HeaderComments[i], emit)
 	}
 	for _, p := range t.Postings {
-		visitPosting(content, &p, emit)
+		visitPosting(content, p, emit)
 	}
 }
 
@@ -421,7 +421,7 @@ func visitPeriodicTransaction(content string, pt *ast.PeriodicTransaction, emit 
 		emitComment(pt.HeaderComments[i], emit)
 	}
 	for _, p := range pt.Postings {
-		visitPosting(content, &p, emit)
+		visitPosting(content, p, emit)
 	}
 }
 
@@ -437,11 +437,11 @@ func visitAutomatedTransaction(content string, at *ast.AutomatedTransaction, emi
 		emitComment(at.HeaderComments[i], emit)
 	}
 	for _, p := range at.Postings {
-		visitPosting(content, &p, emit)
+		visitPosting(content, p, emit)
 	}
 }
 
-func visitPosting(content string, p *ast.Posting, emit semEmitFunc) {
+func visitPosting(content string, p ast.Posting, emit semEmitFunc) {
 	if p.Status.Value != ast.StatusNone {
 		emit(p.Status.Span, semStatus, 0)
 	}

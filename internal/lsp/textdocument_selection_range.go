@@ -232,12 +232,12 @@ func postingsSelection(content string, postings []ast.Posting, li *lsputil.LineI
 		if !ok {
 			continue
 		}
-		return postingSelection(content, p, li, cursor, postingSel), true
+		return postingSelection(content, postings[i], li, cursor, postingSel), true
 	}
 	return protocol.SelectionRange{}, false
 }
 
-func postingSelection(content string, p *ast.Posting, li *lsputil.LineIndex, cursor int, parent protocol.SelectionRange) protocol.SelectionRange {
+func postingSelection(content string, p ast.Posting, li *lsputil.LineIndex, cursor int, parent protocol.SelectionRange) protocol.SelectionRange {
 	if p.Status.Value != ast.StatusNone {
 		if sel, ok := selectionForSpan(content, li, p.Status.Span, cursor, parent); ok {
 			return sel
