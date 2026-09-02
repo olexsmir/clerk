@@ -108,6 +108,7 @@ func (s *server) Initialize(ctx context.Context, params *protocol.InitializePara
 			CompletionProvider: &protocol.CompletionOptions{
 				TriggerCharacters: []string{":", "@"},
 			},
+			FoldingRangeProvider: protocol.Boolean(true),
 			TextDocumentSync: &protocol.TextDocumentSyncOptions{
 				OpenClose: new(true),
 				Change:    new(protocol.TextDocumentSyncKindFull),
