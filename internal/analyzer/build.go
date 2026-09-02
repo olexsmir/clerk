@@ -41,7 +41,7 @@ func Build(rj *journal.ResolvedJournal) *Analysis {
 	return a
 }
 
-func TxDuplicateKey(tx *ast.Transaction) string {
+func txDuplicateKey(tx *ast.Transaction, names []string) string {
 	var b strings.Builder
 	b.WriteString(tx.Date.String())
 	b.WriteByte('|')
@@ -49,8 +49,8 @@ func TxDuplicateKey(tx *ast.Transaction) string {
 		b.WriteString(tx.Payee.Name)
 	}
 	b.WriteByte('|')
-	for _, p := range tx.Postings {
-		b.WriteString(p.Account.String())
+	for i := range tx.Postings {
+		b.WriteString(names[i])
 		b.WriteByte(',')
 	}
 	return b.String()
@@ -99,26 +99,32 @@ func (a *Analysis) addEntry(fileIndex int, entry ast.Entry) {
 	case *ast.Comment:
 		a.addCommentTags(fileIndex, nil, e)
 	case *ast.Transaction:
-		a.Transactions = append(a.Transactions, e)
-		a.addPostings(fileIndex, e.Postings, &e.Date)
 		a.addPayee(fileIndex, e.Payee)
+		a.Transactions = append(a.Transactions, e)
+		a.TransactionsCountByDate[e.Date.String()]++
+
+		names := make([]string, len(e.Postings))
+		for i, p := range e.Postings {
+			names[i] = p.Account.String()
+		}
+		a.addPostings(fileIndex, e.Postings, names, &e.Date)
+
 		a.addCommentTags(fileIndex, &e.Date, e.Comment)
 		for _, c := range e.HeaderComments {
 			a.addCommentTags(fileIndex, &e.Date, c)
 		}
-		key := TxDuplicateKey(e)
+		key := txDuplicateKey(e, names)
 		a.TransactionsByKey[key] = append(a.TransactionsByKey[key], e)
-		a.TransactionsCountByDate[e.Date.String()]++
 	case *ast.PeriodicTransaction:
 		a.PeriodicTransactions = append(a.PeriodicTransactions, e)
-		a.addPostings(fileIndex, e.Postings, nil)
+		a.addPostings(fileIndex, e.Postings, nil, nil)
 		a.addCommentTags(fileIndex, nil, e.Comment)
 		for _, c := range e.HeaderComments {
 			a.addCommentTags(fileIndex, nil, c)
 		}
 	case *ast.AutomatedTransaction:
 		a.AutomatedTransactions = append(a.AutomatedTransactions, e)
-		a.addPostings(fileIndex, e.Postings, nil)
+		a.addPostings(fileIndex, e.Postings, nil, nil)
 		a.addCommentTags(fileIndex, nil, e.Comment)
 		for _, c := range e.HeaderComments {
 			a.addCommentTags(fileIndex, nil, c)
@@ -224,9 +230,15 @@ func (a *Analysis) addPayee(fileIndex int, payee *ast.Payee) {
 	info.UsedCount++
 }
 
-func (a *Analysis) addPostings(fileIndex int, postings []*ast.Posting, date *ast.Date) {
-	for _, posting := range postings {
-		aname := posting.Account.String()
+func (a *Analysis) addPostings(fileIndex int, postings []*ast.Posting, names []string, date *ast.Date) {
+	if names == nil {
+		names = make([]string, len(postings))
+		for i, p := range postings {
+			names[i] = p.Account.String()
+		}
+	}
+	for i, posting := range postings {
+		aname := names[i]
 		info, ok := a.Accounts[aname]
 		if !ok {
 			info = &AccountInfo{}

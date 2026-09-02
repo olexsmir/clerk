@@ -163,12 +163,12 @@ func (a Account) String() string {
 	if len(a.Name) == 0 {
 		return ""
 	}
-	var name strings.Builder
-	name.Grow(len(a.Name))
-	name.WriteString(a.Name[0].Name)
+	var b strings.Builder
+	b.Grow(len(a.Name))
+	b.WriteString(a.Name[0].Name)
 	for _, s := range a.Name[1:] {
-		name.WriteByte(':')
-		name.WriteString(s.Name)
+		b.WriteByte(':')
+		b.WriteString(s.Name)
 	}
-	return name.String()
+	return b.String()
 }
