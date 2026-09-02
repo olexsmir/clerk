@@ -20,10 +20,9 @@ type Analysis struct {
 	AccountAliases  map[string]string     // maps alias names to the account they resovle to
 	AliasDirectives []*ast.AliasDirective // holds every top-level "alias A = B" directive in entry order
 
-	AccountNames     []string                     // sorted for binary search
-	PayeeNames       []string                     // sorted, all payee names from directives + usage
-	PayeeTemplates   map[string][]PostingTemplate // holds the last transaction's postings per payee name
-	AccountsByPrefix map[string][]string          // "expenses:" -> ["expenses:food", "expenses:taxi"]
+	AccountNames     []string            // sorted for binary search
+	PayeeNames       []string            // sorted, all payee names from directives + usage
+	AccountsByPrefix map[string][]string // "expenses:" -> ["expenses:food", "expenses:taxi"]
 
 	Tags      map[string]*TagInfo
 	TagNames  []string // unique tag names, sorted

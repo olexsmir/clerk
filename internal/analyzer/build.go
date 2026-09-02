@@ -23,7 +23,6 @@ func Build(rj *journal.ResolvedJournal) *Analysis {
 		Payees:                  make(map[string]*PayeeInfo),
 		Tags:                    make(map[string]*TagInfo),
 		AccountsByPrefix:        make(map[string][]string),
-		PayeeTemplates:          make(map[string][]PostingTemplate),
 		TransactionsByKey:       make(map[string][]*ast.Transaction),
 		TransactionsCountByDate: make(map[string]int),
 	}
@@ -57,6 +56,34 @@ func TxDuplicateKey(tx *ast.Transaction) string {
 	return b.String()
 }
 
+// PayeeTemplates returns  the last Transactions's postings per payee name.
+func (a *Analysis) PayeeTemplates() map[string][]PostingTemplate {
+	templates := make(map[string][]PostingTemplate)
+	for _, tx := range a.Transactions {
+		payee := ""
+		if tx.Payee != nil {
+			payee = tx.Payee.Name
+		}
+		if payee == "" {
+			continue
+		}
+
+		t := make([]PostingTemplate, len(tx.Postings))
+		for i, p := range tx.Postings {
+			t[i] = PostingTemplate{
+				Account:    p.Account.String(),
+				IsInferred: p.Amount == nil,
+			}
+			if p.Amount != nil {
+				t[i].Amount = p.Amount.Quantity.String()
+				t[i].Commodity = p.Amount.Commodity
+			}
+		}
+		templates[payee] = t
+	}
+	return templates
+}
+
 func (a *Analysis) addEntry(fileIndex int, entry ast.Entry) {
 	switch e := entry.(type) {
 	case *ast.AccountDirective:
@@ -75,7 +102,6 @@ func (a *Analysis) addEntry(fileIndex int, entry ast.Entry) {
 		a.Transactions = append(a.Transactions, e)
 		a.addPostings(fileIndex, e.Postings, &e.Date)
 		a.addPayee(fileIndex, e.Payee)
-		a.addPayeeTemplate(e)
 		a.addCommentTags(fileIndex, &e.Date, e.Comment)
 		for _, c := range e.HeaderComments {
 			a.addCommentTags(fileIndex, &e.Date, c)
@@ -231,30 +257,6 @@ func (a *Analysis) addPostings(fileIndex int, postings []*ast.Posting, date *ast
 			a.addCommentTags(fileIndex, date, &posting.Comments[i])
 		}
 	}
-}
-
-func (a *Analysis) addPayeeTemplate(tx *ast.Transaction) {
-	payee := ""
-	if tx.Payee != nil {
-		payee = tx.Payee.Name
-	}
-	if payee == "" {
-		return
-	}
-
-	templates := make([]PostingTemplate, len(tx.Postings))
-	for i, p := range tx.Postings {
-		t := PostingTemplate{
-			Account:    p.Account.String(),
-			IsInferred: p.Amount == nil,
-		}
-		if p.Amount != nil {
-			t.Amount = p.Amount.Quantity.String()
-			t.Commodity = p.Amount.Commodity
-		}
-		templates[i] = t
-	}
-	a.PayeeTemplates[payee] = templates
 }
 
 func (a *Analysis) collectDates() {

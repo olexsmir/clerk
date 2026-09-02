@@ -227,14 +227,15 @@ func fprint(w io.Writer, a *Analysis) {
 	}
 
 	// payee templates
-	payeeNames := make([]string, 0, len(a.PayeeTemplates))
-	for name := range a.PayeeTemplates {
+	payeeTemplates := a.PayeeTemplates()
+	payeeNames := make([]string, 0, len(payeeTemplates))
+	for name := range payeeTemplates {
 		payeeNames = append(payeeNames, name)
 	}
 	sort.Strings(payeeNames)
-	fmt.Fprintf(w, "\npayee templates (%d):\n", len(a.PayeeTemplates))
+	fmt.Fprintf(w, "\npayee templates (%d):\n", len(payeeTemplates))
 	for _, name := range payeeNames {
-		templates := a.PayeeTemplates[name]
+		templates := payeeTemplates[name]
 		fmt.Fprintf(w, "  %s\n", name)
 		for _, t := range templates {
 			fmt.Fprintf(w, "    %s", t.Account)
