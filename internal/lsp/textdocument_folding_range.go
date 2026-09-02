@@ -27,8 +27,6 @@ func (s *server) FoldingRange(_ context.Context, params *protocol.FoldingRangePa
 	return ranges, nil
 }
 
-// foldingRangesFor folds every foldable structure in a journal's top-level entries:
-// posting blocks, directive sub-blocks, comment runs, comment blocks, and apply/end pairs.
 func foldingRangesFor(entries []ast.Entry) []protocol.FoldingRange {
 	ranges := make([]protocol.FoldingRange, 0, len(entries)) // each entry folds to at most one range
 	var (
@@ -73,7 +71,6 @@ func foldingRangesFor(entries []ast.Entry) []protocol.FoldingRange {
 	return ranges
 }
 
-// appendFold appends r, skipping nil.
 func appendFold(ranges []protocol.FoldingRange, r *protocol.FoldingRange) []protocol.FoldingRange {
 	if r != nil {
 		ranges = append(ranges, *r)
@@ -81,7 +78,6 @@ func appendFold(ranges []protocol.FoldingRange, r *protocol.FoldingRange) []prot
 	return ranges
 }
 
-// postingsFold folds the posting block of a transaction, leaving the header visible.
 func postingsFold(postings []ast.Posting) *protocol.FoldingRange {
 	if len(postings) < 2 {
 		return nil
@@ -94,7 +90,6 @@ func postingsFold(postings []ast.Posting) *protocol.FoldingRange {
 	)
 }
 
-// accountDirectiveFold folds the indented subdirective block after an "account" line.
 func accountDirectiveFold(ad *ast.AccountDirective) *protocol.FoldingRange {
 	if len(ad.Subdirectives) < 2 {
 		return nil
@@ -107,15 +102,12 @@ func accountDirectiveFold(ad *ast.AccountDirective) *protocol.FoldingRange {
 	)
 }
 
-// commentBlockDirectiveFold folds a "comment" ... "end comment" block, leaving the header visible.
-// The directive span extends past the block, so the end line is derived from the content.
 func commentBlockDirectiveFold(cb *ast.CommentBlockDirective) *protocol.FoldingRange {
 	start := uint32(cb.Span.Start.Line - 1)
 	end := start + uint32(strings.Count(cb.Content, "\n")) + 1 // +1 for the "end comment" line
 	return foldRange(start, end, protocol.FoldingRangeKindComment)
 }
 
-// commentRunFold folds consecutive comment lines into a single range.
 func commentRunFold(comments []*ast.Comment) *protocol.FoldingRange {
 	if len(comments) < 2 {
 		return nil
@@ -127,15 +119,13 @@ func commentRunFold(comments []*ast.Comment) *protocol.FoldingRange {
 	)
 }
 
-// applyKeyword returns the first word of an apply/end directive expr ("apply tag work" → "tag").
 func applyKeyword(expr string) string {
-	if i := strings.IndexByte(expr, ' '); i >= 0 {
-		return expr[:i]
+	if before, _, ok := strings.Cut(expr, " "); ok {
+		return before
 	}
 	return expr
 }
 
-// applyFold folds an "apply" ... "end" block.
 func applyFold(a *ast.ApplyDirective, end *ast.EndDirective) *protocol.FoldingRange {
 	return foldRange(
 		uint32(a.Span.Start.Line-1),
@@ -144,7 +134,6 @@ func applyFold(a *ast.ApplyDirective, end *ast.EndDirective) *protocol.FoldingRa
 	)
 }
 
-// foldRange returns nil when the range is not foldable (single line).
 func foldRange(startLine, endLine uint32, kind protocol.FoldingRangeKind) *protocol.FoldingRange {
 	if endLine <= startLine {
 		return nil
