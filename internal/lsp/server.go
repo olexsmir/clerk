@@ -2,12 +2,14 @@ package lsp
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
 	"sync"
 
 	"github.com/go-json-experiment/json"
+	"github.com/pelletier/go-toml/v2"
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 
@@ -198,20 +200,32 @@ func (s *server) applySettings(ctx context.Context, v protocol.LSPAny) error {
 }
 
 func (s *server) applyConfigFile(ctx context.Context) {
-	if _, err := os.Stat(s.configPath); err != nil {
+	data, err := os.ReadFile(s.configPath)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return
+		}
+		s.reportConfigError(ctx, err)
 		return
 	}
-	sets, warns, err := settings.Load(s.configPath)
-	if err != nil {
-		s.reportConfigProblem(ctx, protocol.MessageTypeError, "config "+s.configPath+": "+err.Error())
-		s.log.Error("loading config failed", "err", err)
+	var raw map[string]any
+	if err := toml.Unmarshal(data, &raw); err != nil {
+		s.reportConfigError(ctx, err)
+		return
 	}
 	s.mu.Lock()
-	s.settings = sets
+	warns, err := s.settings.Apply(raw)
 	s.mu.Unlock()
+	if err != nil {
+		s.reportConfigError(ctx, err)
+	}
 	for _, w := range warns {
 		s.reportConfigProblem(ctx, protocol.MessageTypeWarning, w)
 	}
+}
+
+func (s *server) reportConfigError(ctx context.Context, err error) {
+	s.reportConfigProblem(ctx, protocol.MessageTypeError, "config "+s.configPath+": "+err.Error())
 }
 
 func (s *server) reportConfigProblem(ctx context.Context, typ protocol.MessageType, msg string) {
