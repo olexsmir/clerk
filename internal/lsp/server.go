@@ -122,7 +122,7 @@ func (s *server) Initialize(ctx context.Context, params *protocol.InitializePara
 			},
 			TextDocumentSync: &protocol.TextDocumentSyncOptions{
 				OpenClose: new(true),
-				Change:    new(protocol.TextDocumentSyncKindFull),
+				Change:    new(protocol.TextDocumentSyncKindIncremental),
 			},
 			SemanticTokensProvider: &protocol.SemanticTokensOptions{
 				Legend: getSemanticTokensLegend(),

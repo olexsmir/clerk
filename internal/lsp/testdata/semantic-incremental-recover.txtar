@@ -1,0 +1,46 @@
+-- in.journal --
+2024-01-01 groceries  $10
+    expenses:food  $10
+    assets:cash
+
+2024-01-02 salary  $100
+    assets:bank  $100
+    income:salary
+
+2024-01-03 rent  $50
+    expenses:rent  $50
+    assets:cash
+not a valid transaction !!!
+
+-- edited.journal --
+2024-01-01 groceries  $10
+    expenses:food  $10
+    assets:cash
+
+2024-01-02 salary  $100
+    assets:bank  $100
+    income:salary
+
+2024-01-03 rent  $50
+    expenses:rent  $50
+    assets:cash
+
+-- expect --
+0:0+10 class
+0:11+14 property
+1:4+13 namespace
+1:19+1 type
+1:20+2 number
+2:4+11 namespace
+4:0+10 class
+4:11+12 property
+5:4+11 namespace
+5:17+1 type
+5:18+3 number
+6:4+13 namespace
+8:0+10 class
+8:11+9 property
+9:4+13 namespace
+9:19+1 type
+9:20+2 number
+10:4+11 namespace

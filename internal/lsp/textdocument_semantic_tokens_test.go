@@ -10,6 +10,7 @@ import (
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 
+	"olexsmir.xyz/clerk/internal/lsp/lsputil"
 	"olexsmir.xyz/clerk/internal/testutil/golden"
 )
 
@@ -204,9 +205,7 @@ func TestGolden_SemanticTokensDelta(t *testing.T) {
 
 			finalText := in
 			if ed := ar.Get("edited.journal"); ed != nil {
-				srv.server.updateDoc(u, 2, []protocol.TextDocumentContentChangeEvent{
-					&protocol.TextDocumentContentChangeWholeDocument{Text: string(ed)},
-				})
+				srv.server.updateDoc(u, 2, partialChangeFromDiff(string(in), string(ed)))
 				finalText = ed
 			}
 			prev := *full.ResultID
@@ -324,6 +323,32 @@ func tokSem(content []byte) []semanticToken {
 	return tokenizeForSemantics(c, parseJournalStr(c))
 }
 
+func TestSemanticTokensIncremental(t *testing.T) {
+	for _, tt := range []string{"semantic-incremental-append", "semantic-incremental-insert", "semantic-incremental-delete", "semantic-incremental-inline", "semantic-incremental-header"} {
+		t.Run(tt, func(t *testing.T) {
+			ar := golden.Read(t, tt)
+			in, edited := ar.Get("in.journal"), ar.Get("edited.journal")
+
+			// golden: the server's incremental result equals a full tokenization
+			golden.Assert(t, ar, renderSemanticTokens(serverSemTokensAfterEdit(t, newServer(t).server, string(in), string(edited))))
+
+			// engage: the incremental path actually runs, not a silent full rebuild
+			ev := partialChangeFromDiff(string(in), string(edited))[0].(*protocol.TextDocumentContentChangePartial)
+			start, oldEnd, newEnd, delta := editRegion(string(in), ev)
+			_, entries := computeSemTokens(string(in), parseJournalStr(string(in)))
+			if _, ok := incrementalTokens(string(edited), parseJournalStr(string(edited)), entries, semEdit{start: start, oldEnd: oldEnd, newEnd: newEnd, deltaLine: delta}); !ok {
+				t.Error("incremental path not taken")
+			}
+		})
+	}
+
+	t.Run("recover", func(t *testing.T) {
+		ar := golden.Read(t, "semantic-incremental-recover")
+		bad, good := ar.Get("in.journal"), ar.Get("edited.journal")
+		golden.Assert(t, ar, renderSemanticTokens(serverSemTokensAfterEdit(t, newServer(t).server, string(bad), string(good))))
+	})
+}
+
 func BenchmarkSemanticTokens(b *testing.B) {
 	content := openJournal(b, "../../journal/testdata/journals/actual-1ktxns-100accts.journal")
 
@@ -353,7 +378,7 @@ func BenchmarkSemanticTokensDelta(b *testing.B) {
 func BenchmarkSemanticTokensEdits(b *testing.B) {
 	content := openJournal(b, "../../journal/testdata/journals/actual-1ktxns-100accts.journal")
 	old := encodeSemTokens(tokenizeForSemantics(content, parseJournalStr(content)))
-	new := encodeSemTokens(tokenizeForSemantics(
+	new_ := encodeSemTokens(tokenizeForSemantics(
 		content+"\n2000-06-15 transaction 2501\n  expenses:new  1 C\n  assets:cash\n",
 		parseJournalStr(content+"\n2000-06-15 transaction 2501\n  expenses:new  1 C\n  assets:cash\n"),
 	))
@@ -361,7 +386,41 @@ func BenchmarkSemanticTokensEdits(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for b.Loop() {
-		_ = semanticTokensEdits(old, new)
+		_ = semanticTokensEdits(old, new_)
+	}
+}
+
+func BenchmarkIncrementalTokens(b *testing.B) {
+	content := openJournal(b, "../../journal/testdata/journals/actual-1ktxns-100accts.journal")
+	_, entries := computeSemTokens(content, parseJournalStr(content))
+
+	newTx := "\n2024-01-01 new  $1\n    expenses:new  $1\n    assets:cash"
+	appendEdit := content + newTx + "\n"
+	first := strings.Index(content, "\n\n")
+	mid := strings.Index(content[first+2:], "\n\n") + first + 2 // blank line between the first two transactions
+	insertEdit := content[:mid] + newTx + content[mid:]
+
+	b.ReportAllocs()
+	for _, tc := range []struct{ name, edited string }{
+		{"append", appendEdit},
+		{"insert", insertEdit},
+	} {
+		ev := partialChangeFromDiff(content, tc.edited)[0].(*protocol.TextDocumentContentChangePartial)
+		start, oldEnd, newEnd, delta := editRegion(content, ev)
+		j := parseJournalStr(tc.edited)
+
+		b.Run(tc.name+"/full", func(b *testing.B) {
+			for b.Loop() {
+				_ = tokenizeForSemantics(tc.edited, j)
+			}
+		})
+		b.Run(tc.name+"/incremental", func(b *testing.B) {
+			for b.Loop() {
+				if _, ok := incrementalTokens(tc.edited, j, entries, semEdit{start: start, oldEnd: oldEnd, newEnd: newEnd, deltaLine: delta}); !ok {
+					b.Fatal("fell back to full")
+				}
+			}
+		})
 	}
 }
 
@@ -371,6 +430,50 @@ func applySemEdits(data []uint32, edits []protocol.SemanticTokensEdit) []uint32 
 		out = append(append(out[:e.Start], e.Data...), out[e.Start+e.DeleteCount:]...)
 	}
 	return out
+}
+
+func partialChangeFromDiff(from, to string) []protocol.TextDocumentContentChangeEvent {
+	p := 0
+	for p < len(from) && p < len(to) && from[p] == to[p] {
+		p++
+	}
+	s := 0
+	for s < len(from)-p && s < len(to)-p && from[len(from)-1-s] == to[len(to)-1-s] {
+		s++
+	}
+	return []protocol.TextDocumentContentChangeEvent{
+		&protocol.TextDocumentContentChangePartial{
+			Range: protocol.Range{
+				Start: lsputil.Position(from, p),
+				End:   lsputil.Position(from, len(from)-s),
+			},
+			Text: to[p : len(to)-s],
+		},
+	}
+}
+
+func editRegion(from string, ev *protocol.TextDocumentContentChangePartial) (start, oldEnd, newEnd, deltaLine int) {
+	li := lsputil.NewLineIndex(from)
+	start = li.Offset(int(ev.Range.Start.Line), int(ev.Range.Start.Character))
+	oldEnd = li.Offset(int(ev.Range.End.Line), int(ev.Range.End.Character))
+	newEnd = start + len(ev.Text)
+	deltaLine = strings.Count(ev.Text, "\n") - strings.Count(from[start:oldEnd], "\n")
+	return
+}
+
+func serverSemTokensAfterEdit(t *testing.T, srv *server, in, edited string) []semanticToken {
+	t.Helper()
+	u := uri.URI("file:///test.journal")
+	srv.openDoc(u, in, 1, "journal")
+	if _, ok := srv.tokensForDoc(u); !ok {
+		t.Fatal("priming failed")
+	}
+	srv.updateDoc(u, 2, partialChangeFromDiff(in, edited))
+	toks, ok := srv.tokensForDoc(u)
+	if !ok {
+		t.Fatal("tokensForDoc failed after edit")
+	}
+	return toks
 }
 
 func openJournal(t testing.TB, path string) string {

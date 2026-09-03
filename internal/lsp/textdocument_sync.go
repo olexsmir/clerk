@@ -2,7 +2,7 @@ package lsp
 
 import (
 	"context"
-	"strconv"
+	"strings"
 
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
@@ -59,17 +59,8 @@ type docState struct {
 	lineIdx    *lsputil.LineIndex // cached line index for the text
 
 	analysis *analyzer.Analysis // cached analysis, nil until first build
+	sem      *semCache          // semantic token cache, nil until first tokenize
 	dirty    bool               // true while the cached analysis may not reflect the current text
-
-	semTokens   []semanticToken // cached tokens for the current text
-	semBaseline []uint32        // encoded data of the last response; diff baseline for the next delta request
-	semGen      uint64          // semantic token generation, increments per response; 0 before the first
-}
-
-func (d *docState) resultID() string { return strconv.FormatUint(d.semGen, 10) }
-func (d *docState) nextResultID() string {
-	d.semGen++
-	return d.resultID()
 }
 
 func (s *server) openDoc(u uri.URI, text string, version int32, langID protocol.LanguageKind) {
@@ -92,18 +83,44 @@ func (s *server) updateDoc(u uri.URI, version int32, changes []protocol.TextDocu
 		return
 	}
 	state.version = version
+
+	incremental := len(changes) == 1
+	var edit semEdit
 	for _, ch := range changes {
 		switch ev := ch.(type) {
 		case *protocol.TextDocumentContentChangeWholeDocument:
+			incremental = false
 			state.text = ev.Text
-			state.semTokens = nil
-			state.lineIdx = lsputil.NewLineIndex(ev.Text)
 		case *protocol.TextDocumentContentChangePartial:
-			_ = ev // TODO: incremental edit support
+			if state.sem == nil || state.sem.pending != nil {
+				incremental = false
+			}
+			if state.lineIdx == nil {
+				state.lineIdx = lsputil.NewLineIndex(state.text)
+			}
+			start := state.lineIdx.Offset(int(ev.Range.Start.Line), int(ev.Range.Start.Character))
+			end := state.lineIdx.Offset(int(ev.Range.End.Line), int(ev.Range.End.Character))
+			removed := state.text[start:end]
+			state.text = state.text[:start] + ev.Text + state.text[end:]
+			if incremental {
+				edit = semEdit{
+					start:     start,
+					oldEnd:    end,
+					newEnd:    start + len(ev.Text),
+					deltaLine: strings.Count(ev.Text, "\n") - strings.Count(removed, "\n"),
+				}
+			}
 		}
+		state.lineIdx = lsputil.NewLineIndex(state.text)
 	}
+
 	state.analysis = nil
 	state.dirty = true
+	if incremental {
+		state.sem.pending = &edit
+	} else {
+		state.sem = nil
+	}
 	s.openDocs[u] = state
 	s.mu.Unlock()
 

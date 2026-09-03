@@ -3,6 +3,7 @@ package lsp
 import (
 	"context"
 	"slices"
+	"strconv"
 	"unicode/utf8"
 
 	"go.lsp.dev/protocol"
@@ -30,7 +31,7 @@ func (s *server) SemanticTokensFullDelta(ctx context.Context, params *protocol.S
 	s.mu.RLock()
 	st, ok := s.openDocs[u]
 	s.mu.RUnlock()
-	if !ok || st.semGen == 0 || params.PreviousResultID != st.resultID() {
+	if !ok || st.sem == nil || st.sem.gen == 0 || params.PreviousResultID != st.sem.resultID() {
 		return s.semanticTokensFullResult(u), nil
 	}
 
@@ -38,9 +39,9 @@ func (s *server) SemanticTokensFullDelta(ctx context.Context, params *protocol.S
 	if !ok {
 		return &protocol.SemanticTokens{}, nil
 	}
-	edits := semanticTokensEdits(st.semBaseline, data)
+	edits := semanticTokensEdits(st.sem.baseline, data)
 	if len(edits) == 0 {
-		return &protocol.SemanticTokensDelta{ResultID: new(st.resultID()), Edits: []protocol.SemanticTokensEdit{}}, nil
+		return &protocol.SemanticTokensDelta{ResultID: new(st.sem.resultID()), Edits: []protocol.SemanticTokensEdit{}}, nil
 	}
 
 	rid, ok := s.storeSemResult(u, data)
@@ -90,6 +91,24 @@ func (s *server) semanticTokensData(u uri.URI) ([]uint32, bool) {
 	return encodeSemTokens(tokens), true
 }
 
+type semCache struct {
+	entries  []semEntry // tokens per entry of the current text
+	baseline []uint32   // encoded data of the last response; diff baseline for the next delta request
+	gen      uint64     // increments per response; 0 before the first
+	pending  *semEdit   // single edit to apply incrementally, nil when none
+}
+
+type semEdit struct {
+	start, oldEnd, newEnd int
+	deltaLine             int
+}
+
+func (c *semCache) resultID() string { return strconv.FormatUint(c.gen, 10) }
+func (c *semCache) nextResultID() string {
+	c.gen++
+	return c.resultID()
+}
+
 func (s *server) storeSemResult(u uri.URI, data []uint32) (string, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -97,8 +116,11 @@ func (s *server) storeSemResult(u uri.URI, data []uint32) (string, bool) {
 	if !ok {
 		return "", false
 	}
-	rid := st.nextResultID()
-	st.semBaseline = data
+	if st.sem == nil {
+		st.sem = &semCache{}
+	}
+	rid := st.sem.nextResultID()
+	st.sem.baseline = data
 	s.openDocs[u] = st
 	return rid, true
 }
@@ -110,13 +132,23 @@ func (s *server) tokensForDoc(doc uri.URI) ([]semanticToken, bool) {
 	if !ok {
 		return nil, false
 	}
-	if st.semTokens != nil {
-		return st.semTokens, true
+	if st.sem != nil && st.sem.pending == nil {
+		return flattenSemTokens(st.sem.entries), true
 	}
-	// Tokenize outside the lock: a full tokenization of a large journal is
-	// milliseconds, during which didChange/didOpen would otherwise stall.
 	rj := s.loader.ResolveBytes(doc.Path(), []byte(st.text))
-	tokens := tokenizeForSemantics(st.text, rj.Occurrences[0].Ast)
+	j := rj.Occurrences[0].Ast
+
+	var tokens []semanticToken
+	var entries []semEntry
+	good := st.sem != nil && st.sem.pending != nil
+	if good {
+		entries, good = incrementalTokens(st.text, j, st.sem.entries, *st.sem.pending)
+	}
+	if !good {
+		tokens, entries = computeSemTokens(st.text, j)
+	} else {
+		tokens = flattenSemTokens(entries)
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	cur, ok := s.openDocs[doc]
@@ -124,7 +156,11 @@ func (s *server) tokensForDoc(doc uri.URI) ([]semanticToken, bool) {
 		return nil, false
 	}
 	if cur.text == st.text { // unchanged during tokenization
-		cur.semTokens = tokens
+		if cur.sem == nil {
+			cur.sem = &semCache{}
+		}
+		cur.sem.entries = entries
+		cur.sem.pending = nil
 		s.openDocs[doc] = cur
 	}
 	return tokens, true
@@ -180,6 +216,11 @@ type semanticToken struct {
 	modifiers uint32
 }
 
+type semEntry struct {
+	start, end int
+	tokens     []semanticToken
+}
+
 func tokenizeForSemantics(content string, j *ast.Journal) []semanticToken {
 	var raw []rawSpan
 	emit := func(s token.Span, tokType, mods uint32) {
@@ -204,13 +245,123 @@ type rawSpan struct {
 	tok, mods uint32
 }
 
+func computeSemTokens(content string, j *ast.Journal) ([]semanticToken, []semEntry) {
+	if len(j.Errors) > 0 {
+		return tokenizeForSemantics(content, j), nil
+	}
+	entries := buildSemTokens(content, j)
+	return flattenSemTokens(entries), entries
+}
+
+func buildSemTokens(content string, j *ast.Journal) []semEntry {
+	entries := make([]semEntry, 0, len(j.Entries))
+	for _, e := range j.Entries {
+		if _, isBlank := e.(*ast.BlankLine); isBlank {
+			continue
+		}
+		sp := entrySpan(e)
+		entries = append(entries, semEntry{start: sp.Start.Offset, end: sp.End.Offset, tokens: tokensForEntry(content, e)})
+	}
+	return entries
+}
+
+func flattenSemTokens(entries []semEntry) []semanticToken {
+	var flat []semanticToken
+	for _, en := range entries {
+		flat = append(flat, en.tokens...)
+	}
+	return flat
+}
+
+func tokensForEntry(content string, e ast.Entry) []semanticToken {
+	sp := entrySpan(e)
+	var eraw []rawSpan
+	visitEntry(content, e, func(tok token.Span, tokKind, modifier uint32) {
+		if tok.Start.Offset >= tok.End.Offset {
+			return
+		}
+		eraw = append(eraw, rawSpan{tok, tokKind, modifier})
+	})
+	if len(eraw) == 0 {
+		return nil
+	}
+	return rawToSemanticTokensFrom(content, eraw, sp.Start.Line-1, 0, sp.Start.Offset)
+}
+
+func shiftLines(toks []semanticToken, delta int) []semanticToken {
+	if delta == 0 {
+		return toks
+	}
+	out := make([]semanticToken, len(toks))
+	for i, t := range toks {
+		t.line = uint32(int(t.line) + delta)
+		out[i] = t
+	}
+	return out
+}
+
+func incrementalTokens(content string, j *ast.Journal, old []semEntry, e semEdit) ([]semEntry, bool) {
+	if len(j.Errors) > 0 {
+		return nil, false
+	}
+	var nb, na int
+	for _, en := range j.Entries {
+		if _, isBlank := en.(*ast.BlankLine); isBlank {
+			continue
+		}
+		switch sp := entrySpan(en); {
+		case sp.End.Offset <= e.start:
+			nb++
+		case sp.Start.Offset >= e.newEnd:
+			na++
+		}
+	}
+	var ob, oa int
+	for _, en := range old {
+		switch {
+		case en.end <= e.start:
+			ob++
+		case en.start >= e.oldEnd:
+			oa++
+		}
+	}
+	if nb != ob || na != oa {
+		return nil, false
+	}
+
+	out := make([]semEntry, 0, len(old)+1)
+	iBefore, iTail := 0, len(old)-oa
+	for _, en := range j.Entries {
+		if _, isBlank := en.(*ast.BlankLine); isBlank {
+			continue
+		}
+		sp := entrySpan(en)
+		var toks []semanticToken
+		switch {
+		case sp.End.Offset <= e.start:
+			toks = old[iBefore].tokens
+			iBefore++
+		case sp.Start.Offset >= e.newEnd:
+			toks = shiftLines(old[iTail].tokens, e.deltaLine)
+			iTail++
+		default:
+			toks = tokensForEntry(content, en)
+		}
+		out = append(out, semEntry{start: sp.Start.Offset, end: sp.End.Offset, tokens: toks})
+	}
+	return out, true
+}
+
 func rawToSemanticTokens(content string, raw []rawSpan) []semanticToken {
+	return rawToSemanticTokensFrom(content, raw, 0, 0, 0)
+}
+
+func rawToSemanticTokensFrom(content string, raw []rawSpan, line, col, cursor int) []semanticToken {
 	if len(raw) == 0 {
 		return nil
 	}
 	slices.SortFunc(raw, func(a, b rawSpan) int { return a.span.Start.Offset - b.span.Start.Offset })
 	out := make([]semanticToken, len(raw))
-	line, col, cursor := 0, 0, 0
 	advance := func(end int) {
 		for cursor < end {
 			r, size := utf8.DecodeRuneInString(content[cursor:])
