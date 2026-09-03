@@ -1,18 +1,28 @@
 -- in.journal --
-include sub.journal
+include su^b.journal
+include dir/ot^her.journal
 
 2024-01-16 Another^ Store
-    expenses:fo^od  100.00 EUR
-    assets:ca^sh
+  expenses:fo^od  100.00 EUR
+  assets:ca^sh
+
+-- dir/other.journal --
+account expenses:entertainment
+
+2024-01-13 Cinema
+  expenses:entertainment  £10
+  assets:bank
 
 -- sub.journal --
 account expenses:food
 
 2024-01-15 Grocery Store
-    expenses:food  $50
-    assets:cash
+  expenses:food  $50
+  assets:cash
 
 -- expect --
-2:18 in.journal 2:11-2:24
-3:15 sub.journal 0:8-0:21
-4:13 sub.journal 4:4-4:15
+0:10 sub.journal 0:0-0:0
+1:14 other.journal 0:0-0:0
+3:18 in.journal 3:11-3:24
+4:13 sub.journal 0:8-0:21
+5:11 sub.journal 4:2-4:13

@@ -27,6 +27,11 @@ func (s *server) PrepareRename(_ context.Context, params *protocol.PrepareRename
 	if ref == nil {
 		return nil, nil
 	}
+	switch ref.kind {
+	case symbolAccount, symbolCommodity, symbolPayee, symbolTag:
+	default:
+		return nil, nil // kinds without rename support
+	}
 
 	return &protocol.PrepareRenamePlaceholder{
 		Range:       state.lineIdx.SpanRange(ref.span),
@@ -147,6 +152,10 @@ func symbolInEntry(content string, e ast.Entry, cursor int) *symbolRef {
 		if e.Name != nil && spanContains(content, e.Name.Span, cursor) {
 			return &symbolRef{symbolPayee, e.Name.Name, e.Name.Span}
 		}
+	case *ast.IncludeDirective:
+		if spanContains(content, e.Span, cursor) {
+			return &symbolRef{symbolInclude, e.Path, e.Span}
+		}
 	}
 	return nil
 }
@@ -160,6 +169,7 @@ const (
 	symbolCommodity
 	symbolPayee
 	symbolTag
+	symbolInclude
 )
 
 func (s symbolKind) ToProtocol() protocol.SymbolKind {

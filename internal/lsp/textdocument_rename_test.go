@@ -192,6 +192,9 @@ func newTxtarHarness(t *testing.T, ar *golden.Archive) *txtarHarness {
 		if f.Name == "expect" || f.Name == "rename" {
 			continue
 		}
+		if err := os.MkdirAll(filepath.Join(dir, filepath.Dir(f.Name)), 0o755); err != nil {
+			t.Fatal(err)
+		}
 		if err := os.WriteFile(filepath.Join(dir, f.Name), f.Data, 0o644); err != nil {
 			t.Fatal(err)
 		}

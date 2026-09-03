@@ -2,8 +2,10 @@ package lsp
 
 import (
 	"context"
+	"path/filepath"
 	"slices"
 	"sort"
+	"strings"
 
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
@@ -30,23 +32,27 @@ func findDefinitionUnderCursor(an *analyzer.Analysis, docPath, content string, c
 	if ref == nil {
 		return nil
 	}
-	loc := resolveSymbol(ref, an)
+	return resolveSymbol(ref, an, docPath)
+}
+
+func resolveSymbol(ref *symbolRef, an *analyzer.Analysis, docPath string) protocol.LocationSlice {
+	var loc *protocol.Location
+	switch ref.kind {
+	case symbolAccount:
+		loc = findAccountDefinition(an, ref.name)
+	case symbolCommodity:
+		loc = findCommodityDefinition(an, ref.name)
+	case symbolPayee:
+		loc = findPayeeDefinition(an, ref.name)
+	case symbolInclude:
+		return includeTargets(an, docPath, ref.name)
+	default:
+		return nil
+	}
 	if loc == nil {
 		return nil
 	}
 	return protocol.LocationSlice{*loc}
-}
-
-func resolveSymbol(ref *symbolRef, an *analyzer.Analysis) *protocol.Location {
-	switch ref.kind {
-	case symbolAccount:
-		return findAccountDefinition(an, ref.name)
-	case symbolCommodity:
-		return findCommodityDefinition(an, ref.name)
-	case symbolPayee:
-		return findPayeeDefinition(an, ref.name)
-	}
-	return nil
 }
 
 func findAccountDefinition(an *analyzer.Analysis, name string) *protocol.Location {
@@ -141,6 +147,28 @@ func findTagDefinition(an *analyzer.Analysis, key string) *protocol.Location {
 		return locationFor(an, u.FileIndex, span)
 	}
 	return nil
+}
+
+func includeTargets(an *analyzer.Analysis, docPath, pattern string) protocol.LocationSlice {
+	target := filepath.Join(filepath.Dir(docPath), pattern)
+	glob := strings.ContainsAny(target, "*?[")
+	found := make(map[string]bool)
+	var locs protocol.LocationSlice
+	for _, occ := range an.Files {
+		if found[occ.Path] {
+			continue
+		}
+		if glob {
+			if m, _ := filepath.Match(target, occ.Path); !m {
+				continue
+			}
+		} else if occ.Path != target {
+			continue
+		}
+		found[occ.Path] = true
+		locs = append(locs, protocol.Location{URI: uri.File(occ.Path)})
+	}
+	return locs
 }
 
 func fileIndexForEntry(a *analyzer.Analysis, d ast.Entry) int {
