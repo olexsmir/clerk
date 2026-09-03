@@ -1090,7 +1090,7 @@ func (p *Parser) readAccountSegment() (ast.SubAccount, bool) {
 
 func (p *Parser) parseAccount() ast.Account {
 	s := p.cur.Span
-	acc := ast.Account{Name: make([]ast.SubAccount, 0, 2)}
+	acc := ast.Account{Name: make([]ast.SubAccount, 0, 6)}
 
 	sub, ok := p.readAccountSegment()
 	if !ok {
