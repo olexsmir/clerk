@@ -1,7 +1,6 @@
 package lexer
 
 import (
-	"strings"
 	"unicode"
 	"unicode/utf8"
 	"unsafe"
@@ -556,10 +555,15 @@ func (l *Lexer) lexParenExpr() token.Token {
 
 func (l *Lexer) lexNumber() token.Token {
 	s := l.save()
+	isDecimal := false
 	for {
 		if l.isDigit() || l.ch == '.' || l.ch == ',' || l.ch == '_' || l.ch == '\'' {
+			if l.ch == '.' || l.ch == ',' {
+				isDecimal = true
+			}
 			l.advance()
 		} else if l.ch == ' ' && (l.peek() >= '0' && l.peek() <= '9') {
+			isDecimal = true
 			l.advance()
 		} else if l.ch == 'e' || l.ch == 'E' {
 			// exponent: consume only when E[sign]digit, so `10E ` stays an integer
@@ -570,6 +574,7 @@ func (l *Lexer) lexNumber() token.Token {
 			if p >= len(l.input) || l.input[p] < '0' || l.input[p] > '9' {
 				break
 			}
+			isDecimal = true
 			l.advance() // e/E
 			if l.ch == '+' || l.ch == '-' {
 				l.advance()
@@ -583,7 +588,7 @@ func (l *Lexer) lexNumber() token.Token {
 	}
 	lit := l.lit(s)
 	kind := token.INT
-	if strings.ContainsAny(lit, "., eE") {
+	if isDecimal {
 		kind = token.DECIMAL
 	}
 	return token.Token{Type: kind, Literal: lit, Span: l.span(s)}
@@ -704,6 +709,9 @@ func (l *Lexer) advance() {
 }
 
 func (l *Lexer) peek() rune {
+	if l.rpos < len(l.input) && l.input[l.rpos] < utf8.RuneSelf {
+		return rune(l.input[l.rpos])
+	}
 	r, _ := utf8.DecodeRune(l.input[l.rpos:])
 	return r
 }
@@ -721,7 +729,9 @@ func (l *Lexer) isAlpha() bool {
 		(l.ch >= 'A' && l.ch <= 'Z')
 }
 
-func (l *Lexer) isTwoSpaces() bool { return l.ch == ' ' && l.peek() == ' ' }
+func (l *Lexer) isTwoSpaces() bool {
+	return l.ch == ' ' && l.rpos < len(l.input) && l.input[l.rpos] == ' '
+}
 
 func (l *Lexer) isDateSep() bool { return l.ch == '-' || l.ch == '/' || l.ch == '.' }
 

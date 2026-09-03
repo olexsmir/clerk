@@ -1399,6 +1399,10 @@ func (p *Parser) span(s token.Span) token.Span {
 }
 
 func normalizeLiteral(lit string, thousands, decimal byte) string {
+	// fast path: no separators to strip and the decimal mark is already '.'
+	if thousands == 0 && (decimal == 0 || decimal == '.') {
+		return lit
+	}
 	var b strings.Builder
 	for _, ch := range []byte(lit) {
 		if thousands != 0 && ch == thousands {
