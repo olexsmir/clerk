@@ -115,7 +115,8 @@ func (s *server) tokensForDoc(doc uri.URI) ([]semanticToken, bool) {
 	}
 	// Tokenize outside the lock: a full tokenization of a large journal is
 	// milliseconds, during which didChange/didOpen would otherwise stall.
-	tokens := tokenizeForSemantics(st.text, parseJournalStr(st.text))
+	rj := s.loader.ResolveBytes(doc.Path(), []byte(st.text))
+	tokens := tokenizeForSemantics(st.text, rj.Occurrences[0].Ast)
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	cur, ok := s.openDocs[doc]
