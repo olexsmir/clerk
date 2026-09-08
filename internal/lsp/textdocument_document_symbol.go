@@ -37,16 +37,16 @@ func entryDocumentSymbol(e ast.Entry, src []byte) (protocol.DocumentSymbol, bool
 	case *ast.PeriodicTransaction:
 		kind, name, sel, whole = symbolTransaction, transactionName(e), e.Period.Span, e.Span
 	case *ast.AutomatedTransaction:
-		kind, name, sel, whole = symbolTransaction, transactionName(e), e.Expr.Span, e.Span
+		kind, name, sel, whole = symbolTransaction, transactionName(e), e.ExprSpan, e.Span
 	case *ast.AccountDirective:
 		kind, name, sel, whole = symbolAccount, e.Account.String(), e.Account.Span, e.Span
 	case *ast.CommodityDirective:
 		kind, name, sel, whole = symbolCommodity, e.Commodity, e.CommoditySpan, e.Span
 	case *ast.PayeeDirective:
-		if e.Name == nil {
+		if e.Name == "" {
 			return protocol.DocumentSymbol{}, false
 		}
-		kind, name, sel, whole = symbolPayee, e.Name.Name, e.Name.Span, e.Span
+		kind, name, sel, whole = symbolPayee, e.Name, e.NameSpan, e.Span
 	case *ast.TagDirective:
 		sp, ok := tagDirectiveSpan(string(src), e)
 		if !ok {

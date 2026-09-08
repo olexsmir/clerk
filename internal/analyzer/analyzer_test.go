@@ -137,13 +137,13 @@ func fprint(w io.Writer, a *Analysis) {
 		fmt.Fprintf(w, "    directives: %d\n", len(info.Directives))
 		fmt.Fprintf(w, "    used: %d\n", info.UsedCount)
 		for _, d := range info.Directives {
-			if d.Name != nil {
-				fmt.Fprintf(w, "      payee %s\n", d.Name.Name)
+			if d.Name != "" {
+				fmt.Fprintf(w, "      payee %s\n", d.Name)
 			}
 		}
 		fmt.Fprintf(w, "    usages: %d\n", len(info.Usage))
 		for _, u := range info.Usage {
-			fmt.Fprintf(w, "      file %d: %s\n", u.FileIndex, u.Payee.Name)
+			fmt.Fprintf(w, "      file %d: %s\n", u.FileIndex, u.Name)
 		}
 		if info.LastUsed.Year != 0 {
 			fmt.Fprintf(w, "    last-used: %d-%02d-%02d\n", info.LastUsed.Year, info.LastUsed.Month, info.LastUsed.Day)
@@ -180,8 +180,8 @@ func fprint(w io.Writer, a *Analysis) {
 		case *ast.CommodityDirective:
 			fmt.Fprintf(w, "  commodity %s\n", d.Commodity)
 		case *ast.PayeeDirective:
-			if d.Name != nil {
-				fmt.Fprintf(w, "  payee %s\n", d.Name.Name)
+			if d.Name != "" {
+				fmt.Fprintf(w, "  payee %s\n", d.Name)
 			}
 		case *ast.TagDirective:
 			fmt.Fprintf(w, "  tag %s\n", d.Name)

@@ -6,6 +6,7 @@ import (
 
 	"olexsmir.xyz/clerk/journal"
 	"olexsmir.xyz/clerk/journal/ast"
+	"olexsmir.xyz/clerk/journal/token"
 )
 
 // Build constructs [Analysis] from a flat resolved journal view.
@@ -45,8 +46,8 @@ func txDuplicateKey(tx *ast.Transaction, names []string) string {
 	var b strings.Builder
 	b.WriteString(tx.Date.String())
 	b.WriteByte('|')
-	if tx.Payee != nil {
-		b.WriteString(tx.Payee.Name)
+	if tx.Payee != "" {
+		b.WriteString(tx.Payee)
 	}
 	b.WriteByte('|')
 	for i := range tx.Postings {
@@ -61,8 +62,8 @@ func (a *Analysis) PayeeTemplates() map[string][]PostingTemplate {
 	templates := make(map[string][]PostingTemplate)
 	for _, tx := range a.Transactions {
 		payee := ""
-		if tx.Payee != nil {
-			payee = tx.Payee.Name
+		if tx.Payee != "" {
+			payee = tx.Payee
 		}
 		if payee == "" {
 			continue
@@ -99,7 +100,7 @@ func (a *Analysis) addEntry(fileIndex int, entry ast.Entry) {
 	case *ast.Comment:
 		a.addCommentTags(fileIndex, nil, e)
 	case *ast.Transaction:
-		a.addPayee(fileIndex, e.Payee)
+		a.addPayee(fileIndex, e.Payee, e.PayeeSpan)
 		a.Transactions = append(a.Transactions, e)
 		a.TransactionsCountByDate[e.Date.String()]++
 
@@ -163,13 +164,13 @@ func (a *Analysis) addAliasDirective(ad *ast.AliasDirective) {
 }
 
 func (a *Analysis) addPayeeDirective(pd *ast.PayeeDirective) {
-	if pd.Name == nil {
+	if pd.Name == "" {
 		return
 	}
-	info, ok := a.Payees[pd.Name.Name]
+	info, ok := a.Payees[pd.Name]
 	if !ok {
 		info = &PayeeInfo{}
-		a.Payees[pd.Name.Name] = info
+		a.Payees[pd.Name] = info
 	}
 	info.Directives = append(info.Directives, pd)
 }
@@ -214,18 +215,19 @@ func (a *Analysis) addCommodityDirective(cd *ast.CommodityDirective) {
 	info.Directives = append(info.Directives, cd)
 }
 
-func (a *Analysis) addPayee(fileIndex int, payee *ast.Payee) {
-	if payee == nil {
+func (a *Analysis) addPayee(fileIndex int, name string, span token.Span) {
+	if name == "" {
 		return
 	}
-	info, ok := a.Payees[payee.Name]
+	info, ok := a.Payees[name]
 	if !ok {
 		info = &PayeeInfo{}
-		a.Payees[payee.Name] = info
+		a.Payees[name] = info
 	}
 	info.Usage = append(info.Usage, PayeeUsage{
 		FileIndex: fileIndex,
-		Payee:     payee,
+		Name:      name,
+		Span:      span,
 	})
 	info.UsedCount++
 }

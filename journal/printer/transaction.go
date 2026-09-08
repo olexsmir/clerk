@@ -15,28 +15,28 @@ func (p *printer) writeTransaction(t *ast.Transaction) {
 	}
 
 	// status
-	if t.Status.Value != ast.StatusNone {
+	if t.Status != ast.StatusNone {
 		p.buf.WriteByte(' ')
-		p.buf.WriteString(t.Status.Value.String())
+		p.buf.WriteString(t.Status.String())
 	}
 
 	// code
-	if t.Code != nil && t.Code.Value != "" {
+	if t.Code != "" {
 		p.buf.WriteString(" (")
-		p.buf.WriteString(t.Code.Value)
+		p.buf.WriteString(t.Code)
 		p.buf.WriteByte(')')
 	}
 
 	// payee
-	if t.Payee != nil && t.Payee.Name != "" {
+	if t.Payee != "" {
 		p.buf.WriteByte(' ')
-		p.buf.WriteString(t.Payee.Name)
+		p.buf.WriteString(t.Payee)
 	}
 
 	// note
-	if t.Note != nil && t.Note.Value != "" {
+	if t.Note != "" {
 		p.buf.WriteString(" | ")
-		p.buf.WriteString(t.Note.Value)
+		p.buf.WriteString(t.Note)
 	}
 
 	p.writeComment(t.Comment)
@@ -63,22 +63,22 @@ func (p *printer) writePeriodicTransaction(t *ast.PeriodicTransaction) {
 	}
 
 	// status
-	if t.Status.Value != ast.StatusNone {
+	if t.Status != ast.StatusNone {
 		p.buf.WriteByte(' ')
-		p.buf.WriteString(t.Status.Value.String())
+		p.buf.WriteString(t.Status.String())
 	}
 
 	// code
-	if t.Code != nil && t.Code.Value != "" {
+	if t.Code != "" {
 		p.buf.WriteString(" (")
-		p.buf.WriteString(t.Code.Value)
+		p.buf.WriteString(t.Code)
 		p.buf.WriteByte(')')
 	}
 
 	// description
-	if t.Description != nil && t.Description.Value != "" {
+	if t.Description != "" {
 		p.buf.WriteByte(' ')
-		p.buf.WriteString(t.Description.Value)
+		p.buf.WriteString(t.Description)
 	}
 
 	// comment
@@ -100,9 +100,9 @@ func (p *printer) writeAutomatedTransaction(t *ast.AutomatedTransaction) {
 	p.buf.WriteByte('=')
 
 	// expression
-	if t.Expr.Value != "" {
+	if t.Expr != "" {
 		p.buf.WriteByte(' ')
-		p.buf.WriteString(t.Expr.Value)
+		p.buf.WriteString(t.Expr)
 	}
 
 	// comment

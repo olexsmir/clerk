@@ -83,12 +83,12 @@ func findPayeeReferences(an *analyzer.Analysis, name string, includeDeclaration 
 	}
 	var locations []protocol.Location
 	for _, u := range info.Usage {
-		appendLocation(&locations, locationFor(an, u.FileIndex, u.Payee.Span))
+		appendLocation(&locations, locationFor(an, u.FileIndex, u.Span))
 	}
 	if includeDeclaration {
 		for _, d := range info.Directives {
-			if d.Name != nil {
-				appendLocation(&locations, locationForDirective(an, d, d.Name.Span))
+			if d.Name != "" {
+				appendLocation(&locations, locationForDirective(an, d, d.NameSpan))
 			}
 		}
 	}

@@ -70,8 +70,8 @@ func selectionInEntry(content string, e ast.Entry, li *lsputil.LineIndex, cursor
 	case *ast.CommodityDirective:
 		return commodityDirectiveSelection(content, t, li, cursor, parent)
 	case *ast.PayeeDirective:
-		if t.Name != nil {
-			if sel, ok := selectionForSpan(content, li, t.Name.Span, cursor, parent); ok {
+		if t.Name != "" {
+			if sel, ok := selectionForSpan(content, li, t.NameSpan, cursor, parent); ok {
 				return sel
 			}
 		}
@@ -127,17 +127,17 @@ func transactionSelection(content string, t *ast.Transaction, li *lsputil.LineIn
 	if t.SecondDate != nil {
 		sps = append(sps, t.SecondDate.Span)
 	}
-	if t.Status.Value != ast.StatusNone {
-		sps = append(sps, t.Status.Span)
+	if t.Status != ast.StatusNone {
+		sps = append(sps, t.StatusSpan)
 	}
-	if t.Code != nil {
-		sps = append(sps, t.Code.Span)
+	if t.Code != "" {
+		sps = append(sps, t.CodeSpan)
 	}
-	if t.Payee != nil {
-		sps = append(sps, t.Payee.Span)
+	if t.Payee != "" {
+		sps = append(sps, t.PayeeSpan)
 	}
-	if t.Note != nil {
-		sps = append(sps, t.Note.Span)
+	if t.Note != "" {
+		sps = append(sps, t.NoteSpan)
 	}
 	for _, sp := range sps {
 		if sel, ok := selectionForSpan(content, li, sp, cursor, parent); ok {
@@ -178,8 +178,8 @@ func periodicSelection(content string, pt *ast.PeriodicTransaction, li *lsputil.
 		}
 		return sel
 	}
-	if pt.Description != nil {
-		if sel, ok := selectionForSpan(content, li, pt.Description.Span, cursor, parent); ok {
+	if pt.Description != "" {
+		if sel, ok := selectionForSpan(content, li, pt.DescriptionSpan, cursor, parent); ok {
 			return sel
 		}
 	}
@@ -187,7 +187,7 @@ func periodicSelection(content string, pt *ast.PeriodicTransaction, li *lsputil.
 }
 
 func automatedSelection(content string, at *ast.AutomatedTransaction, li *lsputil.LineIndex, cursor int, parent protocol.SelectionRange) protocol.SelectionRange {
-	if sel, ok := selectionForSpan(content, li, at.Expr.Span, cursor, parent); ok {
+	if sel, ok := selectionForSpan(content, li, at.ExprSpan, cursor, parent); ok {
 		return sel
 	}
 	return commentsAndPostingsSelection(content, at.Comment, at.HeaderComments, at.Postings, li, cursor, parent)
@@ -238,8 +238,8 @@ func postingsSelection(content string, postings []ast.Posting, li *lsputil.LineI
 }
 
 func postingSelection(content string, p ast.Posting, li *lsputil.LineIndex, cursor int, parent protocol.SelectionRange) protocol.SelectionRange {
-	if p.Status.Value != ast.StatusNone {
-		if sel, ok := selectionForSpan(content, li, p.Status.Span, cursor, parent); ok {
+	if p.Status != ast.StatusNone {
+		if sel, ok := selectionForSpan(content, li, p.StatusSpan, cursor, parent); ok {
 			return sel
 		}
 	}

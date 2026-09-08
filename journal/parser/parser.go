@@ -129,12 +129,13 @@ func (p *Parser) parseTransaction() *ast.Transaction {
 	p.skipWhitespace()
 
 	// optional status
-	tx.Status = p.parseStatus()
+	tx.Status, tx.StatusSpan = p.parseStatus()
 
 	// optional code - the lexer emits "(CODE)" as a single TEXT token; split it here
 	if p.got(token.TEXT) {
 		if lit := p.cur.Literal; len(lit) >= 2 && lit[0] == '(' && lit[len(lit)-1] == ')' {
-			tx.Code = &ast.Code{Value: lit[1 : len(lit)-1], Span: p.cur.Span}
+			tx.Code = lit[1 : len(lit)-1]
+			tx.CodeSpan = p.cur.Span
 			p.advance()
 			p.skipWhitespace()
 		}
@@ -142,7 +143,7 @@ func (p *Parser) parseTransaction() *ast.Transaction {
 
 	// optional payee | note
 	if p.got(token.TEXT) || p.got(token.STRING) {
-		tx.Payee = p.parsePayee()
+		tx.Payee, tx.PayeeSpan = p.parsePayee()
 
 		// check for | separator
 		p.skipWhitespace()
@@ -153,7 +154,8 @@ func (p *Parser) parseTransaction() *ast.Transaction {
 				sn := p.cur.Span
 				n := p.cur.Literal
 				p.advance()
-				tx.Note = &ast.Note{Value: n, Span: p.span(sn)}
+				tx.Note = n
+				tx.NoteSpan = p.span(sn)
 			}
 		}
 	}
@@ -174,13 +176,13 @@ func unquote(s string) string {
 	return s
 }
 
-func (p *Parser) parsePayee() *ast.Payee {
+func (p *Parser) parsePayee() (string, token.Span) {
 	s := p.cur.Span
 
 	if p.got(token.STRING) {
 		name := unquote(p.cur.Literal)
 		p.advance()
-		return &ast.Payee{Name: name, Span: p.span(s)}
+		return name, p.span(s)
 	}
 
 	// keep spaces/tags between text tokens; stop before trailing whitespace
@@ -189,7 +191,7 @@ func (p *Parser) parsePayee() *ast.Payee {
 		_, _ = name.WriteString(p.cur.Literal)
 		p.advance()
 	}
-	return &ast.Payee{Name: unquote(name.String()), Span: p.span(s)}
+	return unquote(name.String()), p.span(s)
 }
 
 func isPayeeWord(t token.Type) bool {
@@ -210,7 +212,8 @@ func (p *Parser) parsePeriodicTransaction() *ast.PeriodicTransaction {
 	pt.Period = p.parsePeriod()
 
 	if desc, dspan := p.parseOptPeriodicDescription(); desc != "" {
-		pt.Description = &ast.Description{Value: desc, Span: dspan}
+		pt.Description = desc
+		pt.DescriptionSpan = dspan
 	}
 
 	comment := p.parseOptInlineComment()
@@ -233,7 +236,8 @@ func (p *Parser) parseAutomatedTransaction() *ast.AutomatedTransaction {
 	// expression
 	sd := p.cur.Span
 	expr := p.parseDirectiveExpr()
-	at.Expr = ast.Expr{Value: expr, Span: p.span(sd)}
+	at.Expr = expr
+	at.ExprSpan = p.span(sd)
 	at.Comment = p.parseOptInlineComment()
 	p.expectNewline()
 
@@ -541,18 +545,19 @@ func (p *Parser) parsePayeeDirective() *ast.PayeeDirective {
 	p.expect(token.PAYEE)
 	p.skipWhitespace()
 
-	var name *ast.Payee
+	name, nameSpan := "", token.Span{}
 	if p.got(token.TEXT) || p.got(token.STRING) || p.got(token.COMMODITYMARK) {
-		name = p.parsePayee()
+		name, nameSpan = p.parsePayee()
 	}
 
 	comment := p.parseOptInlineComment()
 	p.expectNewline()
 
 	return &ast.PayeeDirective{
-		Name:    name,
-		Comment: comment,
-		Span:    p.span(s),
+		Name:     name,
+		NameSpan: nameSpan,
+		Comment:  comment,
+		Span:     p.span(s),
 	}
 }
 
@@ -821,21 +826,20 @@ func (p *Parser) parseCommentBlockDirective() *ast.CommentBlockDirective {
 	}
 }
 
-func (p *Parser) parseStatus() ast.Status {
+func (p *Parser) parseStatus() (ast.StatusType, token.Span) {
 	s := p.cur.Span
-	st := ast.Status{}
+	st := ast.StatusNone
 	switch p.cur.Type {
 	case token.STAR:
-		st.Value = ast.StatusCleared
+		st = ast.StatusCleared
 	case token.BANG:
-		st.Value = ast.StatusPending
+		st = ast.StatusPending
 	}
-	if st.Value != ast.StatusNone {
+	if st != ast.StatusNone {
 		p.advance()
 		p.skipWhitespace()
 	}
-	st.Span = p.span(s)
-	return st
+	return st, p.span(s)
 }
 
 func (p *Parser) isAmountStart() bool {
@@ -946,7 +950,7 @@ func (p *Parser) parsePosting() (ast.Posting, bool) {
 	}
 
 	// optional status, outside of brackets, '! (account)'
-	posting.Status = p.parseStatus()
+	posting.Status, posting.StatusSpan = p.parseStatus()
 
 	// detect virtual posting brackets
 	switch p.cur.Type {
@@ -960,7 +964,7 @@ func (p *Parser) parsePosting() (ast.Posting, bool) {
 
 	// optional status, inside of brackets, '(* account)'
 	if p.got(token.STAR) || p.got(token.BANG) {
-		posting.Status = p.parseStatus()
+		posting.Status, posting.StatusSpan = p.parseStatus()
 	}
 
 	// validate, must be account text

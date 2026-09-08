@@ -12,10 +12,14 @@ func (BlankLine) entryNode() {}
 type Transaction struct {
 	Date           Date
 	SecondDate     *Date      // optional =2026-05-18 date
-	Status         Status     // optional */! status
-	Code           *Code      // optional (123) code
-	Payee          *Payee     // optional payee
-	Note           *Note      // part after |
+	Status         StatusType // optional */! status
+	StatusSpan     token.Span
+	Code           string // optional (123) code
+	CodeSpan       token.Span
+	Payee          string // optional payee
+	PayeeSpan      token.Span
+	Note           string // part after |
+	NoteSpan       token.Span
 	Comment        *Comment   // inline ; on header line
 	HeaderComments []*Comment // indented ; lines before first posting
 	Postings       []Posting
@@ -34,20 +38,24 @@ type Period struct {
 func (Period) entryNode() {}
 
 type PeriodicTransaction struct {
-	Period         Period       // period-expr
-	Status         Status       // optional */! status
-	Code           *Code        // optional (123) code
-	Description    *Description // optional description
-	Comment        *Comment     // optional inline comment
-	HeaderComments []*Comment
-	Postings       []Posting
-	Span           token.Span
+	Period          Period // period-expr
+	Status          StatusType
+	StatusSpan      token.Span
+	Code            string
+	CodeSpan        token.Span
+	Description     string
+	DescriptionSpan token.Span
+	Comment         *Comment // optional inline comment
+	HeaderComments  []*Comment
+	Postings        []Posting
+	Span            token.Span
 }
 
 func (PeriodicTransaction) entryNode() {}
 
 type AutomatedTransaction struct {
-	Expr           Expr
+	Expr           string
+	ExprSpan       token.Span
 	Postings       []Posting
 	Comment        *Comment   // inline ; on header line
 	HeaderComments []*Comment // indented ; lines before first posting
@@ -78,15 +86,16 @@ func (p PostingType) String() string {
 }
 
 type Posting struct {
-	Type     PostingType
-	Status   Status
-	Account  Account
-	Amount   *Amount // nil == auto-balancing
-	Cost     *Cost   // @ @@
-	Balance  *BalanceAssertion
-	Comment  *Comment
-	Comments []Comment // continuation comment lines
-	Span     token.Span
+	Type       PostingType
+	Status     StatusType
+	StatusSpan token.Span
+	Account    Account
+	Amount     *Amount // nil == auto-balancing
+	Cost       *Cost   // @ @@
+	Balance    *BalanceAssertion
+	Comment    *Comment
+	Comments   []Comment // continuation comment lines
+	Span       token.Span
 }
 
 type Amount struct {

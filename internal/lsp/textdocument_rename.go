@@ -94,8 +94,8 @@ func findSymbolUnderCursor(an *analyzer.Analysis, docPath, content string, curso
 func symbolInEntry(content string, e ast.Entry, cursor int) *symbolRef {
 	switch e := e.(type) {
 	case *ast.Transaction:
-		if e.Payee != nil && spanContains(content, e.Payee.Span, cursor) {
-			return &symbolRef{symbolPayee, e.Payee.Name, e.Payee.Span}
+		if e.Payee != "" && spanContains(content, e.PayeeSpan, cursor) {
+			return &symbolRef{symbolPayee, e.Payee, e.PayeeSpan}
 		}
 		if ref := tagRefInComment(content, e.Comment, cursor); ref != nil {
 			return ref
@@ -149,8 +149,8 @@ func symbolInEntry(content string, e ast.Entry, cursor int) *symbolRef {
 			return &symbolRef{symbolCommodity, e.Commodity, e.CommoditySpan}
 		}
 	case *ast.PayeeDirective:
-		if e.Name != nil && spanContains(content, e.Name.Span, cursor) {
-			return &symbolRef{symbolPayee, e.Name.Name, e.Name.Span}
+		if e.Name != "" && spanContains(content, e.NameSpan, cursor) {
+			return &symbolRef{symbolPayee, e.Name, e.NameSpan}
 		}
 	case *ast.IncludeDirective:
 		if spanContains(content, e.Span, cursor) {
@@ -353,14 +353,14 @@ func renamePayeeEdits(an *analyzer.Analysis, ref *symbolRef, newName string, add
 		return
 	}
 	for _, d := range info.Directives {
-		if d.Name != nil {
+		if d.Name != "" {
 			if fileIdx := fileIndexForEntry(an, d); fileIdx >= 0 {
-				add(fileIdx, d.Name.Span, newName)
+				add(fileIdx, d.NameSpan, newName)
 			}
 		}
 	}
 	for _, u := range info.Usage {
-		add(u.FileIndex, u.Payee.Span, newName)
+		add(u.FileIndex, u.Span, newName)
 	}
 }
 

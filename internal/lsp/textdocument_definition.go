@@ -85,7 +85,7 @@ func findTransactionDefinition(an *analyzer.Analysis, e ast.Entry) *protocol.Loc
 	case *ast.PeriodicTransaction:
 		span = e.Period.Span
 	case *ast.AutomatedTransaction:
-		span = e.Expr.Span
+		span = e.ExprSpan
 	default:
 		return nil
 	}
@@ -114,14 +114,14 @@ func findPayeeDefinition(an *analyzer.Analysis, name string) *protocol.Location 
 	}
 	if len(info.Directives) > 0 {
 		d := info.Directives[0]
-		if d.Name == nil {
+		if d.Name == "" {
 			return nil
 		}
-		return locationForDirective(an, d, d.Name.Span)
+		return locationForDirective(an, d, d.NameSpan)
 	}
 	if len(info.Usage) > 0 {
 		u := info.Usage[0]
-		return locationFor(an, u.FileIndex, u.Payee.Span)
+		return locationFor(an, u.FileIndex, u.Span)
 	}
 	return nil
 }

@@ -14,11 +14,11 @@ func (MissingStatus) ID() RuleID { return MissingStatusID }
 func (m *MissingStatus) CheckJournal(an *analyzer.Analysis) []Find {
 	var finds []Find
 	for _, txn := range an.Transactions {
-		if txn.Status.Value == ast.StatusNone {
+		if txn.Status == ast.StatusNone {
 			finds = append(finds, Find{
 				Code:    m.ID(),
 				Message: "transaction has no status",
-				Span:    txn.Status.Span,
+				Span:    txn.StatusSpan,
 			})
 		}
 	}

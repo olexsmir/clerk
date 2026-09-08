@@ -61,9 +61,10 @@ type FormatSubDirective struct {
 }
 
 type PayeeDirective struct {
-	Name    *Payee
-	Comment *Comment
-	Span    token.Span
+	Name     string
+	NameSpan token.Span
+	Comment  *Comment
+	Span     token.Span
 }
 
 func (PayeeDirective) entryNode() {}

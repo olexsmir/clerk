@@ -3,6 +3,7 @@ package analyzer
 import (
 	"olexsmir.xyz/clerk/journal"
 	"olexsmir.xyz/clerk/journal/ast"
+	"olexsmir.xyz/clerk/journal/token"
 )
 
 type Analysis struct {
@@ -68,7 +69,8 @@ type PayeeInfo struct {
 
 type PayeeUsage struct {
 	FileIndex int
-	Payee     *ast.Payee
+	Name      string
+	Span      token.Span
 }
 
 type TagInfo struct {

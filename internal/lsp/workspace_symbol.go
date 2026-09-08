@@ -117,34 +117,34 @@ func transactionName(e ast.Entry) string {
 	case *ast.Transaction:
 		b.Grow(24)
 		b.WriteString(e.Date.String())
-		if s := e.Status.Value.String(); s != "" {
+		if s := e.Status.String(); s != "" {
 			b.WriteByte(' ')
 			b.WriteString(s)
 		}
-		if e.Payee != nil {
+		if e.Payee != "" {
 			b.WriteByte(' ')
-			b.WriteString(e.Payee.Name)
+			b.WriteString(e.Payee)
 		}
-		if e.Note != nil {
+		if e.Note != "" {
 			b.WriteString(" | ")
-			b.WriteString(e.Note.Value)
+			b.WriteString(e.Note)
 		}
 	case *ast.PeriodicTransaction:
 		b.WriteByte('~')
-		if s := e.Status.Value.String(); s != "" {
+		if s := e.Status.String(); s != "" {
 			b.WriteByte(' ')
 			b.WriteString(s)
 		}
 		b.WriteByte(' ')
 		b.WriteString(e.Period.Raw)
-		if e.Description != nil {
+		if e.Description != "" {
 			b.WriteString(" | ")
-			b.WriteString(e.Description.Value)
+			b.WriteString(e.Description)
 		}
 	case *ast.AutomatedTransaction:
 		b.WriteByte('=')
 		b.WriteByte(' ')
-		b.WriteString(e.Expr.Value)
+		b.WriteString(e.Expr)
 	}
 	return b.String()
 }

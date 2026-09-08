@@ -519,17 +519,17 @@ func visitTransaction(content string, t *ast.Transaction, emit semEmitFunc) {
 	if t.SecondDate != nil {
 		emit(t.SecondDate.Span, semDate, 0)
 	}
-	if t.Status.Value != ast.StatusNone {
-		emit(t.Status.Span, semStatus, 0)
+	if t.Status != ast.StatusNone {
+		emit(t.StatusSpan, semStatus, 0)
 	}
-	if t.Code != nil {
-		emit(t.Code.Span, semString, 0)
+	if t.Code != "" {
+		emit(t.CodeSpan, semString, 0)
 	}
-	if t.Payee != nil {
-		emit(t.Payee.Span, semProperty, 0)
+	if t.Payee != "" {
+		emit(t.PayeeSpan, semProperty, 0)
 	}
-	if t.Note != nil {
-		emit(t.Note.Span, semProperty, 0)
+	if t.Note != "" {
+		emit(t.NoteSpan, semProperty, 0)
 	}
 	emitComment(t.Comment, emit)
 	for i := range t.HeaderComments {
@@ -565,8 +565,8 @@ func visitPeriodicTransaction(content string, pt *ast.PeriodicTransaction, emit 
 			emit(offsetSpan(pt.Period.Span.File, pos, pt.Period.Span.End.Offset), semProperty, 0)
 		}
 	}
-	if pt.Description != nil {
-		emit(pt.Description.Span, semProperty, 0)
+	if pt.Description != "" {
+		emit(pt.DescriptionSpan, semProperty, 0)
 	}
 	emitComment(pt.Comment, emit)
 	for i := range pt.HeaderComments {
@@ -581,8 +581,8 @@ func visitAutomatedTransaction(content string, at *ast.AutomatedTransaction, emi
 	// = operator is at the start of the expression span
 	emit(offsetSpan(at.Span.File, at.Span.Start.Offset, at.Span.Start.Offset+1), semOperator, 0)
 
-	if at.Expr.Value != "" {
-		emit(at.Expr.Span, semString, 0)
+	if at.Expr != "" {
+		emit(at.ExprSpan, semString, 0)
 	}
 	emitComment(at.Comment, emit)
 	for i := range at.HeaderComments {
@@ -594,8 +594,8 @@ func visitAutomatedTransaction(content string, at *ast.AutomatedTransaction, emi
 }
 
 func visitPosting(content string, p ast.Posting, emit semEmitFunc) {
-	if p.Status.Value != ast.StatusNone {
-		emit(p.Status.Span, semStatus, 0)
+	if p.Status != ast.StatusNone {
+		emit(p.StatusSpan, semStatus, 0)
 	}
 
 	// virtual brackets

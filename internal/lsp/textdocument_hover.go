@@ -74,8 +74,8 @@ func hoverAt(an *analyzer.Analysis, docPath, content string, cursor int) *hoverE
 func hoverInEntry(content string, e ast.Entry, cursor int) *hoverElement {
 	switch e := e.(type) {
 	case *ast.Transaction:
-		if e.Payee != nil && spanContains(content, e.Payee.Span, cursor) {
-			return &hoverElement{kind: hoverPayee, span: e.Payee.Span, name: e.Payee.Name}
+		if e.Payee != "" && spanContains(content, e.PayeeSpan, cursor) {
+			return &hoverElement{kind: hoverPayee, span: e.PayeeSpan, name: e.Payee}
 		}
 		if spanContains(content, e.Date.Span, cursor) {
 			return &hoverElement{kind: hoverDate, span: e.Date.Span, tx: e}
@@ -132,8 +132,8 @@ func hoverInEntry(content string, e ast.Entry, cursor int) *hoverElement {
 			return &hoverElement{kind: hoverCommodity, span: e.CommoditySpan, name: e.Commodity}
 		}
 	case *ast.PayeeDirective:
-		if e.Name != nil && spanContains(content, e.Name.Span, cursor) {
-			return &hoverElement{kind: hoverPayee, span: e.Name.Span, name: e.Name.Name}
+		if e.Name != "" && spanContains(content, e.NameSpan, cursor) {
+			return &hoverElement{kind: hoverPayee, span: e.NameSpan, name: e.Name}
 		}
 	case *ast.TagDirective:
 		if e.Name != "" {
@@ -316,8 +316,8 @@ func buildAmountHover(content string, am *ast.Amount, cost *ast.Cost) string {
 func buildDateHover(an *analyzer.Analysis, tx *ast.Transaction) string {
 	var sb strings.Builder
 	fmt.Fprintf(&sb, "**Date:** %04d-%02d-%02d", tx.Date.Year, tx.Date.Month, tx.Date.Day)
-	if tx.Payee != nil {
-		fmt.Fprintf(&sb, "\n\n**Payee:** %s", tx.Payee.Name)
+	if tx.Payee != "" {
+		fmt.Fprintf(&sb, "\n\n**Payee:** %s", tx.Payee)
 	}
 	fmt.Fprintf(&sb, "\n\n**Transactions:** %d", an.CountTransactionsOnDate(tx.Date))
 	fmt.Fprintf(&sb, "\n\n**Postings:** %d", len(tx.Postings))

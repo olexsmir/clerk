@@ -11,7 +11,7 @@ func (MissingPayee) ID() RuleID { return MissingPayeeID }
 func (m *MissingPayee) CheckJournal(an *analyzer.Analysis) []Find {
 	var finds []Find
 	for _, txn := range an.Transactions {
-		if txn.Payee == nil {
+		if txn.Payee == "" {
 			finds = append(finds, Find{
 				Code:    m.ID(),
 				Message: "transaction has no payee",

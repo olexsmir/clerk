@@ -57,9 +57,9 @@ func dumpEntry(b *strings.Builder, e Entry, depth int) {
 	case *PayeeDirective:
 		indent(b, depth)
 		fmt.Fprintf(b, "PayeeDirective %s\n", e.Span)
-		if e.Name != nil {
+		if e.Name != "" {
 			indent(b, depth+1)
-			fmt.Fprintf(b, "Name: %q %s\n", e.Name.Name, e.Name.Span)
+			fmt.Fprintf(b, "Name: %q %s\n", e.Name, e.NameSpan)
 		}
 		dumpOptComment(b, e.Comment, depth+1)
 	case *TagDirective:
@@ -130,21 +130,21 @@ func dumpTransaction(b *strings.Builder, t *Transaction, depth int) {
 		indent(b, depth+1)
 		fmt.Fprintf(b, "SecondDate: %s\n", dumpDate(*t.SecondDate))
 	}
-	if t.Status.Value != StatusNone {
+	if t.Status != StatusNone {
 		indent(b, depth+1)
-		fmt.Fprintf(b, "State: %q\n", t.Status.Value)
+		fmt.Fprintf(b, "State: %q\n", t.Status)
 	}
-	if t.Code != nil {
+	if t.Code != "" {
 		indent(b, depth+1)
-		fmt.Fprintf(b, "Code: %q %s\n", t.Code.Value, t.Code.Span)
+		fmt.Fprintf(b, "Code: %q %s\n", t.Code, t.CodeSpan)
 	}
-	if t.Payee != nil {
+	if t.Payee != "" {
 		indent(b, depth+1)
-		fmt.Fprintf(b, "Payee: %q %s\n", t.Payee.Name, t.Payee.Span)
+		fmt.Fprintf(b, "Payee: %q %s\n", t.Payee, t.PayeeSpan)
 	}
-	if t.Note != nil {
+	if t.Note != "" {
 		indent(b, depth+1)
-		fmt.Fprintf(b, "Note: %q %s\n", t.Note.Value, t.Note.Span)
+		fmt.Fprintf(b, "Note: %q %s\n", t.Note, t.NoteSpan)
 	}
 	dumpOptComment(b, t.Comment, depth+1)
 	if len(t.HeaderComments) > 0 {
@@ -163,7 +163,7 @@ func dumpAutomatedTransaction(b *strings.Builder, t *AutomatedTransaction, depth
 	indent(b, depth)
 	fmt.Fprintf(b, "AutomatedTransaction %s\n", t.Span)
 	indent(b, depth+1)
-	fmt.Fprintf(b, "Expr: %q %s\n", t.Expr.Value, t.Expr.Span)
+	fmt.Fprintf(b, "Expr: %q %s\n", t.Expr, t.ExprSpan)
 	dumpOptComment(b, t.Comment, depth+1)
 	if len(t.HeaderComments) > 0 {
 		indent(b, depth+1)
@@ -190,17 +190,17 @@ func dumpPeriodicTransaction(b *strings.Builder, t *PeriodicTransaction, depth i
 		indent(b, depth+1)
 		fmt.Fprintf(b, "To: %s\n", dumpDate(*t.Period.To))
 	}
-	if t.Status.Value != StatusNone {
+	if t.Status != StatusNone {
 		indent(b, depth+1)
-		fmt.Fprintf(b, "Status: %q\n", t.Status.Value)
+		fmt.Fprintf(b, "Status: %q\n", t.Status)
 	}
-	if t.Code != nil {
+	if t.Code != "" {
 		indent(b, depth+1)
-		fmt.Fprintf(b, "Code: %q %s\n", t.Code.Value, t.Code.Span)
+		fmt.Fprintf(b, "Code: %q %s\n", t.Code, t.CodeSpan)
 	}
-	if t.Description != nil {
+	if t.Description != "" {
 		indent(b, depth+1)
-		fmt.Fprintf(b, "Description: %q %s\n", t.Description.Value, t.Description.Span)
+		fmt.Fprintf(b, "Description: %q %s\n", t.Description, t.DescriptionSpan)
 	}
 	dumpOptComment(b, t.Comment, depth+1)
 	if len(t.HeaderComments) > 0 {
@@ -222,9 +222,9 @@ func dumpPosting(b *strings.Builder, p *Posting, depth int) {
 		indent(b, depth+1)
 		fmt.Fprintf(b, "Type: %s\n", p.Type)
 	}
-	if p.Status.Value != StatusNone {
+	if p.Status != StatusNone {
 		indent(b, depth+1)
-		fmt.Fprintf(b, "Status: %q\n", p.Status.Value)
+		fmt.Fprintf(b, "Status: %q\n", p.Status)
 	}
 	dumpAccount(b, p.Account, depth+1)
 	if p.Amount != nil {

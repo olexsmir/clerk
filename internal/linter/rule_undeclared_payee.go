@@ -20,7 +20,7 @@ func (u *UndeclaredPayee) CheckJournal(an *analyzer.Analysis) []Find {
 		for _, usage := range info.Usage {
 			finds = append(finds, Find{
 				Code:    u.ID(),
-				Span:    usage.Payee.Span,
+				Span:    usage.Span,
 				Message: "undeclared payee: " + name,
 			})
 		}

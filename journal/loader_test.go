@@ -74,8 +74,8 @@ func entrySummary(e ast.Entry) string {
 		return "account " + e.Account.String()
 	case *ast.Transaction:
 		s := fmt.Sprintf("%04d-%02d-%02d", e.Date.Year, e.Date.Month, e.Date.Day)
-		if e.Payee != nil {
-			s += " " + e.Payee.Name
+		if e.Payee != "" {
+			s += " " + e.Payee
 		}
 		return s
 	default:
