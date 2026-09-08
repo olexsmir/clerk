@@ -108,6 +108,15 @@ func (c *Config) FprintEntry(w io.Writer, e ast.Entry) error {
 	return err
 }
 
+func (c *Config) FprintEntries(w io.Writer, e []ast.Entry) error {
+	p := printer{cfg: c, indent: c.indent()}
+	for _, ee := range e {
+		p.formatEntry(ee)
+	}
+	_, err := io.WriteString(w, p.buf.String())
+	return err
+}
+
 func (p *printer) formatEntry(e ast.Entry) {
 	switch e := e.(type) {
 	case *ast.BlankLine:
