@@ -111,6 +111,20 @@ type Amount struct {
 	Span          token.Span
 }
 
+// Quantity parses s as a decimal quantity. Helper for handcrafting ast.
+func Quantity(s string) (decimal.Decimal, error) {
+	return decimal.FromString(s)
+}
+
+// MustQuantity same as [Quantity] but panics in case of an error.
+func MustQuantity(s string) decimal.Decimal {
+	d, err := decimal.FromString(s)
+	if err != nil {
+		panic(err)
+	}
+	return d
+}
+
 type Cost struct {
 	IsTotal bool // @ vs @@
 	Amount  Amount

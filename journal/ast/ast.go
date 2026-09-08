@@ -3,6 +3,7 @@ package ast
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"olexsmir.xyz/clerk/journal/token"
 )
@@ -31,6 +32,16 @@ type Date struct {
 	Year, Month, Day int
 	Sep              byte // '-' '/' '.'
 	Span             token.Span
+}
+
+// DateOf builds a Date from t, sets '-' as the separator. Helper for handbuilding ast.
+func DateOf(t time.Time) Date {
+	return Date{
+		Year:  t.Year(),
+		Month: int(t.Month()),
+		Day:   t.Day(),
+		Sep:   '-',
+	}
 }
 
 // Compare returns -1 if d is before other, 0 if equal, 1 if after.
@@ -127,6 +138,16 @@ type SubAccount struct {
 type Account struct {
 	Name []SubAccount // ['expenses' 'food']
 	Span token.Span
+}
+
+// AccountFromString splits s on ':' into subaccounts. Helper for handbuilding ast.
+func AccountFromString(s string) Account {
+	subs := strings.Split(s, ":")
+	acc := Account{Name: make([]SubAccount, len(subs))}
+	for i := range subs {
+		acc.Name[i] = SubAccount{Name: subs[i]}
+	}
+	return acc
 }
 
 func (a Account) String() string {
