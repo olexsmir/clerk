@@ -17,13 +17,16 @@ func BenchmarkDiagnostics(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	// Per-edit cost: a fresh loader skips the parse cache, so each iteration re-parses, then lints and groups findings.
+	// Per-edit cost: a fresh loader skips the parse cache, so each iteration re-parses,
+	// builds the per-file indices with the analysis, then lints and groups findings.
 	b.ReportAllocs()
 	b.ResetTimer()
 	for b.Loop() {
 		an := analyzer.Build(journal.NewLoader().ResolveBytes("/test.journal", []byte(content)))
+		lines := buildFileIdx(an)
+
 		finds := dedupFinds(lint.Run(an))
 		srv.server.assignSeverities(finds)
-		_ = srv.server.groupFindsByFile(finds)
+		_ = srv.server.groupFindsByFile(finds, lines)
 	}
 }

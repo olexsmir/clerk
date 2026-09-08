@@ -55,12 +55,33 @@ type docState struct {
 	text       string
 	version    int32
 	languageID protocol.LanguageKind
-	paths      map[string]bool    // canonical paths of every file in the cached analysis
 	lineIdx    *lsputil.LineIndex // cached line index for the text
 
-	analysis *analyzer.Analysis // cached analysis, nil until first build
-	sem      *semCache          // semantic token cache, nil until first tokenize
-	dirty    bool               // true while the cached analysis may not reflect the current text
+	dirty bool           // true while the cached analysis may not reflect the current text
+	cache *analysisCache // nil until first build
+	sem   *semCache      // nil until first tokenize
+}
+
+type analysisCache struct {
+	analysis *analyzer.Analysis
+	fileIdx  map[string]*lsputil.LineIndex
+	paths    map[string]bool
+}
+
+func newAnalysisCache(an *analyzer.Analysis) *analysisCache {
+	paths := make(map[string]bool, len(an.Files))
+	for _, pf := range an.Files {
+		paths[journal.CanonicalPath(pf.Path)] = true
+	}
+	return &analysisCache{analysis: an, paths: paths, fileIdx: buildFileIdx(an)}
+}
+
+func buildFileIdx(an *analyzer.Analysis) map[string]*lsputil.LineIndex {
+	idx := make(map[string]*lsputil.LineIndex, len(an.Files))
+	for _, pf := range an.Files {
+		idx[pf.Path] = lsputil.NewLineIndex(string(pf.Src))
+	}
+	return idx
 }
 
 func (s *server) openDoc(u uri.URI, text string, version int32, langID protocol.LanguageKind) {
@@ -114,7 +135,7 @@ func (s *server) updateDoc(u uri.URI, version int32, changes []protocol.TextDocu
 		state.lineIdx = lsputil.NewLineIndex(state.text)
 	}
 
-	state.analysis = nil
+	state.cache = nil
 	state.dirty = true
 	if incremental {
 		state.sem.pending = &edit
@@ -133,7 +154,10 @@ func (s *server) markDependentsDirty(u uri.URI) {
 	canon := journal.CanonicalPath(u.Path())
 	s.mu.Lock()
 	for du, dstate := range s.openDocs {
-		if dstate.paths[canon] {
+		if dstate.cache == nil {
+			continue
+		}
+		if dstate.cache.paths[canon] {
 			dstate.dirty = true
 			s.openDocs[du] = dstate
 		}

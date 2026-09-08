@@ -836,8 +836,10 @@ func (p *Parser) parseStatus() (ast.StatusType, token.Span) {
 		st = ast.StatusPending
 	}
 	if st != ast.StatusNone {
+		sp := p.cur.Span
 		p.advance()
 		p.skipWhitespace()
+		return st, sp
 	}
 	return st, p.span(s)
 }

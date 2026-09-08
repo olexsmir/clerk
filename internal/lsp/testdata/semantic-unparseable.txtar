@@ -20,7 +20,7 @@ garbage $$$$ 123
 3:0+14 comment
 4:0+11 comment
 5:0+10 class
-5:11+2 operator
+5:11+1 operator
 5:13+6 string
 5:20+5 property
 6:2+13 namespace

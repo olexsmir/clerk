@@ -7,7 +7,6 @@ import (
 	"strings"
 	"sync"
 	"testing"
-	"time"
 
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
@@ -92,10 +91,13 @@ func TestServer_Diagnostics(t *testing.T) {
 	open(a, aContent)
 	open(b, bContent)
 
-	waitFor(t, "diagnostics for the unbalanced transaction", func() bool {
-		da, _ := capture.lastDiags(a)
-		return len(da) != 0
-	})
+	// publishDiagnostics is invoked directly so the test is deterministic: the
+	// didOpen/didChange handlers debounce publishing by 200ms in production.
+	srv.server.publishDiagnostics(t.Context())
+	da, _ := capture.lastDiags(a)
+	if len(da) == 0 {
+		t.Fatal("expected diagnostics for the unbalanced transaction")
+	}
 
 	aEdited := "account expenses:food\naccount assets:cash\naccount assets:bank\ncommodity $\npayee test\n\n2024-01-01 * test\n    expenses:food  $20.00\n    assets:cash  $-10.00\n    assets:bank  $-10.00\n"
 	if err := srv.server.DidChange(t.Context(), &protocol.DidChangeTextDocumentParams{
@@ -110,10 +112,10 @@ func TestServer_Diagnostics(t *testing.T) {
 		t.Fatalf("didChange a: %v", err)
 	}
 
-	waitFor(t, "a diagnostics to clear after the edit", func() bool {
-		da, _ := capture.lastDiags(a)
-		return len(da) == 0
-	})
+	srv.server.publishDiagnostics(t.Context())
+	if da, _ := capture.lastDiags(a); len(da) != 0 {
+		t.Errorf("diagnostics not cleared after the edit: %v", da)
+	}
 
 	if err := srv.server.DidClose(t.Context(), &protocol.DidCloseTextDocumentParams{
 		TextDocument: protocol.TextDocumentIdentifier{URI: a},
@@ -137,7 +139,7 @@ func TestServer_DidChangeWatchedFiles_SkipsOpenDocuments(t *testing.T) {
 	a1 := srv.server.analysisFor(uBase)
 
 	testutil.WriteFile(t, base, []byte("2024-01-01 t\n    expenses:food  $10\n    assets:bank\n"))
-	if err := srv.server.DidChangeWatchedFiles(context.Background(), &protocol.DidChangeWatchedFilesParams{
+	if err := srv.server.DidChangeWatchedFiles(t.Context(), &protocol.DidChangeWatchedFilesParams{
 		Changes: []protocol.FileEvent{{URI: uBase, Type: protocol.FileChangeTypeChanged}},
 	}); err != nil {
 		t.Fatalf("didChangeWatchedFiles: %v", err)
@@ -158,7 +160,7 @@ func TestServer_DidChangeWatchedFiles_DiskChangeDirtiesDependents(t *testing.T) 
 	srv := newServer(t)
 	srv.server.client = &captureClient{}
 	uMain := uri.File(main)
-	if err := srv.server.DidOpen(context.Background(), &protocol.DidOpenTextDocumentParams{
+	if err := srv.server.DidOpen(t.Context(), &protocol.DidOpenTextDocumentParams{
 		TextDocument: protocol.TextDocumentItem{URI: uMain, LanguageID: "journal", Version: 1, Text: "include base.journal\n"},
 	}); err != nil {
 		t.Fatalf("didOpen: %v", err)
@@ -171,7 +173,7 @@ func TestServer_DidChangeWatchedFiles_DiskChangeDirtiesDependents(t *testing.T) 
 
 	// base changes on disk, outside the editor
 	testutil.WriteFile(t, base, []byte("2024-01-01 t\n    expenses:food  $10\n    assets:bank\n"))
-	if err := srv.server.DidChangeWatchedFiles(context.Background(), &protocol.DidChangeWatchedFilesParams{
+	if err := srv.server.DidChangeWatchedFiles(t.Context(), &protocol.DidChangeWatchedFilesParams{
 		Changes: []protocol.FileEvent{{URI: uri.File(base), Type: protocol.FileChangeTypeChanged}},
 	}); err != nil {
 		t.Fatalf("didChangeWatchedFiles: %v", err)
@@ -291,18 +293,6 @@ func (c *captureClient) lastDiags(u uri.URI) ([]protocol.Diagnostic, bool) {
 		}
 	}
 	return nil, false
-}
-
-func waitFor(t *testing.T, what string, cond func() bool) {
-	t.Helper()
-	deadline := time.Now().Add(5 * time.Second)
-	for time.Now().Before(deadline) {
-		if cond() {
-			return
-		}
-		time.Sleep(10 * time.Millisecond)
-	}
-	t.Fatalf("timed out waiting for %s", what)
 }
 
 func newServer(tb testing.TB) Server {

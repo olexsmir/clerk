@@ -1,7 +1,6 @@
 package lsp
 
 import (
-	"context"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -37,7 +36,7 @@ func TestServer_Symbols_EmptyQuery(t *testing.T) {
 	u := uri.URI("file:///test.journal")
 	srv.server.openDoc(u, "account expenses:food\n", 1, "journal")
 
-	res, err := srv.server.Symbols(context.Background(), &protocol.WorkspaceSymbolParams{Query: ""})
+	res, err := srv.server.Symbols(t.Context(), &protocol.WorkspaceSymbolParams{Query: ""})
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -9,7 +9,7 @@ import (
 	"go.lsp.dev/uri"
 
 	"olexsmir.xyz/clerk/internal/linter"
-	"olexsmir.xyz/clerk/journal/token"
+	"olexsmir.xyz/clerk/internal/lsp/lsputil"
 )
 
 const diagDebounce = 200 * time.Millisecond
@@ -61,13 +61,21 @@ func (s *server) publishDiagnostics(ctx context.Context) {
 	}
 
 	var finds []linter.Find
+	lines := make(map[string]*lsputil.LineIndex)
 	paths := make(map[string]bool)
 	for _, u := range dirtyURIs {
 		a := s.analysisFor(u)
 		if a == nil {
 			continue
 		}
+		var idx map[string]*lsputil.LineIndex
+		if st, ok := s.getDocState(u); ok && st.cache != nil {
+			idx = st.cache.fileIdx
+		} else {
+			idx = buildFileIdx(a)
+		}
 		for _, pf := range a.Files {
+			lines[pf.Path] = idx[pf.Path]
 			paths[pf.Path] = true
 		}
 		finds = append(finds, lint.Run(a)...)
@@ -78,7 +86,7 @@ func (s *server) publishDiagnostics(ctx context.Context) {
 	}
 
 	s.assignSeverities(finds)
-	diagsByFile := s.groupFindsByFile(dedupFinds(finds))
+	diagsByFile := s.groupFindsByFile(dedupFinds(finds), lines)
 	for fpath := range paths {
 		if err := s.client.PublishDiagnostics(ctx, &protocol.PublishDiagnosticsParams{
 			URI:         uri.File(fpath),
@@ -91,7 +99,7 @@ func (s *server) publishDiagnostics(ctx context.Context) {
 	s.log.Debug("diagnostics published", "files", len(paths), "findings", len(finds))
 }
 
-func (s *server) groupFindsByFile(finds []linter.Find) map[string][]protocol.Diagnostic {
+func (s *server) groupFindsByFile(finds []linter.Find, lines map[string]*lsputil.LineIndex) map[string][]protocol.Diagnostic {
 	// count per file to pre-size the diagnostic slices: append growth on ~10k
 	// findings is the dominant allocation in the diagnostics path
 	counts := make(map[string]int, len(finds))
@@ -109,14 +117,14 @@ func (s *server) groupFindsByFile(finds []linter.Find) map[string][]protocol.Dia
 		if file == "" {
 			continue
 		}
-		diags[file] = append(diags[file], s.findToDiagnostic(find))
+		diags[file] = append(diags[file], s.findToDiagnostic(find, lines[file]))
 	}
 	return diags
 }
 
-func (s *server) findToDiagnostic(find linter.Find) protocol.Diagnostic {
+func (s *server) findToDiagnostic(find linter.Find, lines *lsputil.LineIndex) protocol.Diagnostic {
 	return protocol.Diagnostic{
-		Range:    spanToRange(find.Span),
+		Range:    lines.SpanRange(find.Span),
 		Severity: severityToLSP(find.Severity),
 		Message:  protocol.String(find.Message),
 		Source:   protocol.NewOptional(s.name),
@@ -142,19 +150,6 @@ type findKey struct {
 	file      string
 	line, col int
 	code      linter.RuleID
-}
-
-func spanToRange(span token.Span) protocol.Range {
-	return protocol.Range{
-		Start: protocol.Position{
-			Line:      max(0, uint32(span.Start.Line-1)),
-			Character: max(0, uint32(span.Start.Col-1)),
-		},
-		End: protocol.Position{
-			Line:      max(0, uint32(span.End.Line-1)),
-			Character: uint32(max(0, span.End.Col-1)),
-		},
-	}
 }
 
 func (s *server) assignSeverities(finds []linter.Find) {

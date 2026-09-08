@@ -136,11 +136,11 @@ end
 14:0+10 class
 14:11+10 class
 14:22+9 property
-15:2+2 operator
+15:2+1 operator
 15:4+11 namespace
 15:17+1 type
 15:18+2 number
-16:2+2 operator
+16:2+1 operator
 16:4+1 operator abstract
 16:5+11 namespace
 16:16+1 operator abstract
@@ -193,7 +193,7 @@ end
 37:7+1 type
 37:8+3 number negative
 39:0+10 class
-39:11+2 operator
+39:11+1 operator
 39:13+6 string
 39:20+4 property
 39:27+6 property
@@ -231,7 +231,7 @@ end
 48:31+3 number
 49:4+23 comment
 51:0+10 class
-51:11+2 operator
+51:11+1 operator
 51:13+4 property
 51:19+13 comment
 52:4+13 namespace
@@ -239,7 +239,7 @@ end
 53:21+1 type
 53:22+3 number
 55:0+10 class
-55:11+2 operator
+55:11+1 operator
 55:13+4 property
 56:4+1 namespace
 56:7+1 type
@@ -313,13 +313,13 @@ end
 72:11+6 string
 72:18+5 property
 74:0+10 class
-74:11+2 operator
+74:11+1 operator
 74:13+4 property
 75:2+6 namespace
 76:2+8 namespace
 76:12+14 comment
 78:0+10 class
-78:11+2 operator
+78:11+1 operator
 78:13+4 property
 80:0+10 class
 80:11+2 property

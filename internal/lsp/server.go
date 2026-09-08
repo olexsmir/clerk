@@ -10,6 +10,7 @@ import (
 
 	"github.com/go-json-experiment/json"
 	"github.com/pelletier/go-toml/v2"
+	"go.lsp.dev/jsonrpc2"
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 
@@ -23,7 +24,10 @@ type server struct {
 
 	client protocol.Client
 	log    *slog.Logger
+	conn   jsonrpc2.Conn // set in Run; Exit closes it to end the session
 
+	stateMu       sync.Mutex
+	state         serverState // [serverState]
 	version, name string
 
 	settings settings.Settings
@@ -46,7 +50,7 @@ func parsedFileFor(an *analyzer.Analysis, path string) *journal.ParsedFile {
 	return nil
 }
 
-// analysisFor returns the cached analysis for an open doc, rebuilds when the doc or a file it inclues changed.
+// analysisFor returns the cached analysis for an open doc, rebuilding when the doc or a file it includes changed.
 func (s *server) analysisFor(u uri.URI) *analyzer.Analysis {
 	s.mu.RLock()
 	state, ok := s.openDocs[u]
@@ -55,7 +59,7 @@ func (s *server) analysisFor(u uri.URI) *analyzer.Analysis {
 		return nil
 	}
 	if !state.dirty {
-		an := state.analysis
+		an := state.cache.analysis
 		s.mu.RUnlock()
 		return an
 	}
@@ -68,16 +72,12 @@ func (s *server) analysisFor(u uri.URI) *analyzer.Analysis {
 	s.mu.Lock()
 	state, ok = s.openDocs[u]
 	if !ok || state.version != version {
-		// editot or closed while building. doc stays dirty so te request rebuilds
+		// editor closed or edited while building; the doc stays dirty so the next request rebuilds
 		s.mu.Unlock()
 		return an
 	}
-	state.analysis = an
+	state.cache = newAnalysisCache(an)
 	state.dirty = false
-	state.paths = make(map[string]bool, len(an.Files))
-	for _, pf := range an.Files {
-		state.paths[journal.CanonicalPath(pf.Path)] = true
-	}
 	s.openDocs[u] = state
 	s.mu.Unlock()
 	return an
@@ -93,11 +93,29 @@ func (s *server) Initialize(ctx context.Context, params *protocol.InitializePara
 	if err := s.applySettings(ctx, params.InitializationOptions); err != nil {
 		return nil, err
 	}
+	td := params.Capabilities.TextDocument
 	full := protocol.SemanticTokensOptionsFull(protocol.Boolean(true))
-	if td := params.Capabilities.TextDocument; td != nil {
+	if td != nil {
 		if fd, ok := td.SemanticTokens.Requests.Full.(*protocol.ClientSemanticTokensRequestFullDelta); ok && fd.Delta != nil && *fd.Delta {
 			full = &protocol.SemanticTokensFullDelta{Delta: new(true)}
 		}
+	}
+
+	// RenameOptions may only be specified when the client states prepare support.
+	renameProvider := protocol.RenameProvider(&protocol.RenameOptions{PrepareProvider: new(true)})
+	if td == nil || td.Rename == nil || td.Rename.PrepareSupport == nil || !*td.Rename.PrepareSupport {
+		renameProvider = protocol.Boolean(true)
+	}
+
+	s.stateMu.Lock()
+	if s.state != stateNew {
+		s.stateMu.Unlock()
+		return nil, errInitializeOnce
+	}
+	s.state = stateInitialized
+	s.stateMu.Unlock()
+	if p := params.ProcessID; p != nil {
+		s.watchParent(*p)
 	}
 
 	return &protocol.InitializeResult{
@@ -114,9 +132,7 @@ func (s *server) Initialize(ctx context.Context, params *protocol.InitializePara
 			DocumentSymbolProvider:     protocol.Boolean(true),
 			FoldingRangeProvider:       protocol.Boolean(true),
 			SelectionRangeProvider:     protocol.Boolean(true),
-			RenameProvider: &protocol.RenameOptions{
-				PrepareProvider: new(true),
-			},
+			RenameProvider:             renameProvider,
 			CompletionProvider: &protocol.CompletionOptions{
 				TriggerCharacters: []string{":", "@"},
 			},
@@ -164,10 +180,33 @@ func (s *server) DidChangeConfiguration(ctx context.Context, params *protocol.Di
 }
 
 func (s *server) Shutdown(ctx context.Context) error {
+	s.stateMu.Lock()
+	if s.state == stateInitialized {
+		s.state = stateShutdownRequested
+	}
+	s.stateMu.Unlock()
 	return nil
 }
 
-func (s *server) Exit(ctx context.Context) error {
+// Exit records the exit code the LSP spec prescribes — 0 after a shutdown
+// request, 1 otherwise — and closes the connection to end the session. The
+// close runs in its own goroutine: called from inside the exit-notification
+// handler it cannot block on the connection draining (see [jsonrpc2.Conn.Close]).
+// Exit honors an exit that never saw initialize, and is safe to call
+// concurrently from the exit notification and watchParent: the stateMu guard
+// below makes the transition a once-only, and an exit that lost the race to
+// another exit is a no-op.
+func (s *server) Exit(context.Context) error {
+	s.stateMu.Lock()
+	if s.state < stateExited {
+		if s.state == stateShutdownRequested {
+			s.state = stateExitedAfterShutdown
+		} else {
+			s.state = stateExited
+		}
+	}
+	s.stateMu.Unlock()
+	go s.conn.Close()
 	return nil
 }
 

@@ -46,13 +46,18 @@ func (s *Server) Run(ctx context.Context, stdin io.ReadCloser, stdout io.WriteCl
 		Writer: stdout,
 		Closer: stdin,
 	})
-
-	_, conn, client := protocol.NewServer(ctx, s.server, stream)
-	defer conn.Close()
-
-	s.server.client = client
+	conn := jsonrpc2.NewConn(stream, jsonrpc2.WithCodec(lspCodec{}))
+	s.server.client = protocol.ClientDispatcher(conn)
+	s.server.conn = conn
+	conn.Go(ctx, protocol.Handlers(s.server.lifecycle(protocol.ServerHandler(s.server, jsonrpc2.MethodNotFoundHandler))))
 
 	<-conn.Done()
+	s.server.stateMu.Lock()
+	st := s.server.state
+	s.server.stateMu.Unlock()
+	if st >= stateExited {
+		return &ExitError{Code: st.ExitCode()}
+	}
 	return conn.Err()
 }
 
@@ -81,4 +86,33 @@ func openLogFile() (*os.File, error) {
 		return nil, err
 	}
 	return os.OpenFile(filepath.Join(dir, "lsp.log"), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
+}
+
+// lspCodec mirros go.lsp.dev/protocol wire codec, so Run can install the lifecycle guard.
+type lspCodec struct{}
+
+func (lspCodec) Marshal(v any) ([]byte, error) {
+	switch m := v.(type) {
+	case jsonrpc2.RawMessage:
+		if m == nil {
+			return []byte("null"), nil
+		}
+		return m, nil
+	case *jsonrpc2.RawMessage:
+		if m == nil || *m == nil {
+			return []byte("null"), nil
+		}
+		return *m, nil
+	}
+	return protocol.Marshal(v)
+}
+
+func (lspCodec) Unmarshal(data []byte, v any) error {
+	if p, ok := v.(*jsonrpc2.RawMessage); ok {
+		b := make(jsonrpc2.RawMessage, len(data))
+		copy(b, data)
+		*p = b
+		return nil
+	}
+	return protocol.Unmarshal(data, v)
 }

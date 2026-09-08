@@ -1,7 +1,6 @@
 package lsp
 
 import (
-	"context"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -17,7 +16,7 @@ import (
 
 func TestServer_References_DocumentNotFound(t *testing.T) {
 	srv := newServer(t)
-	res, err := srv.server.References(context.Background(), &protocol.ReferenceParams{
+	res, err := srv.server.References(t.Context(), &protocol.ReferenceParams{
 		TextDocument: protocol.TextDocumentIdentifier{URI: uri.URI("file:///nonexistent.journal")},
 		Position:     protocol.Position{Line: 0, Character: 0},
 	})

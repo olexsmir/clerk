@@ -1,7 +1,6 @@
 package lsp
 
 import (
-	"context"
 	"fmt"
 	"strings"
 	"testing"
@@ -45,7 +44,7 @@ func TestTagValueSpan(t *testing.T) {
 
 func TestServer_Hover_DocumentNotFound(t *testing.T) {
 	srv := newServer(t)
-	res, err := srv.server.Hover(context.Background(), &protocol.HoverParams{
+	res, err := srv.server.Hover(t.Context(), &protocol.HoverParams{
 		TextDocument: protocol.TextDocumentIdentifier{URI: uri.URI("file:///nonexistent.journal")},
 		Position:     protocol.Position{Line: 0, Character: 0},
 	})
