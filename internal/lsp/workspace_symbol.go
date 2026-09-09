@@ -95,22 +95,6 @@ func searchSymbols(an *analyzer.Analysis, query string) []protocol.WorkspaceSymb
 	return symbols
 }
 
-func definitionLocation(an *analyzer.Analysis, s scoredSymbol) *protocol.Location {
-	switch s.kind {
-	case symbolAccount:
-		return findAccountDefinition(an, s.name)
-	case symbolTransaction:
-		return findTransactionDefinition(an, s.tnxEntry)
-	case symbolCommodity:
-		return findCommodityDefinition(an, s.name)
-	case symbolPayee:
-		return findPayeeDefinition(an, s.name)
-	case symbolTag:
-		return findTagDefinition(an, s.name)
-	}
-	return nil
-}
-
 func transactionName(e ast.Entry) string {
 	var b strings.Builder
 	switch e := e.(type) {

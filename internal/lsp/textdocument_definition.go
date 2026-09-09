@@ -149,6 +149,22 @@ func findTagDefinition(an *analyzer.Analysis, key string) *protocol.Location {
 	return nil
 }
 
+func definitionLocation(an *analyzer.Analysis, s scoredSymbol) *protocol.Location {
+	switch s.kind {
+	case symbolAccount:
+		return findAccountDefinition(an, s.name)
+	case symbolTransaction:
+		return findTransactionDefinition(an, s.tnxEntry)
+	case symbolCommodity:
+		return findCommodityDefinition(an, s.name)
+	case symbolPayee:
+		return findPayeeDefinition(an, s.name)
+	case symbolTag:
+		return findTagDefinition(an, s.name)
+	}
+	return nil
+}
+
 func includeTargets(an *analyzer.Analysis, docPath, pattern string) protocol.LocationSlice {
 	target := filepath.Join(filepath.Dir(docPath), pattern)
 	glob := strings.ContainsAny(target, "*?[")
