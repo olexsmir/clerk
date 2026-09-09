@@ -147,10 +147,11 @@ func cmplHeaderCtx(content string, cursor int, toks []token.Token) (cmplCtx, int
 	seen := false
 	for _, t := range toks[1:] {
 		switch t.Type {
-		case token.WHITESPACE, token.STAR, token.BANG, token.DATE, token.TIME,
-			token.EQ, token.EQEQ, token.EQEQEQ:
-			fieldStart = t.Span.End.Offset
-			fieldEnd = t.Span.End.Offset
+		case token.WHITESPACE, token.STAR, token.BANG, token.DATE, token.TIME, token.EQ, token.EQEQ, token.EQEQEQ:
+			if cursor >= t.Span.End.Offset {
+				fieldStart = t.Span.End.Offset
+				fieldEnd = t.Span.End.Offset
+			}
 		case token.TEXT:
 			lit := content[t.Span.Start.Offset:t.Span.End.Offset]
 			if !seen && len(lit) >= 2 && lit[0] == '(' && lit[len(lit)-1] == ')' {
@@ -511,9 +512,23 @@ func cmplItems(
 	}
 
 	end := cursor
-	if ctx == cmplDate {
+	switch ctx {
+	case cmplDate:
 		end = dateTokenEnd(content, start)
+	case cmplAccount:
+		end = fieldTokenEnd(content, end, " \t\r\n;#%)]$=")
+	case cmplPayee:
+		end = fieldTokenEnd(content, end, " \t\r\n;|")
+	case cmplCommodity:
+		end = fieldTokenEnd(content, end, " \t\r\n;[]")
+	case cmplTagName:
+		end = fieldTokenEnd(content, end, " \t\r\n:,;")
+	case cmplTagValue:
+		end = fieldTokenEnd(content, end, " \t\r\n,;")
+	case cmplDirective:
+		end = fieldTokenEnd(content, end, " \t\r\n;")
 	}
+
 	items := make([]protocol.CompletionItem, len(ranked))
 	for i, r := range ranked {
 		// nvim re-filters against the typed prefix, which a transliterated label never starts with; present the typed pattern as filterText.
@@ -606,6 +621,13 @@ func dateTokenEnd(content string, start int) int {
 		i++
 	}
 	return i
+}
+
+func fieldTokenEnd(content string, end int, stops string) int {
+	for end < len(content) && !strings.ContainsRune(stops, rune(content[end])) {
+		end++
+	}
+	return end
 }
 
 // lineBounds returns the byte offsets of the line containing cursor

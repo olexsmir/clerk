@@ -142,6 +142,87 @@ func TestGolden_Completion(t *testing.T) {
 	}
 }
 
+func TestCompletionEditReplacesWholeWord(t *testing.T) {
+	// mid-word completion: accepting replaces the whole typed word, leaving no suffix
+	cases := map[string]struct{ journal, cursorLine, item, wantLine string }{
+		"account": {
+			journal: `account assets:bank
+2024-01-15 x
+  assets:bank $10
+  assets:cash
+`,
+			cursorLine: "  assets:b^nk $10\n",
+			item:       "assets:bank",
+			wantLine:   "  assets:bank $10\n",
+		},
+		"payee": {
+			journal: `account assets:cash
+2024-01-15 Grocery Store
+  assets:cash
+
+2024-01-15 Grocery
+  assets:cash
+`,
+			cursorLine: "2024-01-15 Groc^ery Store\n",
+			item:       "Grocery",
+			wantLine:   "2024-01-15 Grocery Store\n",
+		},
+		"tag value": {
+			journal: `account assets:cash
+2024-01-15 x
+  assets:cash
+; client:acme
+`,
+			cursorLine: "; client:a^cme\n",
+			item:       "acme",
+			wantLine:   "; client:acme\n",
+		},
+	}
+	for name, tt := range cases {
+		t.Run(name, func(t *testing.T) {
+			cur := strings.Index(tt.cursorLine, "^") + len(tt.journal)
+			content := strings.Replace(tt.journal+tt.cursorLine, "^", "", 1)
+			srv := newServer(t).server
+			srv.openDoc(uri.URI("file:///t.journal"), content, 1, "journal")
+			line, col := lsputil.LineCol(content, cur)
+			res, err := srv.Completion(t.Context(), &protocol.CompletionParams{
+				TextDocument: protocol.TextDocumentIdentifier{URI: uri.URI("file:///t.journal")},
+				Position:     protocol.Position{Line: uint32(line), Character: uint32(col)},
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			list := res.(*protocol.CompletionList)
+			var edit *protocol.TextEdit
+			for _, it := range list.Items {
+				if it.Label == tt.item {
+					edit = it.TextEdit.(*protocol.TextEdit)
+				}
+			}
+			if edit == nil {
+				t.Fatalf("item %q not offered (got %v)", tt.item, labelsOf(list))
+			}
+
+			s := lsputil.Offset(content, int(edit.Range.Start.Line), int(edit.Range.Start.Character))
+			e := lsputil.Offset(content, int(edit.Range.End.Line), int(edit.Range.End.Character))
+			got := content[:s] + edit.NewText + content[e:]
+			lines := strings.Split(got, "\n")
+			if lines[edit.Range.Start.Line] != strings.TrimSuffix(tt.wantLine, "\n") {
+				t.Errorf("edited line = %q, want %q", lines[edit.Range.Start.Line], strings.TrimSuffix(tt.wantLine, "\n"))
+			}
+		})
+	}
+}
+
+func labelsOf(list *protocol.CompletionList) []string {
+	labels := make([]string, 0, len(list.Items))
+	for _, it := range list.Items {
+		labels = append(labels, it.Label)
+	}
+	return labels
+}
+
 func (c cmplCtx) String() string {
 	switch c {
 	case cmplNone:
