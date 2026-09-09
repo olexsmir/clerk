@@ -143,10 +143,9 @@ P 2024-01-15 AAPL 1.5 €^
   expenses:food
   expenses:taxi
 23:20 commodity "$"
-  $
 24:19 commodity ""
-  $
   USD
+  $
 25:20 commodity "U"
   USD
 26:21 none ""
@@ -160,10 +159,8 @@ P 2024-01-15 AAPL 1.5 €^
   acme
   x
 31:31 tag-value "ac"
-  ac
   acme
 32:20 tag-value "ac"
-  ac
   acme
 33:21 tag-value "https://exa"
   https://example
@@ -284,18 +281,18 @@ P 2024-01-15 AAPL 1.5 €^
 110:12 date "2024-01-15"
   2024-01-15
 111:13 commodity ""
-  $
   USD
+  $
 112:14 commodity "U"
   USD
 113:24 commodity "U"
   USD
 116:22 commodity ""
-  $
   USD
+  $
 117:21 none ""
 118:18 none ""
 119:22 commodity ""
-  $
   USD
+  $
 120:23 commodity "€"

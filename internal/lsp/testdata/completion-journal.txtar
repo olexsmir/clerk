@@ -9,6 +9,47 @@
   assets:cash
 
 account assets:cash
+account assets:bank
+
+2024-01-15
+  assets:b  $10
+  assets:cash
+
+2024-01-15
+  assets:b  $10
+  assets:cash
+
+2024-01-15
+  assets:b  $10
+  assets:cash
+
+2024-01-15
+  assets:bank  $10
+  assets:cash
+
+2024-01-16
+  assets:b^ank  $10
+  assets:cash
+
+2024-01-15
+  liabilities:l  $10
+  assets:cash
+
+2024-01-15
+  liabilities:l  $10
+  assets:cash
+
+2024-01-15
+  liabilities:l  $10
+  assets:cash
+
+2024-01-15
+  liabilities:loan  $10
+  assets:cash
+
+2024-01-16
+  liabilities:l^oan  $10
+  assets:cash
 
 commodity USD
 
@@ -66,44 +107,47 @@ commodity ¥^元
 tag 客^户
 
 -- expect --
-19:10 tag-value "a"
+29:10 account "assets:b"
+  assets:bank
+49:15 account "liabilities:l"
+  liabilities:loan
+60:10 tag-value "a"
   acme
-20:10 tag-value ""
+61:10 tag-value ""
   alpha
-22:11 payee ""
+63:11 payee ""
   Grocery
   Продукти
   Супермаркет
   Store
   sup
-23:12 account "expenses:f"
+64:12 account "expenses:f"
   expenses:food
-28:16 account "assets:c"
+69:16 account "assets:c"
   assets:cash
-30:11 commodity "U"
+71:11 commodity "U"
   USD
-32:8 payee "Gr"
+73:8 payee "Gr"
   Grocery
-34:7 tag "cli"
+75:7 tag "cli"
   client
-36:5 tag "cli"
+77:5 tag "cli"
   client
-37:6 tag "proj"
+78:6 tag "proj"
   project
-39:3 directive "acc"
+80:3 directive "acc"
   account
-51:16 payee "Супер"
+92:16 payee "Супер"
   Супермаркет
-52:13 account "Витрати:Про"
+93:13 account "Витрати:Про"
   Витрати:Продукти
-55:14 payee "sup"
+96:14 payee "sup"
   Супермаркет
-  sup
-57:15 payee "Прод"
+98:15 payee "Прод"
   Продукти
-58:12 account "Витрати:Тр"
+99:12 account "Витрати:Тр"
   Витрати:Транспорт
-62:11 commodity "¥"
+103:11 commodity "¥"
   ¥
-64:5 tag "客"
+105:5 tag "客"
   客户

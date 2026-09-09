@@ -369,6 +369,8 @@ type cmplCand struct {
 	label        string
 	score        float64
 	count        int
+	declared     bool  // has a declaration directive (account/payee/commodity/tag); sorts before usage-only names
+	exact        bool  // label equals the typed pattern; phantom exact names are dropped entirely
 	lastUsedDays int64 // days since 1970-01-01; 0 when unset
 	rank         int   // lower sorts first among equal scores; 0 except for date completions
 }
@@ -392,25 +394,25 @@ func cmplItems(
 		kind = protocol.CompletionItemKindClass
 		cands = make([]cmplCand, 0, len(a.Accounts))
 		for name, info := range a.Accounts {
-			cands = append(cands, cmplCand{label: name, count: info.UsedCount, lastUsedDays: dateToDays(info.LastUsed)})
+			cands = append(cands, cmplCand{label: name, count: info.UsedCount, lastUsedDays: dateToDays(info.LastUsed), declared: len(info.Directives) > 0})
 		}
 	case cmplPayee:
 		kind = protocol.CompletionItemKindVariable
 		cands = make([]cmplCand, 0, len(a.Payees))
 		for name, info := range a.Payees {
-			cands = append(cands, cmplCand{label: name, count: info.UsedCount, lastUsedDays: dateToDays(info.LastUsed)})
+			cands = append(cands, cmplCand{label: name, count: info.UsedCount, lastUsedDays: dateToDays(info.LastUsed), declared: len(info.Directives) > 0})
 		}
 	case cmplCommodity:
 		kind = protocol.CompletionItemKindValue
 		cands = make([]cmplCand, 0, len(a.Commodities))
 		for name, info := range a.Commodities {
-			cands = append(cands, cmplCand{label: name, count: info.UsedCount, lastUsedDays: dateToDays(info.LastUsed)})
+			cands = append(cands, cmplCand{label: name, count: info.UsedCount, lastUsedDays: dateToDays(info.LastUsed), declared: len(info.Directives) > 0})
 		}
 	case cmplTagName:
 		kind = protocol.CompletionItemKindProperty
 		cands = make([]cmplCand, 0, len(a.Tags))
 		for name, info := range a.Tags {
-			cands = append(cands, cmplCand{label: name, count: info.UsedCount, lastUsedDays: dateToDays(info.LastUsed)})
+			cands = append(cands, cmplCand{label: name, count: info.UsedCount, lastUsedDays: dateToDays(info.LastUsed), declared: len(info.Directives) > 0})
 		}
 	case cmplTagValue:
 		kind = protocol.CompletionItemKindProperty
@@ -467,7 +469,12 @@ func cmplItems(
 		}
 	}
 	ranked := cands[:0]
+	dropExact := ctx == cmplAccount || ctx == cmplPayee || ctx == cmplCommodity || ctx == cmplTagName || ctx == cmplTagValue
 	for i := range cands {
+		cands[i].exact = pattern != "" && strings.EqualFold(cands[i].label, pattern)
+		if dropExact && cands[i].exact && !cands[i].declared {
+			continue // the typed name is not declared; re-offering it is noise
+		}
 		sc := matcher.Score(cands[i].label)
 		if hasTransl {
 			sc = max(sc, translMatcher.Score(cands[i].label))
@@ -485,6 +492,9 @@ func cmplItems(
 		}
 	}
 	sort.Slice(ranked, func(i, j int) bool {
+		if ranked[i].declared != ranked[j].declared {
+			return ranked[i].declared
+		}
 		if ranked[i].score != ranked[j].score {
 			return ranked[i].score > ranked[j].score
 		}
