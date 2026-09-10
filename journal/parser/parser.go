@@ -208,21 +208,17 @@ func (p *Parser) parsePeriodicTransaction() *ast.PeriodicTransaction {
 	p.skipWhitespace()
 
 	pt := &ast.PeriodicTransaction{}
-
 	pt.Period = p.parsePeriod()
-
 	if desc, dspan := p.parseOptPeriodicDescription(); desc != "" {
 		pt.Description = desc
 		pt.DescriptionSpan = dspan
 	}
 
-	comment := p.parseOptInlineComment()
+	pt.Comment = p.parseOptInlineComment()
 	p.expectNewline()
 
 	pt.HeaderComments, pt.Postings = p.parseHeaderCommentsAndPostings()
-
 	pt.Span = p.span(s)
-	pt.Comment = comment
 	return pt
 }
 
@@ -234,10 +230,10 @@ func (p *Parser) parseAutomatedTransaction() *ast.AutomatedTransaction {
 	at := &ast.AutomatedTransaction{}
 
 	// expression
-	sd := p.cur.Span
+	expSpan := p.cur.Span
 	expr := p.parseDirectiveExpr()
 	at.Expr = expr
-	at.ExprSpan = p.span(sd)
+	at.ExprSpan = p.span(expSpan)
 	at.Comment = p.parseOptInlineComment()
 	p.expectNewline()
 
@@ -267,7 +263,6 @@ func (p *Parser) parsePeriod() ast.Period {
 	s := p.cur.Span
 
 	var periodBuf strings.Builder
-
 	for !p.got(token.NEWLINE) && !p.got(token.EOF) &&
 		!p.got(token.SEMICOLON) && !p.got(token.HASH) && !p.got(token.PERCENT) && !p.got(token.STAR) {
 
@@ -289,7 +284,6 @@ func (p *Parser) parsePeriod() ast.Period {
 
 	str := periodBuf.String()
 	period := ast.Period{Raw: str, Span: p.span(s)}
-
 	if _, after, ok := strings.Cut(str, " from "); ok {
 		end := strings.Index(after, " ")
 		dateStr := after
@@ -318,9 +312,6 @@ func (p *Parser) parsePeriod() ast.Period {
 	return period
 }
 
-// periodDateSpan returns the source span of dateStr, which occurs in the
-// period text at or after searchFrom. The period span and text cover the same
-// bytes, so offsets line up 1:1.
 func periodDateSpan(period ast.Period, text, dateStr string, searchFrom int) token.Span {
 	off := strings.Index(text[searchFrom:], dateStr)
 	abs := period.Span.Start.Offset + searchFrom + off
@@ -482,7 +473,6 @@ func (p *Parser) parseCommodityDirective() *ast.CommodityDirective {
 			p.expectNewline()
 			blockComments = append(blockComments, c)
 		case p.got(token.TEXT) && isCommentMarker(p.cur.Literal):
-			// '#', '%' and '*' lex as TEXT in directive mode; treat them as comment lines
 			blockComments = append(blockComments, p.parseTextComment())
 		case p.got(token.TEXT):
 			p.errorf("unknown subdirective %q", p.cur.Literal)
@@ -493,7 +483,7 @@ func (p *Parser) parseCommodityDirective() *ast.CommodityDirective {
 		}
 	}
 
-	cd := &ast.CommodityDirective{
+	return &ast.CommodityDirective{
 		Commodity:     commodity,
 		CommoditySpan: commoditySpan,
 		FormatSub:     format,
@@ -501,7 +491,6 @@ func (p *Parser) parseCommodityDirective() *ast.CommodityDirective {
 		Comment:       comment,
 		Span:          p.span(s),
 	}
-	return cd
 }
 
 func (p *Parser) parseIncludeDirective() *ast.IncludeDirective {
@@ -510,14 +499,12 @@ func (p *Parser) parseIncludeDirective() *ast.IncludeDirective {
 	p.skipWhitespace()
 
 	id := &ast.IncludeDirective{}
-
 	if p.got(token.TEXT) {
 		id.Path = p.cur.Literal
 		p.advance()
 	} else {
 		p.errorf("expected file path, got %s", p.cur.Type)
 	}
-
 	id.Comment = p.parseOptInlineComment()
 	p.expectNewline()
 	id.Span = p.span(s)
@@ -545,20 +532,14 @@ func (p *Parser) parsePayeeDirective() *ast.PayeeDirective {
 	p.expect(token.PAYEE)
 	p.skipWhitespace()
 
-	name, nameSpan := "", token.Span{}
+	pd := &ast.PayeeDirective{}
 	if p.got(token.TEXT) || p.got(token.STRING) || p.got(token.COMMODITYMARK) {
-		name, nameSpan = p.parsePayee()
+		pd.Name, pd.NameSpan = p.parsePayee()
 	}
-
-	comment := p.parseOptInlineComment()
+	pd.Comment = p.parseOptInlineComment()
 	p.expectNewline()
-
-	return &ast.PayeeDirective{
-		Name:     name,
-		NameSpan: nameSpan,
-		Comment:  comment,
-		Span:     p.span(s),
-	}
+	pd.Span = p.span(s)
+	return pd
 }
 
 func (p *Parser) parseTagDirective() *ast.TagDirective {
@@ -566,20 +547,15 @@ func (p *Parser) parseTagDirective() *ast.TagDirective {
 	p.expect(token.TAG)
 	p.skipWhitespace()
 
-	name := ""
+	td := &ast.TagDirective{}
 	if p.got(token.TEXT) || p.got(token.COMMODITYMARK) || p.got(token.STRING) {
-		name = unquote(p.cur.Literal)
+		td.Name = unquote(p.cur.Literal)
 		p.advance()
 	}
-
-	comment := p.parseOptInlineComment()
+	td.Comment = p.parseOptInlineComment()
 	p.expectNewline()
-
-	return &ast.TagDirective{
-		Name:    name,
-		Comment: comment,
-		Span:    p.span(s),
-	}
+	td.Span = p.span(s)
+	return td
 }
 
 func (p *Parser) parseYearDirective() *ast.YearDirective {
@@ -1098,20 +1074,20 @@ func (p *Parser) parseAccount() ast.Account {
 	s := p.cur.Span
 	acc := ast.Account{Name: make([]ast.SubAccount, 0, 6)}
 
-	sub, ok := p.readAccountSegment()
+	seg, ok := p.readAccountSegment()
 	if !ok {
 		p.errorf("expected account, got %s", p.cur.Type)
 		return ast.Account{}
 	}
-	acc.Name = append(acc.Name, sub)
+	acc.Name = append(acc.Name, seg)
 
 	for p.got(token.COLON) {
 		p.advance()
-		sub, ok := p.readAccountSegment()
+		seg, ok := p.readAccountSegment()
 		if !ok {
 			break
 		}
-		acc.Name = append(acc.Name, sub)
+		acc.Name = append(acc.Name, seg)
 	}
 
 	acc.Span = p.span(s)
@@ -1145,27 +1121,18 @@ func (p *Parser) parseOptInlineComment() *ast.Comment {
 	return p.parseCommentRest(p.cur.Span)
 }
 
-// parseCommentRest consumes a comment marker at p.cur, then optional text;
-// s anchors the span at the marker's start.
 func (p *Parser) parseCommentRest(s token.Span) *ast.Comment {
-	marker := p.cur.Literal[0]
+	c := &ast.Comment{}
+	c.Marker = p.cur.Literal[0]
 	p.advance()
 	p.skipWhitespace()
-
-	var tags []ast.Tag
-	text := ""
 	if p.got(token.TEXT) {
-		text = p.cur.Literal
-		tags = parseCommentTags(text, p.cur.Span)
+		c.Text = p.cur.Literal
+		c.Tags = parseCommentTags(c.Text, p.cur.Span)
 		p.advance()
 	}
-
-	return &ast.Comment{
-		Marker: marker,
-		Tags:   tags,
-		Text:   text,
-		Span:   p.span(s),
-	}
+	c.Span = p.span(s)
+	return c
 }
 
 func (p *Parser) parseOptPeriodicDescription() (string, token.Span) {
@@ -1174,7 +1141,6 @@ func (p *Parser) parseOptPeriodicDescription() (string, token.Span) {
 	}
 
 	p.skipWhitespace()
-
 	if p.cur.Type != token.TEXT {
 		return "", token.Span{}
 	}
@@ -1211,13 +1177,8 @@ func (p *Parser) parseQuantityInto(amt *ast.Amount) {
 	lit := p.cur.Literal
 	p.advance()
 
-	// detect format metadata before normalizing
 	amt.QuantityFmt = detectFormat(lit)
-
-	// normalize for decimal.NewFromString
-	// remove thousands separators, replace decimal mark with '.'
 	normalized := normalizeLiteral(lit, amt.QuantityFmt.Thousands, amt.QuantityFmt.Decimal)
-
 	q, err := decimal.FromString(normalized)
 	if err != nil {
 		p.errorf("invalid quantity %q: %v", lit, err)
@@ -1255,7 +1216,6 @@ func (p *Parser) advance() token.Token {
 
 func (p *Parser) got(kind token.Type) bool     { return p.cur.Type == kind }
 func (p *Parser) willGet(kind token.Type) bool { return p.peek.Type == kind }
-
 func (p *Parser) expect(kind token.Type) (token.Token, bool) {
 	if p.got(kind) {
 		return p.advance(), true
@@ -1271,7 +1231,6 @@ func (p *Parser) errorf(format string, args ...any) {
 	})
 }
 
-// errorfAt records a parse error pointing at the start of span.
 func (p *Parser) errorfAt(span token.Span, format string, args ...any) {
 	p.errors = append(p.errors, &ast.ParseError{
 		Span:    token.Span{File: span.File, Start: span.Start, End: span.Start},
