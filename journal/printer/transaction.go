@@ -125,10 +125,11 @@ func (p *printer) writeAutomatedTransaction(t *ast.AutomatedTransaction) {
 }
 
 // writeDate writes date duh.
-// TODO: support dates like '02/12'
 func (p *printer) writeDate(d ast.Date) {
-	p.writeInt(d.Year, 4)
-	p.buf.WriteByte('-')
+	if d.Year != 0 {
+		p.writeInt(d.Year, 4)
+		p.buf.WriteByte('-')
+	}
 	p.writeInt(int(d.Month), 2)
 	p.buf.WriteByte('-')
 	p.writeInt(int(d.Day), 2)
