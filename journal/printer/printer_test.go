@@ -45,12 +45,15 @@ func BenchmarkPrinter(b *testing.B) {
 }
 
 var testsWithConfig = map[string]*Config{
-	"align_right":      {AlignStyle: AlignRight, AlignColumn: 50},
-	"align_tab":        {AlignStyle: AlignTab, AlignColumn: 50},
-	"commodity_before": {CommodityPos: CommodityBefore},
-	"preserve_blanks":  {PreserveBlankLines: true},
-	"tab_indent":       {TabIndent: true},
-	"indent_width":     {IndentWidth: 4},
+	"align_right":              {AlignStyle: AlignRight, AlignColumn: 50},
+	"align_tab":                {AlignStyle: AlignTab, AlignColumn: 50},
+	"commodity_pos_before":     {CommodityPos: CommodityPosBefore},
+	"preserve_blanks":          {PreserveBlankLines: true},
+	"commodity_space_preserve": {CommoditySpace: CommoditySpacePreserve},
+	"commodity_space_always":   {CommoditySpace: CommoditySpaceAlways},
+	"commodity_space_never":    {CommoditySpace: CommoditySpaceNever},
+	"tab_indent":               {TabIndent: true},
+	"indent_width":             {IndentWidth: 4},
 }
 
 func TestRoundTrip_WithConfig(t *testing.T) {

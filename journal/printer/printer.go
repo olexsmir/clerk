@@ -34,28 +34,38 @@ func (a AlignStyle) String() string {
 type CommodityPos int
 
 const (
-	CommodityAfter  CommodityPos = iota // "10.00 EUR"
-	CommodityBefore                     // "$10.00"
+	CommodityPosAfter  CommodityPos = iota // "10.00 EUR"
+	CommodityPosBefore                     // "$10.00"
 )
 
 func (c CommodityPos) String() string {
 	switch c {
-	case CommodityAfter:
+	case CommodityPosAfter:
 		return "after"
-	case CommodityBefore:
+	case CommodityPosBefore:
 		return "before"
 	default:
 		panic("invalid commodity pos value")
 	}
 }
 
+// CommoditySpace controls the space between quantity and commodity
+type CommoditySpace int
+
+const (
+	CommoditySpacePreserve CommoditySpace = iota // "$10" / "$ 10"
+	CommoditySpaceAlways                         // "$ 10"
+	CommoditySpaceNever                          // "$10"
+)
+
 type Config struct {
-	TabIndent          bool         // true = tabs, false = spaces
-	IndentWidth        int          // spaces per indent level (default: 2)
-	PreserveBlankLines bool         // preserve consecutive blank lines as-is
-	AlignStyle         AlignStyle   // (default AlignTwoSpaces)
-	AlignColumn        int          // fixed column for AlignRight
-	CommodityPos       CommodityPos // where to place commodity
+	TabIndent          bool           // true = tabs, false = spaces
+	IndentWidth        int            // spaces per indent level (default: 2)
+	PreserveBlankLines bool           // preserve consecutive blank lines as-is
+	AlignStyle         AlignStyle     // (default AlignTwoSpaces)
+	AlignColumn        int            // fixed column for AlignRight
+	CommodityPos       CommodityPos   // where to place commodity
+	CommoditySpace     CommoditySpace // space between quantity and commodity
 }
 
 var DefaultConfig = Config{
@@ -64,7 +74,8 @@ var DefaultConfig = Config{
 	PreserveBlankLines: false,
 	AlignStyle:         AlignTwoSpaces,
 	AlignColumn:        70,
-	CommodityPos:       CommodityAfter,
+	CommodityPos:       CommodityPosAfter,
+	CommoditySpace:     CommoditySpacePreserve,
 }
 
 func (c *Config) indent() string {

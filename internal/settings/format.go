@@ -43,11 +43,26 @@ func (s *Settings) setFormatField(name string, val any) ([]string, error) {
 		}
 		switch {
 		case strings.EqualFold(c, "after"):
-			s.Format.CommodityPos = printer.CommodityAfter
+			s.Format.CommodityPos = printer.CommodityPosAfter
 		case strings.EqualFold(c, "before"):
-			s.Format.CommodityPos = printer.CommodityBefore
+			s.Format.CommodityPos = printer.CommodityPosBefore
 		default:
 			return nil, fmt.Errorf("invalid value %q (want %q or %q)", c, "after", "before")
+		}
+	case "commodity_space":
+		c, ok := val.(string)
+		if !ok {
+			return nil, fmt.Errorf("invalid value %v (want string)", val)
+		}
+		switch {
+		case strings.EqualFold(c, "preserve"):
+			s.Format.CommoditySpace = printer.CommoditySpacePreserve
+		case strings.EqualFold(c, "always"):
+			s.Format.CommoditySpace = printer.CommoditySpaceAlways
+		case strings.EqualFold(c, "never"):
+			s.Format.CommoditySpace = printer.CommoditySpaceNever
+		default:
+			return nil, fmt.Errorf("invalid value %q (want %q, %q or %q)", c, "preserve", "always", "never")
 		}
 	default:
 		return []string{fmt.Sprintf("unknown format option %q", name)}, nil

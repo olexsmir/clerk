@@ -32,20 +32,30 @@ func (p *printer) writeAmount(a *ast.Amount) {
 	}
 
 	switch p.cfg.CommodityPos {
-	case CommodityBefore:
+	case CommodityPosBefore:
 		p.buf.WriteString(comm)
-		if a.HasSpace {
-			p.buf.WriteByte(' ')
-		}
+		p.writeCommoditySpace(a)
 		p.writeDecimal(a.Quantity, a.QuantityFmt, prec)
-	case CommodityAfter:
+	case CommodityPosAfter:
 		p.writeDecimal(a.Quantity, a.QuantityFmt, prec)
-		if a.HasSpace {
-			p.buf.WriteByte(' ')
-		}
+		p.writeCommoditySpace(a)
 		p.buf.WriteString(comm)
 	default:
 		panic("impossible CommodityPos value")
+	}
+}
+
+func (p *printer) writeCommoditySpace(a *ast.Amount) {
+	switch p.cfg.CommoditySpace {
+	case CommoditySpacePreserve:
+		if a.HasSpace {
+			p.buf.WriteByte(' ')
+		}
+	case CommoditySpaceAlways:
+		p.buf.WriteByte(' ')
+	case CommoditySpaceNever:
+	default:
+		panic("impossible CommoditySpace value")
 	}
 }
 
