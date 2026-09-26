@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/pelletier/go-toml/v2"
+
 	"olexsmir.xyz/clerk/internal/linter"
 	"olexsmir.xyz/clerk/journal/printer"
 )
