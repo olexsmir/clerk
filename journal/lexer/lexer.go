@@ -22,17 +22,13 @@ const (
 	// expects: optional status, optional code, description, comment
 	modeTransaction
 
+	// after ~ or =, at the head of a periodic or automated transaction
+	// expects: period or expression, then optional description, then optional comment
+	modeExpr
+
 	// after lexing an indent at start of line
 	// expects: account name, then two spaces, then amount
 	modePosting
-
-	// after ~, period expression
-	// expects: period, optional description (after 2+ spaces), optional comment
-	modePeriodic
-
-	// after =, automates transaction
-	// expects: expression
-	modeAutomated
 
 	// after a directive keyword like account, commodity, include
 	// expects: rest of directive content
@@ -87,10 +83,8 @@ func (l *Lexer) Next() token.Token {
 		return l.lexTransaction()
 	case modePosting:
 		return l.lexPosting()
-	case modePeriodic:
-		return l.lexPeriodic()
-	case modeAutomated:
-		return l.lexAutomated()
+	case modeExpr:
+		return l.lexExpr()
 	case modeDirective:
 		return l.lexDirective()
 	}
@@ -131,10 +125,10 @@ func (l *Lexer) lexDefault() token.Token {
 		l.mode = modeComment
 		return l.lexSingle(token.STAR)
 	case l.ch == '~':
-		l.mode = modePeriodic
+		l.mode = modeExpr
 		return l.lexSingle(token.TILDE)
 	case l.ch == '=':
-		l.mode = modeAutomated
+		l.mode = modeExpr
 		return l.lexSingle(token.EQ)
 	case l.ch == '+':
 		return l.lexSingle(token.PLUS)
@@ -268,7 +262,7 @@ func (l *Lexer) lexNote() token.Token {
 	return token.Token{Type: token.TEXT, Literal: lit, Span: l.span(s)}
 }
 
-func (l *Lexer) lexPeriodic() token.Token {
+func (l *Lexer) lexExpr() token.Token {
 	switch l.ch {
 	case 0:
 		return l.token(token.EOF, "")
@@ -284,27 +278,6 @@ func (l *Lexer) lexPeriodic() token.Token {
 		return l.lexSingle(token.SEMICOLON)
 	case ' ', '\t':
 		return l.lexWhitespace()
-	default:
-		return l.lexText()
-	}
-}
-
-func (l *Lexer) lexAutomated() token.Token {
-	switch l.ch {
-	case 0:
-		return l.token(token.EOF, "")
-	case '\n':
-		l.mode = modeDefault
-		return l.lexNewline()
-	case '\r':
-		l.col = 0
-		l.advance()
-		return l.lexNewline()
-	case ' ', '\t':
-		return l.lexWhitespace()
-	case ';':
-		l.mode = modeComment
-		return l.lexSingle(token.SEMICOLON)
 	default:
 		return l.lexText()
 	}
