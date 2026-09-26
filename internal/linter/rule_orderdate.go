@@ -1,8 +1,6 @@
 package linter
 
 import (
-	"fmt"
-
 	"olexsmir.xyz/clerk/internal/analyzer"
 	"olexsmir.xyz/clerk/journal/ast"
 )
@@ -16,6 +14,7 @@ func (OrderDate) ID() RuleID { return OrderDateID }
 func (o *OrderDate) CheckJournal(an *analyzer.Analysis) []Find {
 	var finds []Find
 	var anchor *ast.Date
+	var anchorStr string
 	for _, pf := range an.Files {
 		for _, entry := range pf.Ast.Entries {
 			txn, ok := entry.(*ast.Transaction)
@@ -25,12 +24,13 @@ func (o *OrderDate) CheckJournal(an *analyzer.Analysis) []Find {
 			if anchor != nil && txn.Date.Compare(*anchor) < 0 {
 				finds = append(finds, Find{
 					Code:    o.ID(),
-					Message: fmt.Sprintf("transaction is out of chronological order (date %s before %s)", txn.Date, *anchor),
+					Message: "transaction is out of chronological order (date " + txn.Date.String() + " before " + anchorStr + ")",
 					Span:    txn.Date.Span,
 				})
 				continue
 			}
 			anchor = &txn.Date
+			anchorStr = anchor.String()
 		}
 	}
 	return finds
