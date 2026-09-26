@@ -2,6 +2,7 @@ package journal
 
 import (
 	"bytes"
+	"container/ring"
 	"fmt"
 	"io/fs"
 	"os"
@@ -66,6 +67,7 @@ type Loader struct {
 	mu           sync.RWMutex
 	contentCache map[string][]byte // canonical path: normalised content
 	parseCache   map[parseKey]parseEntry
+	parseRing    *ring.Ring // holds parseCache keys oldest first, so overflow evicts the east recently stored one.
 
 	// ContentProvider, when set, is consulted before any disk read. It returns
 	// the file's authoritative content and ok=true, or ok=false to fall back to
@@ -77,6 +79,7 @@ func NewLoader() *Loader {
 	return &Loader{
 		contentCache: make(map[string][]byte),
 		parseCache:   make(map[parseKey]parseEntry),
+		parseRing:    ring.New(parseCacheMax),
 	}
 }
 
@@ -338,12 +341,12 @@ func (l *Loader) parseLookup(key parseKey) (parseEntry, bool) {
 
 func (l *Loader) parseStore(key parseKey, entry parseEntry) {
 	l.mu.Lock()
-	l.parseCache[key] = entry
-	if len(l.parseCache) > parseCacheMax {
-		for k := range l.parseCache {
-			delete(l.parseCache, k)
-			break
-		}
+	defer l.mu.Unlock()
+	old, full := l.parseRing.Value.(parseKey)
+	l.parseRing.Value = key
+	l.parseRing = l.parseRing.Next()
+	if full {
+		delete(l.parseCache, old)
 	}
-	l.mu.Unlock()
+	l.parseCache[key] = entry
 }
