@@ -329,10 +329,9 @@ func TestSemanticTokensIncremental(t *testing.T) {
 			ar := golden.Read(t, tt)
 			in, edited := ar.Get("in.journal"), ar.Get("edited.journal")
 
-			// golden: the server's incremental result equals a full tokenization
 			golden.Assert(t, ar, renderSemanticTokens(serverSemTokensAfterEdit(t, newServer(t).server, string(in), string(edited))))
 
-			// engage: the incremental path actually runs, not a silent full rebuild
+			// the incremental path has to actually run, not silently rebuild
 			ev := partialChangeFromDiff(string(in), string(edited))[0].(*protocol.TextDocumentContentChangePartial)
 			start, oldEnd, newEnd, delta := editRegion(string(in), ev)
 			_, entries := computeSemTokens(string(in), parseJournalStr(string(in)))
@@ -361,7 +360,7 @@ func BenchmarkSemanticTokens(b *testing.B) {
 	}
 }
 
-// BenchmarkSemanticTokensDelta measures the cost of one dela response after an edit.
+// BenchmarkSemanticTokensDelta measures the cost of one delta response after an edit.
 func BenchmarkSemanticTokensDelta(b *testing.B) {
 	content := openJournal(b, "../../journal/testdata/journals/actual-1ktxns-100accts.journal")
 	prev := encodeSemTokens(tokenizeForSemantics(content, parseJournalStr(content)))

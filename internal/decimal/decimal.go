@@ -165,10 +165,7 @@ func (d Decimal) StringFixed(places int, decSep, thousandsSep byte) string {
 	return sb.String()
 }
 
-// WriteFixed writes a string representation with exactly places digits
-// after the decimal point directly into sb. Pads with zeros or truncates
-// as needed. decSep and thousandsSep control formatting; zero values mean
-// no custom separator.
+// WriteFixed is [Decimal.StringFixed] writing into sb instead of returning a string.
 func (d Decimal) WriteFixed(sb *strings.Builder, places int, decSep, thousandsSep byte) {
 	if d.IsZero() {
 		sb.WriteByte('0')

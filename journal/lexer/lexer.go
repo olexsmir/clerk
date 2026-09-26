@@ -120,7 +120,7 @@ func (l *Lexer) lexDefault() token.Token {
 		return tok
 	case l.ch == ';' || l.ch == '#' || l.ch == '%':
 		l.mode = modeComment
-		return l.lexSingle(token.SEMICOLON) // todo: ??
+		return l.lexSingle(token.SEMICOLON)
 	case l.ch == '*': // * at col 0 == comment
 		l.mode = modeComment
 		return l.lexSingle(token.STAR)
@@ -237,7 +237,7 @@ func (l *Lexer) lexTransaction() token.Token {
 	case '"', '\'':
 		return l.lexString()
 	default: // description / payee
-		if l.isDate() { // secondsry date after =
+		if l.isDate() { // secondary date after =
 			return l.lexDate()
 		}
 		return l.lexText()
@@ -482,7 +482,7 @@ func (l *Lexer) lexText() token.Token {
 	return token.Token{Type: token.TEXT, Literal: lit, Span: l.span(s)}
 }
 
-// lexAccountNameDirective reads accout name in directive context.
+// lexAccountNameDirective reads an account name in directive context.
 // stops at any whitespace, supports multi-word names("Taxi Fare").
 func (l *Lexer) lexAccountNameDirective() token.Token {
 	s := l.save()
@@ -574,7 +574,7 @@ func (l *Lexer) lexKeyword() token.Token {
 	}
 	lit := l.lit(s)
 	kind := l.keyword(lit)
-	if kind == token.ILLEGAL { // todo: report an error ??
+	if kind == token.ILLEGAL {
 		kind = token.TEXT
 	} else {
 		l.mode = modeDirective

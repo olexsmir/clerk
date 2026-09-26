@@ -16,7 +16,6 @@ type LineIndex struct {
 	starts  []int // byte offset of each line's first byte; starts[0] == 0
 }
 
-// NewLineIndex builds the line-start table for content.
 func NewLineIndex(content string) *LineIndex {
 	starts := make([]int, 1, len(content)/20+1)
 	for i := 0; i < len(content); i++ {
@@ -80,7 +79,7 @@ func (l *LineIndex) Offset(line, col int) int {
 	for off < lineEnd && units < col {
 		r, size := utf8.DecodeRuneInString(l.content[off:lineEnd])
 		off += size
-		units += utf16Len(r)
+		units += Utf16LenRune(r)
 	}
 	return off
 }

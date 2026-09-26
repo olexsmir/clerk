@@ -177,7 +177,7 @@ func BenchmarkRename(b *testing.B) {
 	}
 }
 
-// txtarHarness runs per-cursor lsp requests againt golden tests
+// txtarHarness runs per-cursor lsp requests against golden tests
 type txtarHarness struct {
 	srv     *server
 	uri     uri.URI

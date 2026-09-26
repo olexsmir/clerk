@@ -54,7 +54,7 @@ func parse(raw map[string]any) (settings Settings, warns []string, err error) {
 	return s, warns, err
 }
 
-// Apply merges raw setting from a config file into Settings object.
+// Apply merges settings from a config file into s.
 func (s *Settings) Apply(raw map[string]any) ([]string, error) {
 	return applyMap(raw, s.applyFileField)
 }
@@ -70,7 +70,7 @@ func (s *Settings) applyFileField(name string, val any) ([]string, error) {
 	}
 }
 
-// ApplyLSP merges raw settings from lsp server config into Settings object.
+// ApplyLSP merges settings from the LSP server configuration into s.
 func (s *Settings) ApplyLSP(raw map[string]any) ([]string, error) {
 	return applyMap(raw, s.applyLSPField)
 }

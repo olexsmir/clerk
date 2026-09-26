@@ -1198,13 +1198,13 @@ func (p *Parser) parseBlankLine() *ast.BlankLine {
 }
 
 func (p *Parser) expectNewline() {
-	if p.got(token.NEWLINE) || p.got(token.EOF) {
-		if p.got(token.NEWLINE) {
-			p.advance()
-		}
-		return
+	switch {
+	case p.got(token.NEWLINE):
+		p.advance()
+	case p.got(token.EOF):
+	default:
+		p.errorf("expected %s, got %s", token.NEWLINE, p.cur.Type)
 	}
-	p.errorf("expected %s, got %s", token.NEWLINE, p.cur.Type)
 }
 
 func (p *Parser) advance() token.Token {
@@ -1417,7 +1417,7 @@ func detectFormat(lit string) ast.QuantityFormat {
 	return ast.QuantityFormat{Decimal: dec, Thousands: thou, Precision: prec}
 }
 
-// parseSimpleDate  parses full YYYY/MM/DD date literal embedded in free text.
+// parseSimpleDate parses full YYYY/MM/DD date literal embedded in free text.
 func parseSimpleDate(s string) ast.Date {
 	year, month, day, sep, err := ParseDateLiteral(s)
 	if err != nil {
@@ -1471,7 +1471,7 @@ func dateSeparator(lit string) byte {
 	return 0
 }
 
-// parseCommentTags extacts tags from comment text.
+// parseCommentTags extracts tags from comment text.
 // A tag is a word immediately followed by a ':', with an optional value that ends at a comma or the end of a line.
 // https://hledger.org/1.52/hledger.html?highlight=tags#tags
 func parseCommentTags(text string, base token.Span) []ast.Tag {

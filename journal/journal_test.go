@@ -14,19 +14,19 @@ type test struct {
 
 var tests = map[string]test{
 	"actual-1ktxns-100accts.journal":            {desc: "hledger: stress test: 1000 transactions, 100 accounts, number-only account names"},
-	"actual-accounttypes.journal":               {desc: "hledger: account type annotations (type:A, type:L) via comments"}, // todo: tags are not supported yet
+	"actual-accounttypes.journal":               {desc: "hledger: account type annotations (type:A, type:L) via comments"}, // TODO: tags are not supported yet
 	"actual-alias.journal":                      {desc: "hledger: account alias directives for renaming"},
 	"actual-borrowing.journal":                  {desc: "hledger: borrowing/lending example with liabilities"},
 	"actual-business.journal":                   {desc: "hledger: simple business transactions with commodities"},
 	"actual-goal-budget.journal":                {desc: "hledger: goal budget using periodic transactions"},
 	"actual-i18n-en.journal":                    {desc: "hledger: internationalization with account types in English"},
-	"actual-ledger-baseline-opt-lots-basis.dat": {err: true, desc: "ledger: G/S prefixes"}, // no lot support yet
+	"actual-ledger-baseline-opt-lots-basis.dat": {err: true, desc: "ledger: G/S prefixes"}, // TODO: no lot support yet
 	"actual-ledger-input-divzero.dat":           {desc: "ledger: fuzz corpus, designed to cause divide-by-zero"},
 	"actual-ledger-input-parsing.dat":           {desc: "ledger: fuzz corpus, tests EOF without newline"},
 	"actual-ledger-input-sample.dat":            {desc: "ledger: fuzz corpus, default commodity directive"},
 	"actual-ledger-input-standard.dat":          {desc: "ledger: fuzz corpus, standard ledger format"},
 	"actual-ledger-input-transfer.dat":          {desc: "ledger: fuzz corpus, byte quantity (non-monetary)"},
-	"actual-ledger-input-wow.dat":               {err: true, desc: "ledger-cli: fuzz corpus, World of Warcraft currency (1G=100s)"}, // no lot support ye
+	"actual-ledger-input-wow.dat":               {err: true, desc: "ledger-cli: fuzz corpus, World of Warcraft currency (1G=100s)"}, // TOOD: no lot support yet
 	"actual-multicurrency.journal":              {desc: "hledger: multi-currency transactions with HRK/EUR"},
 	"actual-personal.journal":                   {desc: "hledger: simple personal finance example"},
 	"actual-quickstart.journal":                 {desc: "hledger: quickstart guide with commodity directive"},

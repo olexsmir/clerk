@@ -57,7 +57,7 @@ func txDuplicateKey(tx *ast.Transaction, names []string) string {
 	return b.String()
 }
 
-// PayeeTemplates returns  the last Transactions's postings per payee name.
+// PayeeTemplates returns the last transaction's postings per payee name.
 func (a *Analysis) PayeeTemplates() map[string][]PostingTemplate {
 	templates := make(map[string][]PostingTemplate)
 	for _, tx := range a.Transactions {

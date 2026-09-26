@@ -37,7 +37,7 @@ const (
 	ILLEGAL Type = iota
 	EOF
 
-	WHITESPACE // singe space or tab
+	WHITESPACE // single space or tab
 	INDENT     // leading whitespace (posting/subdirective marker)
 	NEWLINE    // \n
 

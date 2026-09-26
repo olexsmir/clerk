@@ -44,7 +44,7 @@ func (st serverState) ExitCode() int {
 
 // lifecycle gates the connection on the initialize request: before it, only
 // initialize and exit are served; everything else answers ServerNotInitialized
-// and notifications are dropped. Every later message is served — like gopls,
+// and notifications are dropped. Every later message is served: like gopls,
 // the server trusts its client, so shutdown and exit leave subsequent requests
 // to fail naturally. The handlers themselves enforce initialize-once and the
 // exit code.

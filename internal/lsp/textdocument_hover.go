@@ -80,35 +80,11 @@ func hoverInEntry(content string, e ast.Entry, cursor int) *hoverElement {
 		if spanContains(content, e.Date.Span, cursor) {
 			return &hoverElement{kind: hoverDate, span: e.Date.Span, tx: e}
 		}
-		if el := hoverTagInComment(content, e.Comment, cursor); el != nil {
-			return el
-		}
-		for _, c := range e.HeaderComments {
-			if el := hoverTagInComment(content, c, cursor); el != nil {
-				return el
-			}
-		}
-		return hoverInPostings(content, e.Postings, cursor)
+		return hoverInTransaction(content, e.Comment, e.HeaderComments, e.Postings, cursor)
 	case *ast.PeriodicTransaction:
-		if el := hoverTagInComment(content, e.Comment, cursor); el != nil {
-			return el
-		}
-		for _, c := range e.HeaderComments {
-			if el := hoverTagInComment(content, c, cursor); el != nil {
-				return el
-			}
-		}
-		return hoverInPostings(content, e.Postings, cursor)
+		return hoverInTransaction(content, e.Comment, e.HeaderComments, e.Postings, cursor)
 	case *ast.AutomatedTransaction:
-		if el := hoverTagInComment(content, e.Comment, cursor); el != nil {
-			return el
-		}
-		for _, c := range e.HeaderComments {
-			if el := hoverTagInComment(content, c, cursor); el != nil {
-				return el
-			}
-		}
-		return hoverInPostings(content, e.Postings, cursor)
+		return hoverInTransaction(content, e.Comment, e.HeaderComments, e.Postings, cursor)
 	case *ast.Comment:
 		return hoverTagInComment(content, e, cursor)
 	case *ast.AccountDirective:
@@ -143,6 +119,18 @@ func hoverInEntry(content string, e ast.Entry, cursor int) *hoverElement {
 		}
 	}
 	return nil
+}
+
+func hoverInTransaction(content string, comment *ast.Comment, header []*ast.Comment, postings []ast.Posting, cursor int) *hoverElement {
+	if el := hoverTagInComment(content, comment, cursor); el != nil {
+		return el
+	}
+	for _, c := range header {
+		if el := hoverTagInComment(content, c, cursor); el != nil {
+			return el
+		}
+	}
+	return hoverInPostings(content, postings, cursor)
 }
 
 func hoverInPostings(content string, postings []ast.Posting, cursor int) *hoverElement {

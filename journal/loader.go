@@ -61,7 +61,7 @@ type parseEntry struct {
 	ast *ast.Journal
 }
 
-// Loader include-aware journal parsing caching.
+// Loader parses a journal and its includes, caching both by canonical path.
 type Loader struct {
 	mu           sync.RWMutex
 	contentCache map[string][]byte // canonical path: normalised content
@@ -164,7 +164,7 @@ func (l *Loader) InvalidateFile(fpath string) {
 	l.mu.Unlock()
 }
 
-// Evict drops a file's cached content.
+// Evict drops a file's cached content and every parse cached for it.
 func (l *Loader) Evict(fpath string) {
 	canon := CanonicalPath(fpath)
 	l.mu.Lock()
@@ -211,7 +211,7 @@ func normaliseNewlines(raw []byte) []byte {
 	return bytes.ReplaceAll(content, []byte("\r"), []byte("\n"))
 }
 
-// resolveOccurrence recursively parses one occurrence and its includes
+// resolveOccurrence recursively parses one occurrence and its includes.
 func (l *Loader) resolveOccurrence(rj *ResolvedJournal, parent *ParsedFile, fpath string, src []byte, defaultYear int, stack []string) {
 	// cycle detection uses canonical paths to catch cycles through symlinks.
 	canon := CanonicalPath(fpath)
@@ -316,7 +316,7 @@ func resolveIncludePath(parentPath, incPattern string) (string, error) {
 	return target, nil
 }
 
-// CanonicalPath resolvea path to it's canonical form: absolute, symlinks evaluated, cleaned.
+// CanonicalPath resolves a path to its canonical form: absolute, symlinks evaluated, cleaned.
 func CanonicalPath(path string) string {
 	abs, err := filepath.Abs(path)
 	if err != nil {

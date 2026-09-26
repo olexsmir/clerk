@@ -30,7 +30,7 @@ func TestLexer(t *testing.T) {
 		"transaction with code",
 		"transaction with unicode commodity symbols",
 		"transaction with virtual accounts",
-		"transaction, accounts with uppercase latters",
+		"transaction, accounts with uppercase letters",
 	}
 	for _, tt := range tests {
 		t.Run(tt, func(t *testing.T) {
@@ -82,18 +82,16 @@ func FuzzLexer(f *testing.F) {
 		for range maxTokens {
 			tok := l.Next()
 
-			// Monotonic span
 			if tok.Span.Start.Offset < prevEnd {
 				t.Fatalf("non-monotonic span: prevEnd=%d current=%s %d",
 					prevEnd, tok.Type, tok.Span.Start.Offset)
 			}
 
-			// Token type in range (no garbage from memory corruption)
 			if tok.Type < 0 || tok.Type > maxKnownTokenType {
 				t.Fatalf("token type out of range: %d", tok.Type)
 			}
 
-			// Span in bounds (EOF/NEWLINE sentinels may extend one past input)
+			// EOF and NEWLINE sentinels may extend one past the input
 			maxEnd := len(data)
 			if tok.Type == token.NEWLINE || tok.Type == token.EOF {
 				maxEnd = len(data) + 1
@@ -124,7 +122,7 @@ func FuzzLexer(f *testing.F) {
 			t.Fatalf("token consumed beyond input: end=%d len=%d", prevEnd, len(data))
 		}
 
-		// Pass 2: re-lex the same input — token stream must be identical
+		// pass 2: re-lex the same input, the token stream must be identical
 		l2 := New("j", data)
 		for _, expected := range tokens {
 			tok := l2.Next()

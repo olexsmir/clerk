@@ -27,20 +27,19 @@ type server struct {
 	conn   jsonrpc2.Conn // set in Run; Exit closes it to end the session
 
 	stateMu       sync.Mutex
-	state         serverState // [serverState]
+	state         serverState
 	version, name string
 
 	settings settings.Settings
 	loader   *journal.Loader
 
-	mu            sync.RWMutex
-	openDocs      map[uri.URI]docState
-	diagCancel    context.CancelFunc
-	dynFileWather bool
-	configPath    string
+	mu             sync.RWMutex
+	openDocs       map[uri.URI]docState
+	diagCancel     context.CancelFunc
+	dynFileWatcher bool
+	configPath     string
 }
 
-// parsedFileFor returns the parsed file for path within the analysis, or nil.
 func parsedFileFor(an *analyzer.Analysis, path string) *journal.ParsedFile {
 	for _, pf := range an.Files {
 		if pf.Path == path {
@@ -86,7 +85,7 @@ func (s *server) analysisFor(u uri.URI) *analyzer.Analysis {
 func (s *server) Initialize(ctx context.Context, params *protocol.InitializeParams) (*protocol.InitializeResult, error) {
 	if w := params.Capabilities.Workspace; w != nil {
 		if wf := w.DidChangeWatchedFiles; wf != nil {
-			s.dynFileWather = wf.DynamicRegistration != nil && *wf.DynamicRegistration
+			s.dynFileWatcher = wf.DynamicRegistration != nil && *wf.DynamicRegistration
 		}
 	}
 
@@ -150,7 +149,7 @@ func (s *server) Initialize(ctx context.Context, params *protocol.InitializePara
 }
 
 func (s *server) Initialized(ctx context.Context, params *protocol.InitializedParams) error {
-	if s.dynFileWather {
+	if s.dynFileWatcher {
 		go s.registerFileWatchers(context.Background())
 	}
 	s.applyConfigFile(ctx)
@@ -188,14 +187,6 @@ func (s *server) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-// Exit records the exit code the LSP spec prescribes — 0 after a shutdown
-// request, 1 otherwise — and closes the connection to end the session. The
-// close runs in its own goroutine: called from inside the exit-notification
-// handler it cannot block on the connection draining (see [jsonrpc2.Conn.Close]).
-// Exit honors an exit that never saw initialize, and is safe to call
-// concurrently from the exit notification and watchParent: the stateMu guard
-// below makes the transition a once-only, and an exit that lost the race to
-// another exit is a no-op.
 func (s *server) Exit(context.Context) error {
 	s.stateMu.Lock()
 	if s.state < stateExited {
@@ -260,8 +251,8 @@ func (s *server) applyConfigFile(ctx context.Context) {
 		return
 	}
 	var raw map[string]any
-	if err := toml.Unmarshal(data, &raw); err != nil {
-		s.reportConfigError(ctx, err)
+	if uerr := toml.Unmarshal(data, &raw); uerr != nil {
+		s.reportConfigError(ctx, uerr)
 		return
 	}
 	s.mu.Lock()

@@ -239,7 +239,7 @@ func tokenizeForSemantics(content string, j *ast.Journal) []semanticToken {
 	return rawToSemanticTokens(content, raw)
 }
 
-// rawSpan is a source span tagged with semantic token
+// rawSpan is a source span carrying a semantic token type and modifiers
 type rawSpan struct {
 	span      token.Span
 	tok, mods uint32
@@ -384,7 +384,7 @@ func rawToSemanticTokensFrom(content string, raw []rawSpan, line, col, cursor in
 				continue
 			}
 			cursor += size
-			col += utf16Units(r)
+			col += lsputil.Utf16LenRune(r)
 		}
 	}
 	for i, t := range raw {
@@ -401,13 +401,6 @@ func rawToSemanticTokensFrom(content string, raw []rawSpan, line, col, cursor in
 		advance(t.span.End.Offset)
 	}
 	return out
-}
-
-func utf16Units(r rune) int {
-	if r >= 0x10000 && r <= 0x10FFFF {
-		return 2
-	}
-	return 1
 }
 
 func visitEntry(content string, e ast.Entry, emit semEmitFunc) {
@@ -481,7 +474,6 @@ func visitEntry(content string, e ast.Entry, emit semEmitFunc) {
 		if e.DateTime.Time != nil {
 			emit(e.DateTime.Time.Span, semDate, 0)
 		}
-		// commodity: text between the date (or time) and the amount
 		commStart := e.DateTime.Date.Span.End.Offset
 		if e.DateTime.Time != nil {
 			commStart = e.DateTime.Time.Span.End.Offset
@@ -494,7 +486,6 @@ func visitEntry(content string, e ast.Entry, emit semEmitFunc) {
 	case *ast.ConversionDirective:
 		emit(directiveKeyword(e.Span, "C"), semDirective, 0)
 		semEmitAmount(content, &e.From, emit)
-		// = operator: text between the two amounts
 		if op, ok := betweenSpan(content, e.Span.File, e.From.Span.End.Offset, e.To.Span.Start.Offset); ok {
 			emit(op, semOperator, 0)
 		}
@@ -598,9 +589,7 @@ func visitPosting(content string, p ast.Posting, emit semEmitFunc) {
 		emit(p.StatusSpan, semStatus, 0)
 	}
 
-	// virtual brackets
 	if p.Type == ast.PostingVirtualUnbalanced || p.Type == ast.PostingVirtualBalanced {
-		// opening bracket
 		for off := p.Span.Start.Offset; off < p.Account.Span.Start.Offset && off < p.Span.End.Offset; off++ {
 			if content[off] == '(' || content[off] == '[' {
 				emit(offsetSpan(p.Span.File, off, off+1), semOperator, modifierAbstract)

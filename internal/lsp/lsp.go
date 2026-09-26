@@ -88,7 +88,7 @@ func openLogFile() (*os.File, error) {
 	return os.OpenFile(filepath.Join(dir, "lsp.log"), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
 }
 
-// lspCodec mirros go.lsp.dev/protocol wire codec, so Run can install the lifecycle guard.
+// lspCodec mirrors go.lsp.dev/protocol wire codec, so Run can install the lifecycle guard.
 type lspCodec struct{}
 
 func (lspCodec) Marshal(v any) ([]byte, error) {

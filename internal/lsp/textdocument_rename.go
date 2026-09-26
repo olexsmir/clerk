@@ -97,35 +97,11 @@ func symbolInEntry(content string, e ast.Entry, cursor int) *symbolRef {
 		if e.Payee != "" && spanContains(content, e.PayeeSpan, cursor) {
 			return &symbolRef{symbolPayee, e.Payee, e.PayeeSpan}
 		}
-		if ref := tagRefInComment(content, e.Comment, cursor); ref != nil {
-			return ref
-		}
-		for _, c := range e.HeaderComments {
-			if ref := tagRefInComment(content, c, cursor); ref != nil {
-				return ref
-			}
-		}
-		return symbolInPostings(content, e.Postings, cursor)
+		return symbolInTransaction(content, e.Comment, e.HeaderComments, e.Postings, cursor)
 	case *ast.PeriodicTransaction:
-		if ref := tagRefInComment(content, e.Comment, cursor); ref != nil {
-			return ref
-		}
-		for _, c := range e.HeaderComments {
-			if ref := tagRefInComment(content, c, cursor); ref != nil {
-				return ref
-			}
-		}
-		return symbolInPostings(content, e.Postings, cursor)
+		return symbolInTransaction(content, e.Comment, e.HeaderComments, e.Postings, cursor)
 	case *ast.AutomatedTransaction:
-		if ref := tagRefInComment(content, e.Comment, cursor); ref != nil {
-			return ref
-		}
-		for _, c := range e.HeaderComments {
-			if ref := tagRefInComment(content, c, cursor); ref != nil {
-				return ref
-			}
-		}
-		return symbolInPostings(content, e.Postings, cursor)
+		return symbolInTransaction(content, e.Comment, e.HeaderComments, e.Postings, cursor)
 	case *ast.Comment:
 		return tagRefInComment(content, e, cursor)
 	case *ast.AccountDirective:
@@ -217,6 +193,18 @@ func commodityRef(content string, am *ast.Amount, cursor int) *symbolRef {
 		return nil
 	}
 	return &symbolRef{symbolCommodity, am.Commodity, am.CommoditySpan}
+}
+
+func symbolInTransaction(content string, comment *ast.Comment, header []*ast.Comment, postings []ast.Posting, cursor int) *symbolRef {
+	if ref := tagRefInComment(content, comment, cursor); ref != nil {
+		return ref
+	}
+	for _, c := range header {
+		if ref := tagRefInComment(content, c, cursor); ref != nil {
+			return ref
+		}
+	}
+	return symbolInPostings(content, postings, cursor)
 }
 
 func symbolInPostings(content string, postings []ast.Posting, cursor int) *symbolRef {
@@ -433,8 +421,6 @@ func sortAndDedup(changes map[uri.URI][]protocol.TextEdit) {
 		changes[u] = dedup
 	}
 }
-
-// Validation
 
 func validateAccountName(name string) error   { return validateRenameName(name, "account", ";") }
 func validateCommodityName(name string) error { return validateRenameName(name, "commodity", ";") }

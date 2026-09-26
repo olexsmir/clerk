@@ -136,7 +136,6 @@ run:
 }
 
 func cmplHeaderCtx(content string, cursor int, toks []token.Token) (cmplCtx, int) {
-	// cursor inside date token
 	if cursor >= toks[0].Span.Start.Offset && cursor <= toks[0].Span.End.Offset {
 		return cmplDate, toks[0].Span.Start.Offset
 	}
@@ -195,7 +194,8 @@ func payeeAt(cursor, start, end int) (cmplCtx, int) {
 	return cmplNone, cursor
 }
 
-// cmplDirectiveContext classifies a directive line. keyword completion before the keyword ends, symbol completion in the value field after
+// cmplDirectiveContext classifies a directive line: keyword completion up to the end of
+// the keyword, symbol completion in the value field after it.
 func cmplDirectiveContext(cursor, lineStart int, toks []token.Token) (cmplCtx, int) {
 	kwEnd := toks[0].Span.End.Offset
 	if cursor <= kwEnd {
@@ -290,7 +290,7 @@ func cmplPriceContext(cursor int, toks []token.Token) (cmplCtx, int) {
 	return cmplCommodity, cursor
 }
 
-// commentStart completes tag names before ':' of the current tag and tag values after it
+// cmplTagContext completes tag names before the ':' of the current tag, and tag values after it.
 func cmplTagContext(content string, commentStart, cursor int) (cmplCtx, int) {
 	prefix := content[commentStart:cursor]
 	segStart := commentStart
@@ -310,7 +310,7 @@ func cmplTagContext(content string, commentStart, cursor int) (cmplCtx, int) {
 	return cmplTagName, keyStart
 }
 
-// tagKeyAt returns the key of tag whose value region starts at start
+// tagKeyAt returns the key of the tag whose value region starts at start.
 func tagKeyAt(content string, start int) (string, bool) {
 	lineStart, _ := lineBounds(content, start)
 	segStart := lineStart
@@ -376,7 +376,7 @@ type cmplCand struct {
 	rank         int   // lower sorts first among equal scores; 0 except for date completions
 }
 
-// cmplItems ranks candidates for the content against typed pattern
+// cmplItems ranks candidates for the content against the typed pattern.
 func cmplItems(
 	a *analyzer.Analysis,
 	ctx cmplCtx,
@@ -579,8 +579,8 @@ func daysFromCivil(y, m, d int) int64 {
 	return int64(era)*146097 + int64(doe) - 719468
 }
 
-// dateStyle returns reparator and yesr-ness of the most recent history date.
-// Defualts to '-'/true when history is empty.
+// dateStyle returns the separator and year-ness of the most recent history date.
+// Defaults to '-' with a year when history is empty.
 func dateStyle(history []string) (sep byte, hasYear bool) {
 	sep, hasYear = '-', true
 	if n := len(history); n > 0 {

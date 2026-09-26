@@ -32,7 +32,7 @@ func utf16ColSlow(line string, byteOffset int) int {
 		if r == utf8.RuneError && size <= 1 {
 			break
 		}
-		col += utf16Len(r)
+		col += Utf16LenRune(r)
 		i += size
 	}
 	return col
@@ -55,7 +55,7 @@ func utf16ColBytesSlow(b []byte) int {
 		if r == utf8.RuneError && size <= 1 {
 			break
 		}
-		col += utf16Len(r)
+		col += Utf16LenRune(r)
 		i += size
 	}
 	return col
@@ -88,7 +88,7 @@ func utf16LenSlow(content string, offset, end int) int {
 		if r == utf8.RuneError && size <= 1 {
 			break
 		}
-		n += utf16Len(r)
+		n += Utf16LenRune(r)
 		i += size
 	}
 	return n
@@ -126,7 +126,7 @@ func Offset(content string, line, col int) int {
 	for off < lineEnd && units < col {
 		r, size := utf8.DecodeRuneInString(content[off:])
 		off += size
-		units += utf16Len(r)
+		units += Utf16LenRune(r)
 	}
 	return off
 }
@@ -188,8 +188,8 @@ func Position(content string, offset int) protocol.Position {
 	return protocol.Position{Line: uint32(line), Character: uint32(col)}
 }
 
-// utf16Len returns the number of UTF-16 code units for a rune.
-func utf16Len(r rune) int {
+// Utf16LenRune returns the number of UTF-16 code units for a rune.
+func Utf16LenRune(r rune) int {
 	if r >= 0x10000 && r <= 0x10FFFF {
 		return 2
 	}

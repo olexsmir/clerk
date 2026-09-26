@@ -271,7 +271,6 @@ func entryAt(entries []ast.Entry, cursor int) ast.Entry {
 	return entries[idx]
 }
 
-// entrySpan returns the span covering an entry.
 func entrySpan(e ast.Entry) token.Span {
 	switch e := e.(type) {
 	case *ast.BlankLine:
@@ -319,13 +318,8 @@ func entrySpan(e ast.Entry) token.Span {
 }
 
 func spanEndClamped(content string, end int) int {
-	for end > 0 {
-		switch content[end-1] {
-		case ' ', '\t', '\r', '\n':
-			end--
-		default:
-			return end
-		}
+	for end > 0 && isSpanSpace(content[end-1]) {
+		end--
 	}
 	return end
 }

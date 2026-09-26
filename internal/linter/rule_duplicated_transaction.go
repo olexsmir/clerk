@@ -8,7 +8,7 @@ import (
 
 const DuplicatedTransactionID = "duplicated-transaction"
 
-// DuplicatedTransaction flags idnetical transactions.
+// DuplicatedTransaction flags identical transactions.
 type DuplicatedTransaction struct{}
 
 func (DuplicatedTransaction) ID() RuleID { return DuplicatedTransactionID }
