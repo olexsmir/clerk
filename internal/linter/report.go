@@ -1,13 +1,15 @@
 package linter
 
 import (
+	"bufio"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"os"
 	"path/filepath"
-	"sort"
+	"slices"
+	"strconv"
+	"strings"
 )
 
 // PathStyle controls how file paths are shown in output.
@@ -21,14 +23,14 @@ const (
 
 // Reporter collects lint findings across files and flushes them in the desired format.
 type Reporter struct {
-	w     io.Writer
+	w     *bufio.Writer
 	finds []Find
 	style PathStyle
 	cfg   Config
 }
 
 func NewReporter(w io.Writer, style PathStyle, cfg Config) *Reporter {
-	return &Reporter{w: w, style: style, cfg: cfg}
+	return &Reporter{w: bufio.NewWriter(w), style: style, cfg: cfg}
 }
 
 func (r *Reporter) Collect(finds []Find) {
@@ -48,6 +50,7 @@ func (r *Reporter) HasFailures() bool {
 }
 
 func (r *Reporter) Flush(format string) error {
+	defer r.w.Flush()
 	switch format {
 	case "json":
 		return fprintJSON(r.w, r.style, r.finds)
@@ -62,11 +65,18 @@ func (r *Reporter) Flush(format string) error {
 // fprint writes finds in text format: file:line:col code: message.
 func fprint(w io.Writer, style PathStyle, finds []Find) {
 	sortFinds(finds)
+	wd, _ := os.Getwd()
 	for _, find := range finds {
-		_, _ = fmt.Fprintf(w, "%s:%d:%d: %s: %s\n",
-			formatPath(style, find.Span.File),
-			find.Span.Start.Line, find.Span.Start.Col,
-			find.Code, find.Message)
+		io.WriteString(w, formatPath(style, find.Span.File, wd))
+		io.WriteString(w, ":")
+		io.WriteString(w, strconv.Itoa(find.Span.Start.Line))
+		io.WriteString(w, ":")
+		io.WriteString(w, strconv.Itoa(find.Span.Start.Col))
+		io.WriteString(w, ": ")
+		io.WriteString(w, string(find.Code))
+		io.WriteString(w, ": ")
+		io.WriteString(w, find.Message)
+		io.WriteString(w, "\n")
 	}
 }
 
@@ -82,13 +92,14 @@ type findJSON struct {
 // fprintJSON writes finds as [findJSON] array.
 func fprintJSON(w io.Writer, style PathStyle, finds []Find) error {
 	sortFinds(finds)
+	wd, _ := os.Getwd()
 	jsonFinds := make([]findJSON, len(finds))
 	for i, find := range finds {
 		jsonFinds[i] = findJSON{
 			Message:  find.Message,
 			Severity: find.Severity.String(), // TODO: it's unset
 			Code:     string(find.Code),
-			File:     formatPath(style, find.Span.File),
+			File:     formatPath(style, find.Span.File, wd),
 			Line:     find.Span.Start.Line,
 			Column:   find.Span.Start.Col,
 		}
@@ -96,36 +107,35 @@ func fprintJSON(w io.Writer, style PathStyle, finds []Find) error {
 	return json.NewEncoder(w).Encode(jsonFinds)
 }
 
-func formatPath(style PathStyle, p string) string {
+func formatPath(style PathStyle, path, wdir string) string {
 	switch style {
 	case PathBasename:
-		return filepath.Base(p)
+		return filepath.Base(path)
 	case PathAbsolute:
-		return p
+		return path
 	case PathRelative:
-		wd, err := os.Getwd()
-		if err == nil {
-			if rel, err := filepath.Rel(wd, p); err == nil {
+		if wdir != "" {
+			if rel, err := filepath.Rel(wdir, path); err == nil {
 				return rel
 			}
 		}
-		return p
+		return path
 	default:
 		panic("impossible PathStyle value")
 	}
 }
 
 func sortFinds(finds []Find) {
-	sort.Slice(finds, func(i, j int) bool {
-		if finds[i].Span.Start.Line != finds[j].Span.Start.Line {
-			return finds[i].Span.Start.Line < finds[j].Span.Start.Line
+	slices.SortFunc(finds, func(a, b Find) int {
+		if a.Span.Start.Line != b.Span.Start.Line {
+			return a.Span.Start.Line - b.Span.Start.Line
 		}
-		if finds[i].Span.Start.Col != finds[j].Span.Start.Col {
-			return finds[i].Span.Start.Col < finds[j].Span.Start.Col
+		if a.Span.Start.Col != b.Span.Start.Col {
+			return a.Span.Start.Col - b.Span.Start.Col
 		}
-		if finds[i].Code != finds[j].Code {
-			return finds[i].Code < finds[j].Code
+		if a.Code != b.Code {
+			return strings.Compare(string(a.Code), string(b.Code))
 		}
-		return finds[i].Message < finds[j].Message
+		return strings.Compare(a.Message, b.Message)
 	})
 }

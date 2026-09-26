@@ -78,6 +78,7 @@ func (d Date) String() string {
 	if sep == 0 {
 		sep = '-'
 	}
+	// NOTE(perf): replace sprint with strings.Builder or other kind of buffer
 	if d.Year == 0 {
 		return fmt.Sprintf("%d%c%d", d.Month, sep, d.Day)
 	}
